@@ -1,0 +1,52 @@
+{
+  "name": "@cavort-it-systems/wordpress-mcp",
+  "version": "1.0.0",
+  "mcpName": "io.github.cvrt-jh/wordpress-mcp",
+  "description": "Lightweight WordPress MCP server - token-optimized REST API access",
+  "type": "module",
+  "main": "build/index.js",
+  "bin": {
+    "wordpress-mcp": "build/index.js"
+  },
+  "files": [
+    "build",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "wordpress",
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "ai-tools",
+    "llm",
+    "token-optimization",
+    "rest-api"
+  ],
+  "author": "CVRT",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cvrt-jh/wordpress-mcp.git"
+  },
+  "homepage": "https://github.com/cvrt-jh/wordpress-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/cvrt-jh/wordpress-mcp/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "typescript": "^5.8.3"
+  }
+}
