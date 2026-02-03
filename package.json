@@ -1,6 +1,6 @@
 {
   "name": "@cavort-it-systems/wordpress-mcp",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "mcpName": "io.github.cvrt-jh/wordpress-mcp",
   "description": "Lightweight WordPress MCP server - token-optimized REST API access",
   "type": "module",

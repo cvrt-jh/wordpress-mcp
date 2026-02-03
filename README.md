@@ -4,7 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.12.1-blue.svg)](https://modelcontextprotocol.io)
 
-Lightweight WordPress MCP server for site management. 42 tools with **token-optimized responses** — REST API responses automatically slimmed from kilobytes to essentials.
+Lightweight WordPress MCP server for site management. **85 tools** with **token-optimized responses** — REST API responses automatically slimmed from kilobytes to essentials.
+
+**v2.0**: Now includes extended tools for the [mcp-endpoints](https://github.com/cvrt-gmbh/mcp-endpoints) plugin — install plugins/themes from WordPress.org, database management, full widget/menu control, and more.
 
 ## Why This Server?
 
@@ -116,7 +118,11 @@ All responses are automatically trimmed. Example:
 | HTML tags | excerpts | Clean text output |
 | Pretty-print JSON | all | Compact single-line output |
 
-## Tools (42)
+## Tools (85)
+
+### Standard WordPress REST API (42 tools)
+
+These work with any WordPress site:
 
 ### Site (4)
 - `wp_site_info` - Get site name, description, URL
@@ -184,6 +190,75 @@ All responses are automatically trimmed. Example:
 - `wp_delete_comment` - Delete comment
 - `wp_moderate_comments` - Batch moderate
 
+---
+
+### Extended Tools (43 tools) — Requires mcp-endpoints plugin
+
+These require the [mcp-endpoints](https://github.com/cvrt-gmbh/mcp-endpoints) WordPress plugin to be installed and activated.
+
+### Plugin Management (4)
+- `mcp_search_plugins` - Search WordPress.org plugins
+- `mcp_install_plugin` - Install plugin from WordPress.org
+- `mcp_update_plugin` - Update single plugin
+- `mcp_update_all_plugins` - Update all plugins
+
+### Theme Management (5)
+- `mcp_search_themes` - Search WordPress.org themes
+- `mcp_install_theme` - Install theme from WordPress.org
+- `mcp_update_theme` - Update single theme
+- `mcp_update_all_themes` - Update all themes
+- `mcp_delete_theme` - Delete inactive theme
+
+### Core Management (6)
+- `mcp_get_version` - Get WordPress version info
+- `mcp_get_system_info` - Get comprehensive system info
+- `mcp_check_updates` - Check for all updates
+- `mcp_update_core` - Update WordPress core
+- `mcp_flush_rewrite` - Flush rewrite rules
+- `mcp_flush_cache` - Clear all caches
+
+### Database Management (5)
+- `mcp_get_tables` - List tables with sizes
+- `mcp_search_replace` - Search/replace in database
+- `mcp_optimize_tables` - Optimize all tables
+- `mcp_clean_revisions` - Delete old revisions
+- `mcp_clean_comments` - Delete spam/trash comments
+
+### Options Management (5)
+- `mcp_list_options` - List options with prefix filter
+- `mcp_get_option` - Get single option
+- `mcp_set_option` - Create/update option
+- `mcp_delete_option` - Delete option
+- `mcp_bulk_get_options` - Get multiple options
+
+### Menu Management (8)
+- `mcp_list_menus` - List navigation menus
+- `mcp_get_menu_locations` - Get theme locations
+- `mcp_get_menu` - Get menu with items
+- `mcp_create_menu` - Create menu
+- `mcp_delete_menu` - Delete menu
+- `mcp_add_menu_item` - Add menu item
+- `mcp_delete_menu_item` - Delete menu item
+- `mcp_assign_menu_location` - Assign menu to location
+
+### Widget Management (8)
+- `mcp_list_sidebars` - List all sidebars
+- `mcp_get_sidebar_widgets` - Get sidebar widgets
+- `mcp_list_widget_types` - List widget types
+- `mcp_get_widget` - Get widget details
+- `mcp_add_widget` - Add widget to sidebar
+- `mcp_update_widget` - Update widget settings
+- `mcp_delete_widget` - Remove widget
+- `mcp_move_widget` - Move widget to sidebar
+
+### Health & Diagnostics (6)
+- `mcp_get_health` - Site health score
+- `mcp_get_debug_info` - Debug information
+- `mcp_get_php_info` - PHP configuration
+- `mcp_get_plugins_health` - Plugin health/updates
+- `mcp_get_cron_status` - Cron jobs status
+- `mcp_run_cron` - Run cron hook manually
+
 ## Architecture
 
 ```
@@ -193,6 +268,7 @@ src/
   types.ts          # Shared Zod schemas + jsonResult helper
   slim.ts           # Response slimming transformers
   tools/
+    # Standard WP REST API (wp/v2)
     site.ts         # 4 tools
     posts.ts        # 6 tools
     pages.ts        # 5 tools
@@ -202,6 +278,15 @@ src/
     media.ts        # 4 tools
     taxonomies.ts   # 8 tools (categories + tags)
     comments.ts     # 6 tools
+    # Extended (mcp/v1) - requires mcp-endpoints plugin
+    mcp-plugins.ts  # 4 tools - install from WordPress.org
+    mcp-themes.ts   # 5 tools - install from WordPress.org
+    mcp-core.ts     # 6 tools - updates, cache flush
+    mcp-database.ts # 5 tools - search-replace, optimize
+    mcp-options.ts  # 5 tools - full options CRUD
+    mcp-menus.ts    # 8 tools - navigation menus
+    mcp-widgets.ts  # 8 tools - sidebar widgets
+    mcp-health.ts   # 6 tools - diagnostics, cron
 ```
 
 ## Multi-Site Support
