@@ -13,7 +13,7 @@ import { register as registerMedia } from "./tools/media.js";
 import { register as registerTaxonomies } from "./tools/taxonomies.js";
 import { register as registerComments } from "./tools/comments.js";
 
-// Extended MCP Endpoints tools (mcp/v1) - requires mcp-endpoints plugin
+// Extended MCP Endpoints tools (mcp/v1) — requires cvrt-mcp-endpoints plugin
 import { register as registerMcpPlugins } from "./tools/mcp-plugins.js";
 import { register as registerMcpThemes } from "./tools/mcp-themes.js";
 import { register as registerMcpCore } from "./tools/mcp-core.js";
@@ -22,6 +22,19 @@ import { register as registerMcpOptions } from "./tools/mcp-options.js";
 import { register as registerMcpMenus } from "./tools/mcp-menus.js";
 import { register as registerMcpWidgets } from "./tools/mcp-widgets.js";
 import { register as registerMcpHealth } from "./tools/mcp-health.js";
+import { register as registerMcpCpt } from "./tools/mcp-cpt.js";
+import { register as registerMcpTaxonomies } from "./tools/mcp-taxonomies.js";
+import { register as registerMcpUsers } from "./tools/mcp-users.js";
+import { register as registerMcpMedia } from "./tools/mcp-media.js";
+
+// Elementor tools (mcp/v1/elementor) — requires cvrt-mcp-endpoints plugin + Elementor active
+import { register as registerMcpElementor } from "./tools/mcp-elementor.js";
+
+// ACF tools (mcp/v1/acf) — requires cvrt-mcp-endpoints plugin + ACF Pro active
+import { register as registerAcf } from "./tools/mcp-acf.js";
+
+// WooCommerce tools — requires future cvrt-woo-endpoints plugin (mcp/v1/woo)
+import { register as registerWoo } from "./tools/mcp-woo.js";
 
 const server = new McpServer({
   name: "wordpress-mcp",
@@ -39,7 +52,7 @@ registerMedia(server);
 registerTaxonomies(server);
 registerComments(server);
 
-// Extended tools (require mcp-endpoints plugin)
+// Extended tools (require cvrt-mcp-endpoints plugin)
 registerMcpPlugins(server);
 registerMcpThemes(server);
 registerMcpCore(server);
@@ -48,6 +61,19 @@ registerMcpOptions(server);
 registerMcpMenus(server);
 registerMcpWidgets(server);
 registerMcpHealth(server);
+registerMcpCpt(server);
+registerMcpTaxonomies(server);
+registerMcpUsers(server);
+registerMcpMedia(server);
+
+// Elementor tools (require cvrt-mcp-endpoints plugin + Elementor)
+registerMcpElementor(server);
+
+// ACF tools (require cvrt-mcp-endpoints plugin + ACF Pro)
+registerAcf(server);
+
+// WooCommerce tools (require future cvrt-woo-endpoints plugin)
+registerWoo(server);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

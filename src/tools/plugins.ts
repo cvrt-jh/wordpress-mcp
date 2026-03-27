@@ -4,6 +4,16 @@ import { wpGet, wpPost, wpPut, wpDelete } from "../client.js";
 import { jsonResult } from "../types.js";
 import { slimPlugin } from "../slim.js";
 
+/**
+ * Encode plugin slug for WP REST API URL path.
+ * The WP REST API route regex `[^.\/]+(?:\/[^.\/]+)?` rejects dots,
+ * so the .php extension must be stripped (e.g., "akismet/akismet.php" → "akismet/akismet").
+ * Each segment is then URI-encoded separately, preserving the slash.
+ */
+function encodePluginSlug(plugin: string): string {
+  return plugin.replace(/\.php$/, "").split("/").map(encodeURIComponent).join("/");
+}
+
 export function register(server: McpServer) {
   // List plugins
   server.tool(
@@ -26,7 +36,7 @@ export function register(server: McpServer) {
       plugin: z.string().describe("Plugin identifier (e.g., 'akismet/akismet.php')"),
     },
     async ({ plugin }) => {
-      const pluginData = await wpGet<Record<string, unknown>>(`/wp/v2/plugins/${encodeURIComponent(plugin)}`);
+      const pluginData = await wpGet<Record<string, unknown>>(`/wp/v2/plugins/${encodePluginSlug(plugin)}`);
       return jsonResult(slimPlugin(pluginData));
     }
   );
@@ -40,7 +50,7 @@ export function register(server: McpServer) {
     },
     async ({ plugin }) => {
       const pluginData = await wpPut<Record<string, unknown>>(
-        `/wp/v2/plugins/${encodeURIComponent(plugin)}`,
+        `/wp/v2/plugins/${encodePluginSlug(plugin)}`,
         { status: "active" }
       );
       return jsonResult(slimPlugin(pluginData));
@@ -56,7 +66,7 @@ export function register(server: McpServer) {
     },
     async ({ plugin }) => {
       const pluginData = await wpPut<Record<string, unknown>>(
-        `/wp/v2/plugins/${encodeURIComponent(plugin)}`,
+        `/wp/v2/plugins/${encodePluginSlug(plugin)}`,
         { status: "inactive" }
       );
       return jsonResult(slimPlugin(pluginData));
@@ -71,7 +81,7 @@ export function register(server: McpServer) {
       plugin: z.string().describe("Plugin identifier (e.g., 'akismet/akismet.php')"),
     },
     async ({ plugin }) => {
-      await wpDelete<Record<string, unknown>>(`/wp/v2/plugins/${encodeURIComponent(plugin)}`);
+      await wpDelete<Record<string, unknown>>(`/wp/v2/plugins/${encodePluginSlug(plugin)}`);
       return jsonResult({ deleted: true, plugin });
     }
   );

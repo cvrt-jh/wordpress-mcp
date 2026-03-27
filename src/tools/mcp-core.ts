@@ -1,6 +1,6 @@
 /**
- * WordPress core management tools using mcp-endpoints plugin
- * Requires: mcp-endpoints WordPress plugin
+ * WordPress core management tools using cvrt-mcp-endpoints plugin
+ * Requires: cvrt-mcp-endpoints WordPress plugin
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { wpGet, wpPost } from "../client.js";

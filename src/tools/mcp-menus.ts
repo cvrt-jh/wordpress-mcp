@@ -1,6 +1,6 @@
 /**
- * Navigation menu management tools using mcp-endpoints plugin
- * Requires: mcp-endpoints WordPress plugin
+ * Navigation menu management tools using cvrt-mcp-endpoints plugin
+ * Requires: cvrt-mcp-endpoints WordPress plugin
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -124,6 +124,43 @@ export function register(server: McpServer) {
     async ({ item_id }) => {
       const result = await wpDelete<{ id: number; deleted: boolean }>(
         `/mcp/v1/menus/items/${item_id}`
+      );
+      return jsonResult(result);
+    }
+  );
+
+  // Update menu
+  server.tool(
+    "mcp_update_menu",
+    "Update a navigation menu (rename)",
+    {
+      id: z.number().describe("Menu ID"),
+      name: z.string().describe("New menu name"),
+    },
+    async ({ id, name }) => {
+      const result = await wpPut<{ id: number; updated: boolean }>(
+        `/mcp/v1/menus/${id}`,
+        { name }
+      );
+      return jsonResult(result);
+    }
+  );
+
+  // Update menu item
+  server.tool(
+    "mcp_update_menu_item",
+    "Update a menu item (title, URL, position, parent)",
+    {
+      item_id: z.number().describe("Menu item ID"),
+      title: z.string().optional().describe("Menu item title"),
+      url: z.string().optional().describe("URL for custom links"),
+      parent: z.number().optional().describe("Parent menu item ID"),
+      position: z.number().optional().describe("Position in menu"),
+    },
+    async ({ item_id, ...params }) => {
+      const result = await wpPut<{ id: number; updated: boolean }>(
+        `/mcp/v1/menus/items/${item_id}`,
+        params
       );
       return jsonResult(result);
     }

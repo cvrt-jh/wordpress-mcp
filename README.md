@@ -4,9 +4,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.12.1-blue.svg)](https://modelcontextprotocol.io)
 
-Lightweight WordPress MCP server for site management. **85 tools** with **token-optimized responses** — REST API responses automatically slimmed from kilobytes to essentials.
+Lightweight WordPress MCP server for site management. **158 tools** with **token-optimized responses** — REST API responses automatically slimmed from kilobytes to essentials.
 
-**v2.0**: Now includes extended tools for the [mcp-endpoints](https://github.com/cvrt-gmbh/mcp-endpoints) plugin — install plugins/themes from WordPress.org, database management, full widget/menu control, and more.
+**v2.1**: Now includes Pro modules for ACF and WooCommerce via [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro).
+
+**v2.0**: Extended tools for the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-endpoints) plugin — install plugins/themes from WordPress.org, database management, full widget/menu control, and more.
 
 ## Why This Server?
 
@@ -118,7 +120,7 @@ All responses are automatically trimmed. Example:
 | HTML tags | excerpts | Clean text output |
 | Pretty-print JSON | all | Compact single-line output |
 
-## Tools (85)
+## Tools (158)
 
 ### Standard WordPress REST API (42 tools)
 
@@ -192,9 +194,9 @@ These work with any WordPress site:
 
 ---
 
-### Extended Tools (43 tools) — Requires mcp-endpoints plugin
+### Extended Tools (43 tools) — Requires cvrt-mcp-endpoints plugin
 
-These require the [mcp-endpoints](https://github.com/cvrt-gmbh/mcp-endpoints) WordPress plugin to be installed and activated.
+These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-endpoints) WordPress plugin to be installed and activated.
 
 ### Plugin Management (4)
 - `mcp_search_plugins` - Search WordPress.org plugins
@@ -259,6 +261,122 @@ These require the [mcp-endpoints](https://github.com/cvrt-gmbh/mcp-endpoints) Wo
 - `mcp_get_cron_status` - Cron jobs status
 - `mcp_run_cron` - Run cron hook manually
 
+---
+
+### ACF Module (31 tools) — Requires wp-pilot-pro + ACF
+
+Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and Advanced Custom Fields.
+
+### Field Groups (4)
+- `acf_list_field_groups` - List all field groups
+- `acf_get_field_group` - Get field group with schema
+- `acf_export_field_groups` - Export as JSON
+- `acf_import_field_groups` - Import from JSON
+
+### Post Fields (4)
+- `acf_get_post_fields` - Get all fields for post
+- `acf_update_post_fields` - Update multiple fields
+- `acf_get_post_field` - Get single field value
+- `acf_update_post_field` - Update single field
+
+### Term & User Fields (4)
+- `acf_get_term_fields` - Get term ACF fields
+- `acf_update_term_fields` - Update term fields
+- `acf_get_user_fields` - Get user ACF fields
+- `acf_update_user_fields` - Update user fields
+
+### Options Pages (3)
+- `acf_list_options_pages` - List options pages
+- `acf_get_options_fields` - Get options page fields
+- `acf_update_options_fields` - Update options fields
+
+### Repeater Fields (5)
+- `acf_get_repeater` - Get repeater rows
+- `acf_add_repeater_row` - Add row
+- `acf_update_repeater_row` - Update row
+- `acf_delete_repeater_row` - Delete row
+- `acf_reorder_repeater` - Reorder rows
+
+### Flexible Content (5)
+- `acf_get_flexible` - Get layouts
+- `acf_add_flexible_layout` - Add layout
+- `acf_update_flexible_layout` - Update layout
+- `acf_delete_flexible_layout` - Delete layout
+- `acf_reorder_flexible` - Reorder layouts
+
+### Relationship Fields (4)
+- `acf_get_relationship` - Get related posts
+- `acf_set_relationship` - Set related posts
+- `acf_add_to_relationship` - Add posts
+- `acf_remove_from_relationship` - Remove posts
+
+### Utility (2)
+- `acf_get_clone_references` - Get clone field refs
+- `acf_get_field_object` - Get field schema
+
+---
+
+### WooCommerce Module (42 tools) — Requires wp-pilot-pro + WooCommerce
+
+Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommerce.
+
+### Products (5)
+- `woo_list_products` - List products with filters
+- `woo_get_product` - Get product details
+- `woo_create_product` - Create product
+- `woo_update_product` - Update product
+- `woo_delete_product` - Delete product
+
+### Variations (4)
+- `woo_list_variations` - List product variations
+- `woo_create_variation` - Create variation
+- `woo_update_variation` - Update variation
+- `woo_delete_variation` - Delete variation
+
+### Attributes (4)
+- `woo_list_attributes` - List attributes
+- `woo_list_attribute_terms` - List attribute terms
+- `woo_create_attribute` - Create attribute
+- `woo_create_attribute_term` - Create term
+
+### Categories & Tags (5)
+- `woo_list_categories` - List product categories
+- `woo_create_category` - Create category
+- `woo_update_category` - Update category
+- `woo_delete_category` - Delete category
+- `woo_list_tags` - List product tags
+
+### Orders (5)
+- `woo_list_orders` - List orders
+- `woo_get_order` - Get order details
+- `woo_update_order_status` - Update status
+- `woo_add_order_note` - Add note
+- `woo_get_order_notes` - Get notes
+
+### Customers (5)
+- `woo_list_customers` - List customers
+- `woo_get_customer` - Get customer
+- `woo_create_customer` - Create customer
+- `woo_update_customer` - Update customer
+- `woo_get_customer_orders` - Get order history
+
+### Coupons (5)
+- `woo_list_coupons` - List coupons
+- `woo_get_coupon` - Get coupon
+- `woo_create_coupon` - Create coupon
+- `woo_update_coupon` - Update coupon
+- `woo_delete_coupon` - Delete coupon
+
+### Reports (3)
+- `woo_sales_report` - Sales report
+- `woo_top_sellers` - Top selling products
+- `woo_stock_report` - Stock status report
+
+### Product Meta & Inventory (3)
+- `woo_get_product_meta` - Get product meta
+- `woo_update_product_meta` - Update product meta
+- `woo_bulk_update_stock` - Bulk stock update
+
 ## Architecture
 
 ```
@@ -278,7 +396,7 @@ src/
     media.ts        # 4 tools
     taxonomies.ts   # 8 tools (categories + tags)
     comments.ts     # 6 tools
-    # Extended (mcp/v1) - requires mcp-endpoints plugin
+    # Extended (mcp/v1) - requires cvrt-mcp-endpoints plugin
     mcp-plugins.ts  # 4 tools - install from WordPress.org
     mcp-themes.ts   # 5 tools - install from WordPress.org
     mcp-core.ts     # 6 tools - updates, cache flush
@@ -287,6 +405,9 @@ src/
     mcp-menus.ts    # 8 tools - navigation menus
     mcp-widgets.ts  # 8 tools - sidebar widgets
     mcp-health.ts   # 6 tools - diagnostics, cron
+    # Pro modules (mcp/v1) - requires wp-pilot-pro
+    mcp-acf.ts      # 31 tools - ACF integration
+    mcp-woo.ts      # 42 tools - WooCommerce
 ```
 
 ## Multi-Site Support

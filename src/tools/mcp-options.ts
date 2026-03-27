@@ -1,6 +1,6 @@
 /**
- * WordPress options management tools using mcp-endpoints plugin
- * Requires: mcp-endpoints WordPress plugin
+ * WordPress options management tools using cvrt-mcp-endpoints plugin
+ * Requires: cvrt-mcp-endpoints WordPress plugin
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";

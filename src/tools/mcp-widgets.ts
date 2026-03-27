@@ -1,6 +1,6 @@
 /**
- * Widget management tools using mcp-endpoints plugin
- * Requires: mcp-endpoints WordPress plugin
+ * Widget management tools using cvrt-mcp-endpoints plugin
+ * Requires: cvrt-mcp-endpoints WordPress plugin
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -133,6 +133,24 @@ export function register(server: McpServer) {
       const result = await wpDelete<{ widget_id: string; deleted: boolean }>(
         `/mcp/v1/widgets/${encodeURIComponent(widget_id)}`
       );
+      return jsonResult(result);
+    }
+  );
+
+  // Reorder widgets in sidebar
+  server.tool(
+    "mcp_reorder_widgets",
+    "Reorder widgets within a sidebar",
+    {
+      sidebar_id: z.string().describe("Sidebar ID"),
+      widget_ids: z.array(z.string()).describe("Ordered list of widget IDs"),
+    },
+    async ({ sidebar_id, widget_ids }) => {
+      const result = await wpPost<{
+        sidebar_id: string;
+        widget_ids: string[];
+        reordered: boolean;
+      }>(`/mcp/v1/widgets/sidebars/${encodeURIComponent(sidebar_id)}/reorder`, { widget_ids });
       return jsonResult(result);
     }
   );

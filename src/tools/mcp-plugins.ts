@@ -1,6 +1,6 @@
 /**
- * Extended plugin tools using mcp-endpoints plugin
- * Requires: mcp-endpoints WordPress plugin
+ * Extended plugin tools using cvrt-mcp-endpoints plugin
+ * Requires: cvrt-mcp-endpoints WordPress plugin
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -68,6 +68,28 @@ export function register(server: McpServer) {
         "/mcp/v1/plugins/update-all",
         {}
       );
+      return jsonResult(result);
+    }
+  );
+
+  // Install plugin from ZIP URL
+  server.tool(
+    "mcp_install_plugin_zip",
+    "Install a plugin from a ZIP URL (GitHub releases, custom sources)",
+    {
+      url: z.string().describe("URL to plugin ZIP file"),
+      activate: z.boolean().optional().default(false).describe("Activate after install"),
+      overwrite: z.boolean().optional().default(true).describe("Overwrite if plugin already exists"),
+    },
+    async ({ url, activate, overwrite }) => {
+      const result = await wpPost<{
+        installed: boolean;
+        activated: boolean;
+        plugin: string;
+        name: string;
+        version: string;
+        source: string;
+      }>("/mcp/v1/plugins/install-zip", { url, activate, overwrite });
       return jsonResult(result);
     }
   );

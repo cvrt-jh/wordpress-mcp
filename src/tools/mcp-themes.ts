@@ -1,6 +1,6 @@
 /**
- * Extended theme tools using mcp-endpoints plugin
- * Requires: mcp-endpoints WordPress plugin
+ * Extended theme tools using cvrt-mcp-endpoints plugin
+ * Requires: cvrt-mcp-endpoints WordPress plugin
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -84,6 +84,28 @@ export function register(server: McpServer) {
         "/mcp/v1/themes/delete",
         { stylesheet }
       );
+      return jsonResult(result);
+    }
+  );
+
+  // Install theme from ZIP URL
+  server.tool(
+    "mcp_install_theme_zip",
+    "Install a theme from a ZIP URL (GitHub releases, custom sources)",
+    {
+      url: z.string().describe("URL to theme ZIP file"),
+      activate: z.boolean().optional().default(false).describe("Activate after install"),
+      overwrite: z.boolean().optional().default(true).describe("Overwrite if theme already exists"),
+    },
+    async ({ url, activate, overwrite }) => {
+      const result = await wpPost<{
+        installed: boolean;
+        activated: boolean;
+        stylesheet: string;
+        name: string;
+        version: string;
+        source: string;
+      }>("/mcp/v1/themes/install-zip", { url, activate, overwrite });
       return jsonResult(result);
     }
   );
