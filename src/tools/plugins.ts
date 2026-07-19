@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { wpGet, wpPost, wpPut, wpDelete } from "../client.js";
+import { forSite } from "../client.js";
 import { jsonResult } from "../types.js";
 import { slimPlugin } from "../slim.js";
 
@@ -20,10 +20,12 @@ export function register(server: McpServer) {
     "wp_list_plugins",
     "List all installed plugins",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       status: z.enum(["active", "inactive"]).optional().describe("Filter by status"),
     },
-    async (params) => {
-      const plugins = await wpGet<unknown[]>("/wp/v2/plugins", params as Record<string, string | number>);
+    async ({ site, ...params }) => {
+      const wp = forSite(site);
+      const plugins = await wp.get<unknown[]>("/wp/v2/plugins", params as Record<string, string | number>);
       return jsonResult(plugins.map(slimPlugin));
     }
   );
@@ -33,10 +35,12 @@ export function register(server: McpServer) {
     "wp_get_plugin",
     "Get plugin details by slug",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       plugin: z.string().describe("Plugin identifier (e.g., 'akismet/akismet.php')"),
     },
-    async ({ plugin }) => {
-      const pluginData = await wpGet<Record<string, unknown>>(`/wp/v2/plugins/${encodePluginSlug(plugin)}`);
+    async ({ site, plugin }) => {
+      const wp = forSite(site);
+      const pluginData = await wp.get<Record<string, unknown>>(`/wp/v2/plugins/${encodePluginSlug(plugin)}`);
       return jsonResult(slimPlugin(pluginData));
     }
   );
@@ -46,10 +50,12 @@ export function register(server: McpServer) {
     "wp_activate_plugin",
     "Activate a plugin",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       plugin: z.string().describe("Plugin identifier (e.g., 'akismet/akismet.php')"),
     },
-    async ({ plugin }) => {
-      const pluginData = await wpPut<Record<string, unknown>>(
+    async ({ site, plugin }) => {
+      const wp = forSite(site);
+      const pluginData = await wp.put<Record<string, unknown>>(
         `/wp/v2/plugins/${encodePluginSlug(plugin)}`,
         { status: "active" }
       );
@@ -62,10 +68,12 @@ export function register(server: McpServer) {
     "wp_deactivate_plugin",
     "Deactivate a plugin",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       plugin: z.string().describe("Plugin identifier (e.g., 'akismet/akismet.php')"),
     },
-    async ({ plugin }) => {
-      const pluginData = await wpPut<Record<string, unknown>>(
+    async ({ site, plugin }) => {
+      const wp = forSite(site);
+      const pluginData = await wp.put<Record<string, unknown>>(
         `/wp/v2/plugins/${encodePluginSlug(plugin)}`,
         { status: "inactive" }
       );
@@ -78,10 +86,12 @@ export function register(server: McpServer) {
     "wp_delete_plugin",
     "Delete/uninstall a plugin (must be deactivated first)",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       plugin: z.string().describe("Plugin identifier (e.g., 'akismet/akismet.php')"),
     },
-    async ({ plugin }) => {
-      await wpDelete<Record<string, unknown>>(`/wp/v2/plugins/${encodePluginSlug(plugin)}`);
+    async ({ site, plugin }) => {
+      const wp = forSite(site);
+      await wp.delete<Record<string, unknown>>(`/wp/v2/plugins/${encodePluginSlug(plugin)}`);
       return jsonResult({ deleted: true, plugin });
     }
   );

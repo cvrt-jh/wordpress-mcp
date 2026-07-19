@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { wpGet, wpPost, wpPut, wpDelete } from "../client.js";
+import { forSite } from "../client.js";
 import { jsonResult, PostStatusSchema } from "../types.js";
 import { slimPage } from "../slim.js";
 
@@ -10,6 +10,7 @@ export function register(server: McpServer) {
     "wp_list_pages",
     "List WordPress pages",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       per_page: z.number().optional().default(20).describe("Pages per request (max 100)"),
       page: z.number().optional().default(1).describe("Page number"),
       status: PostStatusSchema.optional().describe("Page status filter"),
@@ -17,8 +18,9 @@ export function register(server: McpServer) {
       orderby: z.enum(["date", "title", "modified", "menu_order"]).optional().default("menu_order"),
       order: z.enum(["asc", "desc"]).optional().default("asc"),
     },
-    async (params) => {
-      const pages = await wpGet<unknown[]>("/wp/v2/pages", params as Record<string, string | number>);
+    async ({ site, ...params }) => {
+      const wp = forSite(site);
+      const pages = await wp.get<unknown[]>("/wp/v2/pages", params as Record<string, string | number>);
       return jsonResult(pages.map(slimPage));
     }
   );
@@ -28,11 +30,13 @@ export function register(server: McpServer) {
     "wp_get_page",
     "Get a single page by ID",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       id: z.number().describe("Page ID"),
       content: z.boolean().optional().default(false).describe("Include full content"),
     },
-    async ({ id, content }) => {
-      const page = await wpGet<Record<string, unknown>>(`/wp/v2/pages/${id}`);
+    async ({ site, id, content }) => {
+      const wp = forSite(site);
+      const page = await wp.get<Record<string, unknown>>(`/wp/v2/pages/${id}`);
       const result = slimPage(page);
       if (content && page.content) {
         result.content = (page.content as { rendered?: string }).rendered || "";
@@ -46,14 +50,16 @@ export function register(server: McpServer) {
     "wp_create_page",
     "Create a new WordPress page",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       title: z.string().describe("Page title"),
       content: z.string().optional().describe("Page content (HTML)"),
       status: PostStatusSchema.optional().default("draft").describe("Page status"),
       parent: z.number().optional().default(0).describe("Parent page ID"),
       menu_order: z.number().optional().default(0).describe("Menu order"),
     },
-    async (params) => {
-      const page = await wpPost<Record<string, unknown>>("/wp/v2/pages", params);
+    async ({ site, ...params }) => {
+      const wp = forSite(site);
+      const page = await wp.post<Record<string, unknown>>("/wp/v2/pages", params);
       return jsonResult(slimPage(page));
     }
   );
@@ -63,6 +69,7 @@ export function register(server: McpServer) {
     "wp_update_page",
     "Update an existing page",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       id: z.number().describe("Page ID"),
       title: z.string().optional().describe("Page title"),
       content: z.string().optional().describe("Page content (HTML)"),
@@ -70,8 +77,9 @@ export function register(server: McpServer) {
       parent: z.number().optional().describe("Parent page ID"),
       menu_order: z.number().optional().describe("Menu order"),
     },
-    async ({ id, ...params }) => {
-      const page = await wpPut<Record<string, unknown>>(`/wp/v2/pages/${id}`, params);
+    async ({ site, id, ...params }) => {
+      const wp = forSite(site);
+      const page = await wp.put<Record<string, unknown>>(`/wp/v2/pages/${id}`, params);
       return jsonResult(slimPage(page));
     }
   );
@@ -81,11 +89,13 @@ export function register(server: McpServer) {
     "wp_delete_page",
     "Delete a page (moves to trash, or permanently if force=true)",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       id: z.number().describe("Page ID"),
       force: z.boolean().optional().default(false).describe("Bypass trash and delete permanently"),
     },
-    async ({ id, force }) => {
-      const result = await wpDelete<Record<string, unknown>>(`/wp/v2/pages/${id}`, { force: force ? 1 : 0 });
+    async ({ site, id, force }) => {
+      const wp = forSite(site);
+      const result = await wp.delete<Record<string, unknown>>(`/wp/v2/pages/${id}`, { force: force ? 1 : 0 });
       return jsonResult({ deleted: true, id });
     }
   );
