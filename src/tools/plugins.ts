@@ -48,51 +48,54 @@ export function register(server: McpServer) {
   // Activate plugin
   server.tool(
     "wp_activate_plugin",
-    "Activate a plugin",
+    "Activate an installed plugin (via cvrt-mcp-endpoints, avoids the often-blocked core route)",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      plugin: z.string().describe("Plugin identifier (e.g., 'akismet/akismet.php')"),
+      plugin: z.string().describe("Plugin file path, e.g. akismet/akismet.php"),
     },
     async ({ site, plugin }) => {
       const wp = forSite(site);
-      const pluginData = await wp.put<Record<string, unknown>>(
-        `/wp/v2/plugins/${encodePluginSlug(plugin)}`,
-        { status: "active" }
+      const result = await wp.post<{ plugin: string; active: boolean; changed: boolean }>(
+        "/mcp/v1/plugins/activate",
+        { plugin },
       );
-      return jsonResult(slimPlugin(pluginData));
-    }
+      return jsonResult(result);
+    },
   );
 
   // Deactivate plugin
   server.tool(
     "wp_deactivate_plugin",
-    "Deactivate a plugin",
+    "Deactivate an installed plugin (via cvrt-mcp-endpoints)",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      plugin: z.string().describe("Plugin identifier (e.g., 'akismet/akismet.php')"),
+      plugin: z.string().describe("Plugin file path, e.g. akismet/akismet.php"),
     },
     async ({ site, plugin }) => {
       const wp = forSite(site);
-      const pluginData = await wp.put<Record<string, unknown>>(
-        `/wp/v2/plugins/${encodePluginSlug(plugin)}`,
-        { status: "inactive" }
+      const result = await wp.post<{ plugin: string; active: boolean; changed: boolean }>(
+        "/mcp/v1/plugins/deactivate",
+        { plugin },
       );
-      return jsonResult(slimPlugin(pluginData));
-    }
+      return jsonResult(result);
+    },
   );
 
   // Delete plugin
   server.tool(
     "wp_delete_plugin",
-    "Delete/uninstall a plugin (must be deactivated first)",
+    "Delete an installed plugin (via cvrt-mcp-endpoints; deactivates first)",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      plugin: z.string().describe("Plugin identifier (e.g., 'akismet/akismet.php')"),
+      plugin: z.string().describe("Plugin file path, e.g. akismet/akismet.php"),
     },
     async ({ site, plugin }) => {
       const wp = forSite(site);
-      await wp.delete<Record<string, unknown>>(`/wp/v2/plugins/${encodePluginSlug(plugin)}`);
-      return jsonResult({ deleted: true, plugin });
-    }
+      const result = await wp.post<{ plugin: string; deleted: boolean }>(
+        "/mcp/v1/plugins/delete",
+        { plugin },
+      );
+      return jsonResult(result);
+    },
   );
 }
