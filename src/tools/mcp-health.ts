@@ -4,7 +4,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { wpGet, wpPost } from "../client.js";
+import { forSite } from "../client.js";
 import { jsonResult } from "../types.js";
 
 export function register(server: McpServer) {
@@ -12,9 +12,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_get_health",
     "Get site health status and score",
-    {},
-    async () => {
-      const result = await wpGet<{
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         status: string;
         score: number;
         wordpress: { version: string; update_available: boolean };
@@ -34,9 +37,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_get_debug_info",
     "Get detailed debug information",
-    {},
-    async () => {
-      const result = await wpGet<{
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         wordpress: Record<string, unknown>;
         server: Record<string, unknown>;
         database: Record<string, unknown>;
@@ -51,9 +57,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_get_php_info",
     "Get PHP configuration details",
-    {},
-    async () => {
-      const result = await wpGet<{
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         version: string;
         sapi: string;
         memory_limit: string;
@@ -71,9 +80,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_get_plugins_health",
     "Get plugin health status and available updates",
-    {},
-    async () => {
-      const result = await wpGet<{
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         plugins: Array<{
           file: string;
           name: string;
@@ -95,9 +107,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_get_cron_status",
     "Get WordPress cron jobs status",
-    {},
-    async () => {
-      const result = await wpGet<{
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         cron_disabled: boolean;
         schedules: Record<string, { interval: number; display: string }>;
         events: Array<{
@@ -118,10 +133,12 @@ export function register(server: McpServer) {
     "mcp_run_cron",
     "Manually trigger a cron hook",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       hook: z.string().describe("Cron hook name to run"),
     },
-    async ({ hook }) => {
-      const result = await wpPost<{ hook: string; executed: boolean }>(
+    async ({ site, hook }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{ hook: string; executed: boolean }>(
         "/mcp/v1/health/cron/run",
         { hook }
       );

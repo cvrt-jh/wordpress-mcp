@@ -4,7 +4,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { wpGet, wpPost, wpPut, wpDelete } from "../client.js";
+import { forSite } from "../client.js";
 import { jsonResult } from "../types.js";
 
 export function register(server: McpServer) {
@@ -12,9 +12,12 @@ export function register(server: McpServer) {
   server.tool(
     "acf_list_field_groups",
     "List all ACF field groups with their fields",
-    {},
-    async () => {
-      const result = await wpGet<
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.get<
         Array<{
           key: string;
           title: string;
@@ -32,10 +35,12 @@ export function register(server: McpServer) {
     "acf_get_field_group",
     "Get ACF field group with full field configuration",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       key: z.string().describe("Field group key (e.g., group_abc123)"),
     },
-    async ({ key }) => {
-      const result = await wpGet<{
+    async ({ site, key }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         key: string;
         title: string;
         active: boolean;
@@ -54,6 +59,7 @@ export function register(server: McpServer) {
     "acf_create_field_group",
     "Create an ACF field group with fields",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       title: z.string().describe("Field group title"),
       key: z.string().optional().describe("Field group key (auto-generated if omitted)"),
       fields: z
@@ -78,8 +84,9 @@ export function register(server: McpServer) {
       style: z.enum(["default", "seamless"]).optional().default("default"),
       hide_on_screen: z.array(z.string()).optional().default([]),
     },
-    async (params) => {
-      const result = await wpPost<{
+    async ({ site, ...params }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{
         success: boolean;
         key: string;
         title: string;
@@ -95,6 +102,7 @@ export function register(server: McpServer) {
     "acf_update_field_group",
     "Update an existing ACF field group",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       key: z.string().describe("Field group key"),
       title: z.string().optional().describe("New title"),
       fields: z
@@ -107,8 +115,9 @@ export function register(server: McpServer) {
       active: z.boolean().optional(),
       hide_on_screen: z.array(z.string()).optional(),
     },
-    async ({ key, ...params }) => {
-      const result = await wpPut<{
+    async ({ site, key, ...params }) => {
+      const wp = forSite(site);
+      const result = await wp.put<{
         success: boolean;
         key: string;
         title: string;
@@ -124,10 +133,12 @@ export function register(server: McpServer) {
     "acf_delete_field_group",
     "Delete an ACF field group",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       key: z.string().describe("Field group key"),
     },
-    async ({ key }) => {
-      const result = await wpDelete<{
+    async ({ site, key }) => {
+      const wp = forSite(site);
+      const result = await wp.delete<{
         success: boolean;
         key: string;
         title: string;
@@ -142,10 +153,12 @@ export function register(server: McpServer) {
     "acf_export_field_group",
     "Export a field group in ACF JSON format (for import/backup)",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       key: z.string().describe("Field group key"),
     },
-    async ({ key }) => {
-      const result = await wpGet<Record<string, unknown>>(
+    async ({ site, key }) => {
+      const wp = forSite(site);
+      const result = await wp.get<Record<string, unknown>>(
         `/mcp/v1/acf/field-groups/${encodeURIComponent(key)}/export`
       );
       return jsonResult(result);
@@ -157,10 +170,12 @@ export function register(server: McpServer) {
     "acf_import_field_groups",
     "Import ACF field groups from JSON export format",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       groups: z.array(z.record(z.unknown())).describe("Array of ACF field group JSON objects"),
     },
-    async ({ groups }) => {
-      const result = await wpPost<{
+    async ({ site, groups }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{
         imported: number;
         results: Array<{
           key: string;
@@ -183,11 +198,13 @@ export function register(server: McpServer) {
     "acf_get_post_fields",
     "Get all ACF field values for a post",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       post_id: z.number().describe("Post ID"),
       format: z.enum(["formatted", "raw"]).optional().default("formatted"),
     },
-    async ({ post_id, format }) => {
-      const result = await wpGet<{
+    async ({ site, post_id, format }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         post_id: number;
         fields: Record<string, { value: unknown; type: string; label: string }>;
       }>(`/mcp/v1/acf/posts/${post_id}/fields`, { format });
@@ -200,11 +217,13 @@ export function register(server: McpServer) {
     "acf_update_post_fields",
     "Update multiple ACF field values for a post",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       post_id: z.number().describe("Post ID"),
       fields: z.record(z.unknown()).describe("Field name => value pairs"),
     },
-    async ({ post_id, fields }) => {
-      const result = await wpPost<{
+    async ({ site, post_id, fields }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{
         post_id: number;
         updated: Record<string, boolean>;
       }>(`/mcp/v1/acf/posts/${post_id}/fields`, { fields });
@@ -217,12 +236,14 @@ export function register(server: McpServer) {
     "acf_get_post_field",
     "Get a single ACF field value for a post",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       post_id: z.number().describe("Post ID"),
       field: z.string().describe("Field name"),
       format: z.enum(["formatted", "raw"]).optional().default("formatted"),
     },
-    async ({ post_id, field, format }) => {
-      const result = await wpGet<{
+    async ({ site, post_id, field, format }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         post_id: number;
         field: string;
         value: unknown;
@@ -238,12 +259,14 @@ export function register(server: McpServer) {
     "acf_update_post_field",
     "Update a single ACF field value for a post",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       post_id: z.number().describe("Post ID"),
       field: z.string().describe("Field name"),
       value: z.unknown().describe("New value"),
     },
-    async ({ post_id, field, value }) => {
-      const result = await wpPut<{
+    async ({ site, post_id, field, value }) => {
+      const wp = forSite(site);
+      const result = await wp.put<{
         post_id: number;
         field: string;
         updated: boolean;

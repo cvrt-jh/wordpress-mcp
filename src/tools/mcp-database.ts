@@ -4,7 +4,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { wpGet, wpPost } from "../client.js";
+import { forSite } from "../client.js";
 import { jsonResult } from "../types.js";
 
 export function register(server: McpServer) {
@@ -12,9 +12,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_get_tables",
     "List all database tables with sizes",
-    {},
-    async () => {
-      const result = await wpGet<{
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         tables: Array<{ name: string; data_mb: number; index_mb: number; rows: number }>;
         total_size_mb: number;
       }>("/mcp/v1/db/tables");
@@ -27,13 +30,15 @@ export function register(server: McpServer) {
     "mcp_search_replace",
     "Search and replace strings in database (serialization-safe)",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       search: z.string().describe("String to search for"),
       replace: z.string().describe("Replacement string"),
       tables: z.array(z.string()).optional().describe("Specific tables (empty = all)"),
       dry_run: z.boolean().optional().default(true).describe("Preview without applying"),
     },
-    async ({ search, replace, tables, dry_run }) => {
-      const result = await wpPost<{
+    async ({ site, search, replace, tables, dry_run }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{
         dry_run: boolean;
         search: string;
         replace: string;
@@ -48,9 +53,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_optimize_tables",
     "Optimize all database tables",
-    {},
-    async () => {
-      const result = await wpPost<{ optimized: string[]; count: number }>(
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{ optimized: string[]; count: number }>(
         "/mcp/v1/db/optimize",
         {}
       );
@@ -63,10 +71,12 @@ export function register(server: McpServer) {
     "mcp_clean_revisions",
     "Delete old post revisions",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       keep: z.number().optional().default(5).describe("Revisions to keep per post"),
     },
-    async ({ keep }) => {
-      const result = await wpPost<{ deleted: number; kept_per_post: number }>(
+    async ({ site, keep }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{ deleted: number; kept_per_post: number }>(
         "/mcp/v1/db/clean-revisions",
         { keep }
       );
@@ -78,9 +88,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_clean_comments",
     "Delete spam and trashed comments",
-    {},
-    async () => {
-      const result = await wpPost<{ spam_deleted: number; trash_deleted: number }>(
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{ spam_deleted: number; trash_deleted: number }>(
         "/mcp/v1/db/clean-comments",
         {}
       );

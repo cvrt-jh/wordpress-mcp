@@ -6,6 +6,8 @@
 
 Lightweight WordPress MCP server for site management. **158 tools** with **token-optimized responses** — REST API responses automatically slimmed from kilobytes to essentials.
 
+**v3.0 (BREAKING)**: Multi-site — one server instance manages any number of sites via a single `WORDPRESS_SITES` env var. Every tool now requires a `site` argument; use the new `list_sites` tool to discover configured ids. The old single-site env vars are removed. `wp_activate_plugin` / `wp_deactivate_plugin` / `wp_delete_plugin` now use `cvrt-mcp-endpoints` `mcp/v1` routes and take the plugin file path (e.g. `akismet/akismet.php`) instead of a slug.
+
 **v2.1**: Now includes Pro modules for ACF and WooCommerce via [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro).
 
 **v2.0**: Extended tools for the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-endpoints) plugin — install plugins/themes from WordPress.org, database management, full widget/menu control, and more.
@@ -36,15 +38,9 @@ npx @cavort-it-systems/wordpress-mcp
 
 ## Configuration
 
-### Claude Code CLI
+**v3.0 is multi-site (BREAKING CHANGE).** A single server instance now manages any number of WordPress sites, defined in one `WORDPRESS_SITES` env var as a JSON array of `{id, url, username, password}` objects. The old single-site env vars (`WORDPRESS_SITE_URL`, `WORDPRESS_USERNAME`, `WORDPRESS_PASSWORD`) are **no longer read** — set `WORDPRESS_SITES` instead.
 
-```bash
-claude mcp add wordpress \
-  -e WORDPRESS_SITE_URL=https://example.com \
-  -e WORDPRESS_USERNAME=admin \
-  -e WORDPRESS_PASSWORD="xxxx xxxx xxxx xxxx" \
-  -- npx @cavort-it-systems/wordpress-mcp
-```
+Every tool (except `list_sites`) now requires a `site` argument naming the target site id. Call `list_sites` first to discover which ids are configured — it returns `{id, url}` for each site (passwords are never returned or logged).
 
 ### Claude Desktop / Manual
 
@@ -57,13 +53,21 @@ Add to your MCP config (`~/.claude.json` or Claude Desktop settings):
       "command": "npx",
       "args": ["@cavort-it-systems/wordpress-mcp"],
       "env": {
-        "WORDPRESS_SITE_URL": "https://example.com",
-        "WORDPRESS_USERNAME": "admin",
-        "WORDPRESS_PASSWORD": "xxxx xxxx xxxx xxxx"
+        "WORDPRESS_SITES": "[{\"id\":\"boardcouture\",\"url\":\"https://boardcouture.shop\",\"username\":\"cavortkonzepte\",\"password\":\"xxxx xxxx xxxx\"}]"
       }
     }
   }
 }
+```
+
+Add more sites by appending objects to the `WORDPRESS_SITES` array — one server instance handles them all.
+
+### Claude Code CLI
+
+```bash
+claude mcp add wordpress \
+  -e WORDPRESS_SITES='[{"id":"boardcouture","url":"https://boardcouture.shop","username":"cavortkonzepte","password":"xxxx xxxx xxxx"}]' \
+  -- npx @cavort-it-systems/wordpress-mcp
 ```
 
 ### From Source
@@ -122,6 +126,11 @@ All responses are automatically trimmed. Example:
 
 ## Tools (158)
 
+Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself.
+
+### Sites (1)
+- `list_sites` - List configured site ids and URLs (no `site` argument; passwords never returned)
+
 ### Standard WordPress REST API (42 tools)
 
 These work with any WordPress site:
@@ -158,9 +167,9 @@ These work with any WordPress site:
 ### Plugins (5)
 - `wp_list_plugins` - List plugins
 - `wp_get_plugin` - Get plugin details
-- `wp_activate_plugin` - Activate plugin
-- `wp_deactivate_plugin` - Deactivate plugin
-- `wp_delete_plugin` - Delete plugin
+- `wp_activate_plugin` - Activate plugin (mcp/v1; `plugin` is the file path, e.g. `akismet/akismet.php`)
+- `wp_deactivate_plugin` - Deactivate plugin (mcp/v1; `plugin` is the file path)
+- `wp_delete_plugin` - Delete plugin (mcp/v1; `plugin` is the file path)
 
 ### Themes (4)
 - `wp_list_themes` - List themes
@@ -412,27 +421,16 @@ src/
 
 ## Multi-Site Support
 
-For managing multiple WordPress sites, run separate MCP instances:
+One server instance manages all your sites via the `WORDPRESS_SITES` env var (see [Configuration](#configuration)). Call `list_sites` to see configured ids, then pass `site: "<id>"` to any other tool:
 
 ```json
 {
   "mcpServers": {
-    "wordpress-site1": {
+    "wordpress": {
       "command": "npx",
       "args": ["@cavort-it-systems/wordpress-mcp"],
       "env": {
-        "WORDPRESS_SITE_URL": "https://site1.com",
-        "WORDPRESS_USERNAME": "admin",
-        "WORDPRESS_PASSWORD": "xxxx xxxx xxxx xxxx"
-      }
-    },
-    "wordpress-site2": {
-      "command": "npx",
-      "args": ["@cavort-it-systems/wordpress-mcp"],
-      "env": {
-        "WORDPRESS_SITE_URL": "https://site2.com",
-        "WORDPRESS_USERNAME": "admin",
-        "WORDPRESS_PASSWORD": "yyyy yyyy yyyy yyyy"
+        "WORDPRESS_SITES": "[{\"id\":\"site1\",\"url\":\"https://site1.com\",\"username\":\"admin\",\"password\":\"xxxx xxxx xxxx xxxx\"},{\"id\":\"site2\",\"url\":\"https://site2.com\",\"username\":\"admin\",\"password\":\"yyyy yyyy yyyy yyyy\"}]"
       }
     }
   }

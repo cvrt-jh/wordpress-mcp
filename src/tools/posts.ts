@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { wpGet, wpPost, wpPut, wpDelete } from "../client.js";
+import { forSite } from "../client.js";
 import { jsonResult, PostStatusSchema } from "../types.js";
 import { slimPost } from "../slim.js";
 
@@ -10,6 +10,7 @@ export function register(server: McpServer) {
     "wp_list_posts",
     "List WordPress posts with optional filters",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       per_page: z.number().optional().default(10).describe("Posts per page (max 100)"),
       page: z.number().optional().default(1).describe("Page number"),
       status: PostStatusSchema.optional().describe("Post status filter"),
@@ -20,8 +21,9 @@ export function register(server: McpServer) {
       orderby: z.enum(["date", "title", "modified", "id"]).optional().default("date"),
       order: z.enum(["asc", "desc"]).optional().default("desc"),
     },
-    async (params) => {
-      const posts = await wpGet<unknown[]>("/wp/v2/posts", params as Record<string, string | number>);
+    async ({ site, ...params }) => {
+      const wp = forSite(site);
+      const posts = await wp.get<unknown[]>("/wp/v2/posts", params as Record<string, string | number>);
       return jsonResult(posts.map(slimPost));
     }
   );
@@ -31,11 +33,13 @@ export function register(server: McpServer) {
     "wp_get_post",
     "Get a single post by ID",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       id: z.number().describe("Post ID"),
       content: z.boolean().optional().default(false).describe("Include full content"),
     },
-    async ({ id, content }) => {
-      const post = await wpGet<Record<string, unknown>>(`/wp/v2/posts/${id}`);
+    async ({ site, id, content }) => {
+      const wp = forSite(site);
+      const post = await wp.get<Record<string, unknown>>(`/wp/v2/posts/${id}`);
       const result = slimPost(post);
       if (content && post.content) {
         result.content = (post.content as { rendered?: string }).rendered || "";
@@ -49,6 +53,7 @@ export function register(server: McpServer) {
     "wp_create_post",
     "Create a new WordPress post",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       title: z.string().describe("Post title"),
       content: z.string().optional().describe("Post content (HTML)"),
       status: PostStatusSchema.optional().default("draft").describe("Post status"),
@@ -57,8 +62,9 @@ export function register(server: McpServer) {
       tags: z.array(z.number()).optional().describe("Tag IDs"),
       featured_media: z.number().optional().describe("Featured image ID"),
     },
-    async (params) => {
-      const post = await wpPost<Record<string, unknown>>("/wp/v2/posts", params);
+    async ({ site, ...params }) => {
+      const wp = forSite(site);
+      const post = await wp.post<Record<string, unknown>>("/wp/v2/posts", params);
       return jsonResult(slimPost(post));
     }
   );
@@ -68,6 +74,7 @@ export function register(server: McpServer) {
     "wp_update_post",
     "Update an existing post",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       id: z.number().describe("Post ID"),
       title: z.string().optional().describe("Post title"),
       content: z.string().optional().describe("Post content (HTML)"),
@@ -77,8 +84,9 @@ export function register(server: McpServer) {
       tags: z.array(z.number()).optional().describe("Tag IDs"),
       featured_media: z.number().optional().describe("Featured image ID"),
     },
-    async ({ id, ...params }) => {
-      const post = await wpPut<Record<string, unknown>>(`/wp/v2/posts/${id}`, params);
+    async ({ site, id, ...params }) => {
+      const wp = forSite(site);
+      const post = await wp.put<Record<string, unknown>>(`/wp/v2/posts/${id}`, params);
       return jsonResult(slimPost(post));
     }
   );
@@ -88,11 +96,13 @@ export function register(server: McpServer) {
     "wp_delete_post",
     "Delete a post (moves to trash, or permanently if force=true)",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       id: z.number().describe("Post ID"),
       force: z.boolean().optional().default(false).describe("Bypass trash and delete permanently"),
     },
-    async ({ id, force }) => {
-      const result = await wpDelete<Record<string, unknown>>(`/wp/v2/posts/${id}`, { force: force ? 1 : 0 });
+    async ({ site, id, force }) => {
+      const wp = forSite(site);
+      const result = await wp.delete<Record<string, unknown>>(`/wp/v2/posts/${id}`, { force: force ? 1 : 0 });
       return jsonResult({ deleted: true, id, previous: slimPost(result.previous || result) });
     }
   );
@@ -102,11 +112,13 @@ export function register(server: McpServer) {
     "wp_search_posts",
     "Search posts by keyword",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       search: z.string().describe("Search term"),
       per_page: z.number().optional().default(10).describe("Results per page"),
     },
-    async ({ search, per_page }) => {
-      const posts = await wpGet<unknown[]>("/wp/v2/posts", { search, per_page });
+    async ({ site, search, per_page }) => {
+      const wp = forSite(site);
+      const posts = await wp.get<unknown[]>("/wp/v2/posts", { search, per_page });
       return jsonResult(posts.map(slimPost));
     }
   );

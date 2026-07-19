@@ -3,7 +3,8 @@
  * Requires: cvrt-mcp-endpoints WordPress plugin
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { wpGet, wpPost } from "../client.js";
+import { z } from "zod";
+import { forSite } from "../client.js";
 import { jsonResult } from "../types.js";
 
 export function register(server: McpServer) {
@@ -11,9 +12,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_get_version",
     "Get WordPress version and update status",
-    {},
-    async () => {
-      const result = await wpGet<{
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         wordpress_version: string;
         php_version: string;
         mysql_version: string;
@@ -28,9 +32,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_get_system_info",
     "Get comprehensive system information",
-    {},
-    async () => {
-      const result = await wpGet<{
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         wordpress: Record<string, unknown>;
         server: Record<string, unknown>;
         paths: Record<string, string>;
@@ -44,9 +51,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_check_updates",
     "Check for WordPress core, plugin, and theme updates",
-    {},
-    async () => {
-      const result = await wpPost<{
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{
         core: string | null;
         plugins: number;
         themes: number;
@@ -59,9 +69,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_update_core",
     "Update WordPress to the latest version",
-    {},
-    async () => {
-      const result = await wpPost<{ updated: boolean; version: string }>(
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{ updated: boolean; version: string }>(
         "/mcp/v1/core/update",
         {}
       );
@@ -73,9 +86,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_flush_rewrite",
     "Flush permalink rewrite rules",
-    {},
-    async () => {
-      const result = await wpPost<{ flushed: boolean }>(
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{ flushed: boolean }>(
         "/mcp/v1/core/flush-rewrite",
         {}
       );
@@ -87,9 +103,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_flush_cache",
     "Clear all caches and transients",
-    {},
-    async () => {
-      const result = await wpPost<{ flushed: boolean }>(
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{ flushed: boolean }>(
         "/mcp/v1/core/flush-cache",
         {}
       );
