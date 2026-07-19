@@ -4,7 +4,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { wpGet, wpPost, wpPut, wpDelete } from "../client.js";
+import { forSite } from "../client.js";
 import { jsonResult } from "../types.js";
 
 export function register(server: McpServer) {
@@ -12,9 +12,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_list_sidebars",
     "List all registered sidebars",
-    {},
-    async () => {
-      const result = await wpGet<{
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         sidebars: Array<{
           id: string;
           name: string;
@@ -32,10 +35,12 @@ export function register(server: McpServer) {
     "mcp_get_sidebar_widgets",
     "Get all widgets in a sidebar",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       sidebar_id: z.string().describe("Sidebar ID"),
     },
-    async ({ sidebar_id }) => {
-      const result = await wpGet<{
+    async ({ site, sidebar_id }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         sidebar: { id: string; name: string };
         widgets: Array<{
           id: string;
@@ -53,9 +58,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_list_widget_types",
     "List all available widget types",
-    {},
-    async () => {
-      const result = await wpGet<{
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         types: Array<{
           id_base: string;
           name: string;
@@ -72,10 +80,12 @@ export function register(server: McpServer) {
     "mcp_get_widget",
     "Get a widget's details",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       widget_id: z.string().describe("Widget ID (e.g., text-2)"),
     },
-    async ({ widget_id }) => {
-      const result = await wpGet<{
+    async ({ site, widget_id }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         id: string;
         type: string;
         name: string;
@@ -91,13 +101,15 @@ export function register(server: McpServer) {
     "mcp_add_widget",
     "Add a widget to a sidebar",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       sidebar_id: z.string().describe("Target sidebar ID"),
       widget_type: z.string().describe("Widget type (e.g., text, search)"),
       settings: z.record(z.unknown()).optional().default({}).describe("Widget settings"),
       position: z.number().optional().describe("Position in sidebar"),
     },
-    async ({ sidebar_id, widget_type, settings, position }) => {
-      const result = await wpPost<{ widget_id: string; sidebar_id: string; created: boolean }>(
+    async ({ site, sidebar_id, widget_type, settings, position }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{ widget_id: string; sidebar_id: string; created: boolean }>(
         "/mcp/v1/widgets",
         { sidebar_id, widget_type, settings, position }
       );
@@ -110,11 +122,13 @@ export function register(server: McpServer) {
     "mcp_update_widget",
     "Update a widget's settings",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       widget_id: z.string().describe("Widget ID"),
       settings: z.record(z.unknown()).describe("Settings to update"),
     },
-    async ({ widget_id, settings }) => {
-      const result = await wpPut<{ widget_id: string; updated: boolean }>(
+    async ({ site, widget_id, settings }) => {
+      const wp = forSite(site);
+      const result = await wp.put<{ widget_id: string; updated: boolean }>(
         `/mcp/v1/widgets/${encodeURIComponent(widget_id)}`,
         { settings }
       );
@@ -127,10 +141,12 @@ export function register(server: McpServer) {
     "mcp_delete_widget",
     "Remove a widget from its sidebar",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       widget_id: z.string().describe("Widget ID"),
     },
-    async ({ widget_id }) => {
-      const result = await wpDelete<{ widget_id: string; deleted: boolean }>(
+    async ({ site, widget_id }) => {
+      const wp = forSite(site);
+      const result = await wp.delete<{ widget_id: string; deleted: boolean }>(
         `/mcp/v1/widgets/${encodeURIComponent(widget_id)}`
       );
       return jsonResult(result);
@@ -142,11 +158,13 @@ export function register(server: McpServer) {
     "mcp_reorder_widgets",
     "Reorder widgets within a sidebar",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       sidebar_id: z.string().describe("Sidebar ID"),
       widget_ids: z.array(z.string()).describe("Ordered list of widget IDs"),
     },
-    async ({ sidebar_id, widget_ids }) => {
-      const result = await wpPost<{
+    async ({ site, sidebar_id, widget_ids }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{
         sidebar_id: string;
         widget_ids: string[];
         reordered: boolean;
@@ -160,12 +178,14 @@ export function register(server: McpServer) {
     "mcp_move_widget",
     "Move a widget to a different sidebar",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       widget_id: z.string().describe("Widget ID"),
       sidebar_id: z.string().describe("Target sidebar ID"),
       position: z.number().optional().describe("Position in target sidebar"),
     },
-    async ({ widget_id, sidebar_id, position }) => {
-      const result = await wpPost<{
+    async ({ site, widget_id, sidebar_id, position }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{
         widget_id: string;
         from_sidebar: string;
         to_sidebar: string;

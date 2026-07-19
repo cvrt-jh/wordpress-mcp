@@ -4,7 +4,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { wpGet, wpPost, wpDelete } from "../client.js";
+import { forSite } from "../client.js";
 import { jsonResult } from "../types.js";
 
 export function register(server: McpServer) {
@@ -13,11 +13,13 @@ export function register(server: McpServer) {
     "mcp_search_themes",
     "Search WordPress.org theme repository",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       search: z.string().describe("Search query"),
       per_page: z.number().optional().default(10).describe("Results per page"),
     },
-    async ({ search, per_page }) => {
-      const result = await wpGet<{ total: number; themes: unknown[] }>(
+    async ({ site, search, per_page }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{ total: number; themes: unknown[] }>(
         "/mcp/v1/themes/search",
         { search, per_page }
       );
@@ -30,11 +32,13 @@ export function register(server: McpServer) {
     "mcp_install_theme",
     "Install a theme from WordPress.org by slug",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       slug: z.string().describe("Theme slug from WordPress.org"),
       activate: z.boolean().optional().default(false).describe("Activate after install"),
     },
-    async ({ slug, activate }) => {
-      const result = await wpPost<{ installed: boolean; activated: boolean; stylesheet: string }>(
+    async ({ site, slug, activate }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{ installed: boolean; activated: boolean; stylesheet: string }>(
         "/mcp/v1/themes/install",
         { slug, activate }
       );
@@ -47,10 +51,12 @@ export function register(server: McpServer) {
     "mcp_update_theme",
     "Update a single theme to latest version",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       stylesheet: z.string().describe("Theme folder name"),
     },
-    async ({ stylesheet }) => {
-      const result = await wpPost<{ updated: boolean; stylesheet: string }>(
+    async ({ site, stylesheet }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{ updated: boolean; stylesheet: string }>(
         "/mcp/v1/themes/update",
         { stylesheet }
       );
@@ -62,9 +68,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_update_all_themes",
     "Update all themes with available updates",
-    {},
-    async () => {
-      const result = await wpPost<{ updated: string[]; failed: string[] }>(
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{ updated: string[]; failed: string[] }>(
         "/mcp/v1/themes/update-all",
         {}
       );
@@ -77,10 +86,12 @@ export function register(server: McpServer) {
     "mcp_delete_theme",
     "Delete an inactive theme",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       stylesheet: z.string().describe("Theme folder name"),
     },
-    async ({ stylesheet }) => {
-      const result = await wpDelete<{ deleted: boolean; stylesheet: string }>(
+    async ({ site, stylesheet }) => {
+      const wp = forSite(site);
+      const result = await wp.delete<{ deleted: boolean; stylesheet: string }>(
         "/mcp/v1/themes/delete",
         { stylesheet }
       );
@@ -93,12 +104,14 @@ export function register(server: McpServer) {
     "mcp_install_theme_zip",
     "Install a theme from a ZIP URL (GitHub releases, custom sources)",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       url: z.string().describe("URL to theme ZIP file"),
       activate: z.boolean().optional().default(false).describe("Activate after install"),
       overwrite: z.boolean().optional().default(true).describe("Overwrite if theme already exists"),
     },
-    async ({ url, activate, overwrite }) => {
-      const result = await wpPost<{
+    async ({ site, url, activate, overwrite }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{
         installed: boolean;
         activated: boolean;
         stylesheet: string;
