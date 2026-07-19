@@ -7,7 +7,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { wpGet, wpPost } from "../client.js";
+import { forSite } from "../client.js";
 import { jsonResult } from "../types.js";
 
 const NS = "/mcp/fulfillment/v1/admin";
@@ -16,14 +16,18 @@ export function register(server: McpServer) {
   server.tool(
     "fulfillment_get_settings",
     "Get the cvrt-order-fulfillment plugin settings. Secret values are returned as { set: boolean }, never raw.",
-    {},
-    async () => jsonResult(await wpGet<Record<string, unknown>>(`${NS}/settings`))
+    { site: z.string().describe("Site id (see list_sites)") },
+    async ({ site }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/settings`));
+    }
   );
 
   server.tool(
     "fulfillment_update_settings",
     "Update cvrt-order-fulfillment settings. Only provide the keys you want to change. A blank/omitted secret keeps the stored value (never wipes it). Keys: clickup_token, clickup_list_id, clickup_assignee_id, agent_token, webhook_secret, github_updater_token, slack_webhook_url.",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       clickup_token: z.string().optional(),
       clickup_list_id: z.string().optional(),
       clickup_assignee_id: z.number().optional(),
@@ -32,55 +36,78 @@ export function register(server: McpServer) {
       github_updater_token: z.string().optional(),
       slack_webhook_url: z.string().optional(),
     },
-    async (args) => {
+    async ({ site, ...args }) => {
+      const wp = forSite(site);
       const body = Object.fromEntries(
         Object.entries(args).filter(([, v]) => v !== undefined)
       );
-      return jsonResult(await wpPost<Record<string, unknown>>(`${NS}/settings`, body));
+      return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/settings`, body));
     }
   );
 
   server.tool(
     "fulfillment_status",
     "Pipeline health: which credentials are set, ClickUp list/assignee, when the print agent last polled, and print-queue counts.",
-    {},
-    async () => jsonResult(await wpGet<Record<string, unknown>>(`${NS}/status`))
+    { site: z.string().describe("Site id (see list_sites)") },
+    async ({ site }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/status`));
+    }
   );
 
   server.tool(
     "fulfillment_queue",
     "Print-queue state: status counts (pending/printing/printed/failed) and the recent jobs with their errors.",
-    {},
-    async () => jsonResult(await wpGet<Record<string, unknown>>(`${NS}/queue`))
+    { site: z.string().describe("Site id (see list_sites)") },
+    async ({ site }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/queue`));
+    }
   );
 
   server.tool(
     "fulfillment_reprint_job",
     "Reset a print job to pending so the agent prints it again.",
-    { job_id: z.number().describe("The print job id (from fulfillment_queue)") },
-    async ({ job_id }) =>
-      jsonResult(await wpPost<Record<string, unknown>>(`${NS}/jobs/${job_id}/reprint`, {}))
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+      job_id: z.number().describe("The print job id (from fulfillment_queue)"),
+    },
+    async ({ site, job_id }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/jobs/${job_id}/reprint`, {}));
+    }
   );
 
   server.tool(
     "fulfillment_fulfill_order",
     "Manually (force) run fulfillment for an order: renders the packing slip, creates the ClickUp task, notifies Slack. Bypasses the idempotency guard, so it can create a duplicate ClickUp task. Audit-logged.",
-    { order_id: z.number().describe("The WooCommerce order id") },
-    async ({ order_id }) =>
-      jsonResult(await wpPost<Record<string, unknown>>(`${NS}/orders/${order_id}/fulfill`, {}))
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+      order_id: z.number().describe("The WooCommerce order id"),
+    },
+    async ({ site, order_id }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/orders/${order_id}/fulfill`, {}));
+    }
   );
 
   server.tool(
     "fulfillment_update_check",
     "Force an immediate plugin-update check (bypassing PUC's throttle) and report whether a newer version is available. Throttled to about once per 30s.",
-    {},
-    async () => jsonResult(await wpPost<Record<string, unknown>>(`${NS}/update-check`, {}))
+    { site: z.string().describe("Site id (see list_sites)") },
+    async ({ site }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/update-check`, {}));
+    }
   );
 
   server.tool(
     "fulfillment_update_apply",
     "Install a pending cvrt-order-fulfillment update via WordPress's own upgrader (same code path as the wp-admin one-click update). Reports { applied, from, to }. Audit-logged.",
-    {},
-    async () => jsonResult(await wpPost<Record<string, unknown>>(`${NS}/update-apply`, {}))
+    { site: z.string().describe("Site id (see list_sites)") },
+    async ({ site }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/update-apply`, {}));
+    }
   );
 }

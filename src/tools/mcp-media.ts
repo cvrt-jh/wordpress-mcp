@@ -4,7 +4,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { wpGet, wpPost, wpPut, wpDelete } from "../client.js";
+import { forSite } from "../client.js";
 import { jsonResult } from "../types.js";
 
 export function register(server: McpServer) {
@@ -13,6 +13,7 @@ export function register(server: McpServer) {
     "mcp_list_media",
     "List media library items with filtering",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       per_page: z.number().optional().default(20).describe("Items per page"),
       page: z.number().optional().default(1).describe("Page number"),
       mime_type: z.string().optional().describe("Filter by MIME type (image, video, audio, application)"),
@@ -20,11 +21,12 @@ export function register(server: McpServer) {
       orderby: z.string().optional().default("date").describe("Order by field"),
       order: z.enum(["ASC", "DESC"]).optional().default("DESC").describe("Sort direction"),
     },
-    async ({ per_page, page, mime_type, search, orderby, order }) => {
+    async ({ site, per_page, page, mime_type, search, orderby, order }) => {
+      const wp = forSite(site);
       const params: Record<string, string | number> = { per_page, page, orderby, order };
       if (mime_type) params.mime_type = mime_type;
       if (search) params.search = search;
-      const result = await wpGet<{
+      const result = await wp.get<{
         media: Array<{
           id: number;
           title: string;
@@ -48,10 +50,12 @@ export function register(server: McpServer) {
     "mcp_get_media",
     "Get detailed media item info (sizes, metadata)",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       id: z.number().describe("Media ID"),
     },
-    async ({ id }) => {
-      const result = await wpGet<Record<string, unknown>>(
+    async ({ site, id }) => {
+      const wp = forSite(site);
+      const result = await wp.get<Record<string, unknown>>(
         `/mcp/v1/media/${id}`
       );
       return jsonResult(result);
@@ -63,14 +67,16 @@ export function register(server: McpServer) {
     "mcp_sideload_media",
     "Upload media to WordPress from an external URL",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       url: z.string().describe("URL of the file to download and import"),
       filename: z.string().optional().describe("Override filename"),
       title: z.string().optional().describe("Media title"),
       alt: z.string().optional().describe("Alt text (for images)"),
       caption: z.string().optional().describe("Caption"),
     },
-    async (params) => {
-      const result = await wpPost<{
+    async ({ site, ...params }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{
         id: number;
         url: string;
         uploaded: boolean;
@@ -85,14 +91,16 @@ export function register(server: McpServer) {
     "mcp_update_media",
     "Update media item metadata (title, alt text, caption)",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       id: z.number().describe("Media ID"),
       title: z.string().optional().describe("Title"),
       alt: z.string().optional().describe("Alt text"),
       caption: z.string().optional().describe("Caption"),
       description: z.string().optional().describe("Description"),
     },
-    async ({ id, ...params }) => {
-      const result = await wpPut<{ id: number; updated: boolean }>(
+    async ({ site, id, ...params }) => {
+      const wp = forSite(site);
+      const result = await wp.put<{ id: number; updated: boolean }>(
         `/mcp/v1/media/${id}`,
         params
       );
@@ -105,11 +113,13 @@ export function register(server: McpServer) {
     "mcp_delete_media",
     "Delete a media item",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       id: z.number().describe("Media ID"),
       force: z.boolean().optional().default(true).describe("Permanently delete"),
     },
-    async ({ id, force }) => {
-      const result = await wpDelete<{ id: number; deleted: boolean }>(
+    async ({ site, id, force }) => {
+      const wp = forSite(site);
+      const result = await wp.delete<{ id: number; deleted: boolean }>(
         `/mcp/v1/media/${id}`,
         { force: force ? 1 : 0 }
       );
@@ -122,11 +132,13 @@ export function register(server: McpServer) {
     "mcp_bulk_delete_media",
     "Delete multiple media items at once",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       ids: z.array(z.number()).describe("Array of media IDs to delete"),
       force: z.boolean().optional().default(true).describe("Permanently delete"),
     },
-    async ({ ids, force }) => {
-      const result = await wpPost<{
+    async ({ site, ids, force }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{
         deleted: number[];
         failed: number[];
         deleted_count: number;
@@ -140,10 +152,12 @@ export function register(server: McpServer) {
     "mcp_regenerate_thumbnails",
     "Regenerate image thumbnails for a media item",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       id: z.number().describe("Image media ID"),
     },
-    async ({ id }) => {
-      const result = await wpPost<{
+    async ({ site, id }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{
         id: number;
         regenerated: boolean;
         sizes: string[];
@@ -156,9 +170,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_get_media_stats",
     "Get media library statistics (counts by type, total size)",
-    {},
-    async () => {
-      const result = await wpGet<{
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         total: number;
         by_type: Record<string, number>;
         upload_path: string;

@@ -4,7 +4,7 @@
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { wpGet, wpPost, wpPut, wpDelete } from "../client.js";
+import { forSite } from "../client.js";
 import { jsonResult } from "../types.js";
 
 export function register(server: McpServer) {
@@ -12,9 +12,12 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_list_post_types",
     "List all public post types with their schema and counts",
-    {},
-    async () => {
-      const result = await wpGet<{
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         post_types: Array<{
           name: string;
           label: string;
@@ -38,10 +41,12 @@ export function register(server: McpServer) {
     "mcp_get_post_type",
     "Get detailed schema for a post type",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       type: z.string().describe("Post type name (e.g., product, testimonial)"),
     },
-    async ({ type }) => {
-      const result = await wpGet<{
+    async ({ site, type }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         name: string;
         label: string;
         singular: string;
@@ -64,6 +69,7 @@ export function register(server: McpServer) {
     "mcp_list_cpt_posts",
     "List posts of any custom post type",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       type: z.string().describe("Post type name"),
       per_page: z.number().optional().default(20).describe("Posts per page"),
       page: z.number().optional().default(1).describe("Page number"),
@@ -71,8 +77,9 @@ export function register(server: McpServer) {
       orderby: z.string().optional().default("date").describe("Order by field"),
       order: z.enum(["ASC", "DESC"]).optional().default("DESC").describe("Sort direction"),
     },
-    async ({ type, ...params }) => {
-      const result = await wpGet<{
+    async ({ site, type, ...params }) => {
+      const wp = forSite(site);
+      const result = await wp.get<{
         posts: Array<{
           id: number;
           title: string;
@@ -97,14 +104,16 @@ export function register(server: McpServer) {
     "mcp_create_cpt_post",
     "Create a post of any custom post type",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       type: z.string().describe("Post type name"),
       title: z.string().describe("Post title"),
       content: z.string().optional().default("").describe("Post content"),
       status: z.string().optional().default("draft").describe("Post status"),
       meta: z.record(z.unknown()).optional().default({}).describe("Post meta key-value pairs"),
     },
-    async ({ type, ...params }) => {
-      const result = await wpPost<{
+    async ({ site, type, ...params }) => {
+      const wp = forSite(site);
+      const result = await wp.post<{
         id: number;
         created: boolean;
         edit_url: string;
@@ -118,6 +127,7 @@ export function register(server: McpServer) {
     "mcp_update_cpt_post",
     "Update a custom post type post",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       type: z.string().describe("Post type name"),
       id: z.number().describe("Post ID"),
       title: z.string().optional().describe("Post title"),
@@ -125,8 +135,9 @@ export function register(server: McpServer) {
       status: z.string().optional().describe("Post status"),
       meta: z.record(z.unknown()).optional().describe("Post meta key-value pairs"),
     },
-    async ({ type, id, ...params }) => {
-      const result = await wpPut<{
+    async ({ site, type, id, ...params }) => {
+      const wp = forSite(site);
+      const result = await wp.put<{
         id: number;
         updated: boolean;
       }>(`/mcp/v1/cpt/${encodeURIComponent(type)}/posts/${id}`, params);
@@ -139,12 +150,14 @@ export function register(server: McpServer) {
     "mcp_delete_cpt_post",
     "Delete a custom post type post",
     {
+      site: z.string().describe("Site id (see list_sites)"),
       type: z.string().describe("Post type name"),
       id: z.number().describe("Post ID"),
       force: z.boolean().optional().default(false).describe("Skip trash and permanently delete"),
     },
-    async ({ type, id, force }) => {
-      const result = await wpDelete<{
+    async ({ site, type, id, force }) => {
+      const wp = forSite(site);
+      const result = await wp.delete<{
         id: number;
         deleted: boolean;
         trashed: boolean;
