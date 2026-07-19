@@ -2,6 +2,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
+// Multi-site: list_sites has no `site` param; every other tool requires one.
+import { register as registerSites } from "./tools/sites.js";
+
 // Standard WordPress REST API tools (wp/v2)
 import { register as registerSite } from "./tools/site.js";
 import { register as registerPosts } from "./tools/posts.js";
@@ -41,6 +44,9 @@ const server = new McpServer({
   name: "wordpress-mcp",
   version: "2.0.0",
 });
+
+// Multi-site: list_sites has no `site` param; every other tool requires one.
+registerSites(server);
 
 // Standard WordPress REST API tools
 registerSite(server);
