@@ -1,7 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { forSite } from "../client.js";
-import { getSite } from "../sites.js";
 import { jsonResult } from "../types.js";
 import { slimSiteInfo } from "../slim.js";
 
