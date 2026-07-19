@@ -42,7 +42,7 @@ import { register as registerFulfillment } from "./tools/fulfillment.js";
 
 const server = new McpServer({
   name: "wordpress-mcp",
-  version: "2.0.0",
+  version: "3.0.0",
 });
 
 // Multi-site: list_sites has no `site` param; every other tool requires one.
