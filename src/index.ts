@@ -39,6 +39,7 @@ import { register as registerAcf } from "./tools/mcp-acf.js";
 // WooCommerce tools — requires future cvrt-woo-endpoints plugin (mcp/v1/woo)
 import { register as registerWoo } from "./tools/mcp-woo.js";
 import { register as registerFulfillment } from "./tools/fulfillment.js";
+import { register as registerLegal } from "./tools/legal.js";
 import { register as registerSeo } from "./tools/seo.js";
 
 const server = new McpServer({
@@ -83,6 +84,7 @@ registerAcf(server);
 // WooCommerce tools (require future cvrt-woo-endpoints plugin)
 registerWoo(server);
 registerFulfillment(server);
+registerLegal(server);
 registerSeo(server);
 
 const transport = new StdioServerTransport();
