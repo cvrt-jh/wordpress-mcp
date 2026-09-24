@@ -155,7 +155,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "legal_put_consent",
-    "Configure the consent banner. GTM is injected only after the visitor accepts - nothing reaches Google before consent.",
+    "Configure the consent banner and every tracking credential the site uses. Nothing is handed to the browser until the visitor accepts - this plugin owns GTM, GA4 and Ahrefs Web Analytics precisely because it owns the gate. Search-engine verification meta tags are NOT here; those belong to cvrt-seo-manager because they fire no request.",
     {
       site,
       enabled: z.boolean(),
@@ -164,7 +164,19 @@ export function register(server: McpServer) {
         .string()
         .optional()
         .describe(
-          "First-party GTM loader, e.g. a Stape endpoint. Defaults to googletagmanager.com"
+          "Optional first-party GTM loader URL. Leave empty to load straight from googletagmanager.com (the default on all our sites)"
+        ),
+      ga4_id: z
+        .string()
+        .optional()
+        .describe(
+          "GA4 measurement id G-XXXXXXXXXX, for a site running GA4 WITHOUT a GTM container. Ignored when gtm_id is set, since loading both double-counts every hit."
+        ),
+      ahrefs_key: z
+        .string()
+        .optional()
+        .describe(
+          "Ahrefs Web Analytics data-key. Cookieless but still a third-party request, so it is consent-gated and must be named in the Datenschutz text before enabling."
         ),
       privacy_page: z.number().optional().describe("Page id of the Datenschutz page"),
       imprint_page: z.number().optional().describe("Page id of the Impressum page"),
