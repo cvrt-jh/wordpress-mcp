@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-09-24
+
+### Added
+- `legal_get_page` / `legal_link_page`: link a cvrt-legal document to its page (needs cvrt-legal 0.4.2). Linking mirrors the rendered text into the page and fills the consent banner's imprint/privacy link while it is unset. `page_id: 0` unlinks.
+- `legal_*` tools (15) for the cvrt-legal plugin (`mcp/legal/v1`): documents, sections, render, consent banner, theme, settings, status.
+- `legal_put_consent` takes `ga4_id` and `ahrefs_key`; the loader defaults to googletagmanager.com.
+- `seo_*` tools (31) for cvrt-seo-manager (`mcp/seo/v1`): per-post/term SEO, analysis, redirects, 404 monitor, sitemaps, IndexNow, import/export, RankMath migration.
+- First unit tests for the legal tools (`src/tools/legal.test.ts`).
+
 ## [3.0.0] - 2026-07-19
 
 ### Changed (BREAKING)

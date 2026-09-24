@@ -4,13 +4,15 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.12.1-blue.svg)](https://modelcontextprotocol.io)
 
-Lightweight WordPress MCP server for site management. **158 tools** with **token-optimized responses** — REST API responses automatically slimmed from kilobytes to essentials.
+Lightweight WordPress MCP server for site management. **246 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
 
-**v3.0 (BREAKING)**: Multi-site — one server instance manages any number of sites via a single `WORDPRESS_SITES` env var. Every tool now requires a `site` argument; use the new `list_sites` tool to discover configured ids. The old single-site env vars are removed. `wp_activate_plugin` / `wp_deactivate_plugin` / `wp_delete_plugin` now use `cvrt-mcp-endpoints` `mcp/v1` routes and take the plugin file path (e.g. `akismet/akismet.php`) instead of a slug.
+**v3.1**: Tools for our own plugins - `seo_*` (31) for [cvrt-seo-manager](https://github.com/cvrt-gmbh/cvrt-seo-manager), `legal_*` (15) for [cvrt-legal](https://github.com/cvrt-gmbh/cvrt-legal) incl. `legal_link_page` (cvrt-legal 0.4.2+), and `fulfillment_*` (8) for cvrt-order-fulfillment.
+
+**v3.0 (BREAKING)**: Multi-site - one server instance manages any number of sites via a single `WORDPRESS_SITES` env var. Every tool now requires a `site` argument; use the new `list_sites` tool to discover configured ids. The old single-site env vars are removed. `wp_activate_plugin` / `wp_deactivate_plugin` / `wp_delete_plugin` now use `cvrt-mcp-endpoints` `mcp/v1` routes and take the plugin file path (e.g. `akismet/akismet.php`) instead of a slug.
 
 **v2.1**: Now includes Pro modules for ACF and WooCommerce via [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro).
 
-**v2.0**: Extended tools for the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-endpoints) plugin — install plugins/themes from WordPress.org, database management, full widget/menu control, and more.
+**v2.0**: Extended tools for the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-endpoints) plugin - install plugins/themes from WordPress.org, database management, full widget/menu control, and more.
 
 ## Why This Server?
 
@@ -38,9 +40,9 @@ npx @cavort-it-systems/wordpress-mcp
 
 ## Configuration
 
-**v3.0 is multi-site (BREAKING CHANGE).** A single server instance now manages any number of WordPress sites, defined in one `WORDPRESS_SITES` env var as a JSON array of `{id, url, username, password}` objects. The old single-site env vars (`WORDPRESS_SITE_URL`, `WORDPRESS_USERNAME`, `WORDPRESS_PASSWORD`) are **no longer read** — set `WORDPRESS_SITES` instead.
+**v3.0 is multi-site (BREAKING CHANGE).** A single server instance now manages any number of WordPress sites, defined in one `WORDPRESS_SITES` env var as a JSON array of `{id, url, username, password}` objects. The old single-site env vars (`WORDPRESS_SITE_URL`, `WORDPRESS_USERNAME`, `WORDPRESS_PASSWORD`) are **no longer read** - set `WORDPRESS_SITES` instead.
 
-Every tool (except `list_sites`) now requires a `site` argument naming the target site id. Call `list_sites` first to discover which ids are configured — it returns `{id, url}` for each site (passwords are never returned or logged).
+Every tool (except `list_sites`) now requires a `site` argument naming the target site id. Call `list_sites` first to discover which ids are configured - it returns `{id, url}` for each site (passwords are never returned or logged).
 
 ### Claude Desktop / Manual
 
@@ -60,7 +62,7 @@ Add to your MCP config (`~/.claude.json` or Claude Desktop settings):
 }
 ```
 
-Add more sites by appending objects to the `WORDPRESS_SITES` array — one server instance handles them all.
+Add more sites by appending objects to the `WORDPRESS_SITES` array - one server instance handles them all.
 
 ### Claude Code CLI
 
@@ -91,7 +93,7 @@ Uses **Application Passwords** (WordPress 5.6+):
 
 All responses are automatically trimmed. Example:
 
-**`wp_get_post`** — from ~5KB to ~200 bytes:
+**`wp_get_post`** - from ~5KB to ~200 bytes:
 ```json
 // Before (WordPress REST API raw)
 {"id":123,"date":"2026-01-15T10:30:00","date_gmt":"2026-01-15T09:30:00",
@@ -124,7 +126,7 @@ All responses are automatically trimmed. Example:
 | HTML tags | excerpts | Clean text output |
 | Pretty-print JSON | all | Compact single-line output |
 
-## Tools (158)
+## Tools (246)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself.
 
@@ -203,7 +205,7 @@ These work with any WordPress site:
 
 ---
 
-### Extended Tools (43 tools) — Requires cvrt-mcp-endpoints plugin
+### Extended Tools (43 tools) - Requires cvrt-mcp-endpoints plugin
 
 These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-endpoints) WordPress plugin to be installed and activated.
 
@@ -272,7 +274,7 @@ These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-end
 
 ---
 
-### ACF Module (31 tools) — Requires wp-pilot-pro + ACF
+### ACF Module (31 tools) - Requires wp-pilot-pro + ACF
 
 Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and Advanced Custom Fields.
 
@@ -325,7 +327,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and Advanced 
 
 ---
 
-### WooCommerce Module (42 tools) — Requires wp-pilot-pro + WooCommerce
+### WooCommerce Module (42 tools) - Requires wp-pilot-pro + WooCommerce
 
 Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommerce.
 
@@ -385,6 +387,69 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `woo_get_product_meta` - Get product meta
 - `woo_update_product_meta` - Update product meta
 - `woo_bulk_update_stock` - Bulk stock update
+
+### SEO Module (31 tools) - Requires [cvrt-seo-manager](https://github.com/cvrt-gmbh/cvrt-seo-manager)
+
+- `seo_status` - Get cvrt-seo-manager status (version, configured, dependencies)
+- `seo_get_settings` - Get cvrt-seo-manager settings
+- `seo_update_settings` - Update cvrt-seo-manager settings
+- `seo_get_post_seo` - Get the SEO meta for a post
+- `seo_update_post_seo` - Update the SEO meta for a post
+- `seo_delete_post_seo` - Delete (reset) the SEO meta for a post
+- `seo_get_post_analysis` - Get the SEO analysis (score, issues) for a post
+- `seo_list_posts_seo` - List SEO meta across posts
+- `seo_bulk_update_posts_seo` - Bulk update SEO meta across multiple posts
+- `seo_get_term_seo` - Get the SEO meta for a taxonomy term
+- `seo_update_term_seo` - Update the SEO meta for a taxonomy term
+- `seo_delete_term_seo` - Delete (reset) the SEO meta for a taxonomy term
+- `seo_keyword_check` - Run the keyword analysis check
+- `seo_list_redirects` - List all redirects
+- `seo_create_redirect` - Create a redirect
+- `seo_get_redirect` - Get a redirect by id
+- `seo_update_redirect` - Update a redirect by id
+- `seo_delete_redirect` - Delete a redirect by id
+- `seo_list_monitor_log` - List the 404/redirect monitor log entries
+- `seo_clear_monitor_log` - Clear the 404/redirect monitor log
+- `seo_create_redirect_from_log` - Create a redirect directly from a monitor log entry
+- `seo_sitemap_status` - Get sitemap status
+- `seo_sitemap_ping` - Ping search engines with the sitemap
+- `seo_indexnow_ping` - Submit URLs to IndexNow
+- `seo_export_settings` - Export cvrt-seo-manager settings
+- `seo_import_settings` - Import cvrt-seo-manager settings
+- `seo_export_csv` - Export post SEO meta as CSV
+- `seo_import_csv` - Import post SEO meta from CSV
+- `seo_export_redirects` - Export redirects
+- `seo_import_redirects` - Import redirects
+- `seo_import_migrate` - Run a migration import (e.g
+
+### Legal Module (15 tools) - Requires [cvrt-legal](https://github.com/cvrt-gmbh/cvrt-legal) (`legal_get_page` / `legal_link_page` need 0.4.2+)
+
+- `legal_status` - Legal document status for a site: which documents are required, filled and published, plus a single compliant flag
+- `legal_list_documents` - List all legal document types with their required/filled state and linked page
+- `legal_get_document` - Get one legal document including its ordered sections
+- `legal_put_document` - Replace a legal document
+- `legal_render_document` - Render a document to normalized HTML without saving
+- `legal_get_page` - Get which page a legal document is linked to: linked, page_id, the page's post status, and ok (linked AND published)
+- `legal_link_page` - Link a legal document to its WordPress page (post type page only; posts and products are refused)
+- `legal_add_section` - Append a section to a legal document
+- `legal_update_section` - Update a section
+- `legal_delete_section` - Delete a section from a legal document
+- `legal_get_consent` - Get the cookie consent banner configuration
+- `legal_put_consent` - Configure the consent banner and every tracking credential the site uses
+- `legal_get_theme` - Get the banner theme: preset name, CSS custom property overrides and the rendered CSS
+- `legal_put_theme` - Set the banner theme preset and/or individual CSS custom properties
+- `legal_get_settings` - Get cvrt-legal settings
+
+### Order Fulfillment Module (8 tools) - Requires cvrt-order-fulfillment 0.2.0+
+
+- `fulfillment_get_settings` - Get the cvrt-order-fulfillment plugin settings
+- `fulfillment_update_settings` - Update cvrt-order-fulfillment settings
+- `fulfillment_status` - Pipeline health: which credentials are set, ClickUp list/assignee, when the print agent last polled, and print-queue counts
+- `fulfillment_queue` - Print-queue state: status counts (pending/printing/printed/failed) and the recent jobs with their errors
+- `fulfillment_reprint_job` - Reset a print job to pending so the agent prints it again
+- `fulfillment_fulfill_order` - Manually (force) run fulfillment for an order: renders the packing slip, creates the ClickUp task, notifies Slack
+- `fulfillment_update_check` - Force an immediate plugin-update check (bypassing PUC's throttle) and report whether a newer version is available
+- `fulfillment_update_apply` - Install a pending cvrt-order-fulfillment update via WordPress's own upgrader (same code path as the wp-admin one-click update)
 
 ## Architecture
 
