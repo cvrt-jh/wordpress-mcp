@@ -103,3 +103,129 @@ describe("legal page tools", () => {
     ).rejects.toThrow(/unknown_page/);
   });
 });
+
+describe("legal consent log tools", () => {
+  beforeEach(() => {
+    get.mockReset();
+    put.mockReset();
+  });
+
+  it("registers the three consent log tools", () => {
+    const names = [...tools().keys()];
+    expect(names).toContain("legal_consent_log_get");
+    expect(names).toContain("legal_consent_log_stats");
+    expect(names).toContain("legal_consent_log_export");
+  });
+
+  it("legal_consent_log_get reads by consent_id", async () => {
+    const state = {
+      consent_id: "11111111-1111-4111-8111-111111111111",
+      rows: [
+        {
+          consent_id: "11111111-1111-4111-8111-111111111111",
+          created_at: "2026-09-24 10:00:00",
+          action: "accept_all",
+          analytics: true,
+          external: true,
+          banner_version: "1",
+          page_path: "/",
+          ip_hash: "abc",
+        },
+      ],
+    };
+    get.mockResolvedValue(state);
+
+    const result = await tool("legal_consent_log_get").handler({
+      site: "a",
+      consent_id: "11111111-1111-4111-8111-111111111111",
+    });
+
+    expect(get).toHaveBeenCalledWith("/mcp/legal/v1/consent/log", {
+      consent_id: "11111111-1111-4111-8111-111111111111",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual(state);
+  });
+
+  it("legal_consent_log_get schema rejects a non-UUID consent_id", () => {
+    const schema = z.object(tool("legal_consent_log_get").schema);
+
+    expect(
+      schema.safeParse({ site: "a", consent_id: "11111111-1111-4111-8111-111111111111" }).success,
+    ).toBe(true);
+    expect(schema.safeParse({ site: "a", consent_id: "not-a-uuid" }).success).toBe(false);
+    expect(schema.safeParse({ site: "a" }).success).toBe(false);
+  });
+
+  it("legal_consent_log_stats reads with an optional from/to range", async () => {
+    const state = { from: "2026-08-25", to: "2026-09-24", rows: [{ action: "accept_all", banner_version: "1", count: 5 }] };
+    get.mockResolvedValue(state);
+
+    const result = await tool("legal_consent_log_stats").handler({
+      site: "a",
+      from: "2026-08-25",
+      to: "2026-09-24",
+    });
+
+    expect(get).toHaveBeenCalledWith("/mcp/legal/v1/consent/log/stats", {
+      from: "2026-08-25",
+      to: "2026-09-24",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual(state);
+  });
+
+  it("legal_consent_log_stats works with no range given", async () => {
+    get.mockResolvedValue({ from: "2026-08-25", to: "2026-09-24", rows: [] });
+
+    await tool("legal_consent_log_stats").handler({ site: "a" });
+
+    expect(get).toHaveBeenCalledWith("/mcp/legal/v1/consent/log/stats", {});
+  });
+
+  it("legal_consent_log_stats schema rejects a from/to that is not YYYY-MM-DD", () => {
+    const schema = z.object(tool("legal_consent_log_stats").schema);
+
+    expect(schema.safeParse({ site: "a" }).success).toBe(true);
+    expect(schema.safeParse({ site: "a", from: "2026-08-25", to: "2026-09-24" }).success).toBe(true);
+    expect(schema.safeParse({ site: "a", from: "25-08-2026" }).success).toBe(false);
+    expect(schema.safeParse({ site: "a", to: "2026/09/24" }).success).toBe(false);
+  });
+
+  it("legal_consent_log_export reads the csv text and filename with the same range rules", async () => {
+    const state = { filename: "consent-log-2026-08-25-2026-09-24.csv", csv: "consent_id,created_at\n" };
+    get.mockResolvedValue(state);
+
+    const result = await tool("legal_consent_log_export").handler({
+      site: "a",
+      from: "2026-08-25",
+      to: "2026-09-24",
+    });
+
+    expect(get).toHaveBeenCalledWith("/mcp/legal/v1/consent/log/export", {
+      from: "2026-08-25",
+      to: "2026-09-24",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual(state);
+  });
+
+  it("legal_consent_log_export schema rejects a malformed date", () => {
+    const schema = z.object(tool("legal_consent_log_export").schema);
+
+    expect(schema.safeParse({ site: "a", from: "2026-8-25" }).success).toBe(false);
+  });
+
+  it("legal_put_consent forwards log_enabled", async () => {
+    put.mockResolvedValue({ saved: true });
+
+    await tool("legal_put_consent").handler({ site: "a", enabled: true, log_enabled: true });
+
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/consent", { enabled: true, log_enabled: true });
+  });
+
+  it("legal_put_consent omits log_enabled when not given", async () => {
+    put.mockResolvedValue({ saved: true });
+
+    await tool("legal_put_consent").handler({ site: "a", enabled: true });
+
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/consent", { enabled: true });
+  });
+});

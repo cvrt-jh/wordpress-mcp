@@ -17,6 +17,11 @@ const doc = z
   .enum(["impressum", "datenschutz", "agb", "widerruf"])
   .describe("Document type");
 
+const dateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .describe("YYYY-MM-DD");
+
 const sectionSchema = z.object({
   slug: z
     .string()
@@ -212,6 +217,12 @@ export function register(server: McpServer) {
         ),
       privacy_page: z.number().optional().describe("Page id of the Datenschutz page"),
       imprint_page: z.number().optional().describe("Page id of the Impressum page"),
+      log_enabled: z
+        .boolean()
+        .optional()
+        .describe(
+          "Turn the consent decision log on or off. Stays off (the default) until a 'einwilligungsnachweis' section exists in the Datenschutz document - set it only after that section is in place."
+        ),
     },
     async ({ site, ...args }) => {
       const wp = forSite(site);
@@ -256,6 +267,59 @@ export function register(server: McpServer) {
     async ({ site }) => {
       const wp = forSite(site);
       return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/settings`));
+    }
+  );
+
+  server.tool(
+    "legal_consent_log_get",
+    "Get every logged consent decision for one consent_id (the banner's own record of what it asked and what the visitor chose). Requires manage_options. Logging itself stays off until legal_put_consent's log_enabled is set, which should only happen after the Datenschutz document has an 'einwilligungsnachweis' section describing it. Requires cvrt-legal 0.5.0+.",
+    {
+      site,
+      consent_id: z.string().uuid().describe("The consent_id the banner generated for one visitor"),
+    },
+    async ({ site, consent_id }) => {
+      const wp = forSite(site);
+      return jsonResult(
+        await wp.get<Record<string, unknown>>(`${NS}/consent/log`, { consent_id })
+      );
+    }
+  );
+
+  server.tool(
+    "legal_consent_log_stats",
+    "Aggregate consent decision counts by action and banner_version over a day range (both from and to are optional, default the last 30 days; the range cannot exceed 366 days). Requires manage_options. Logging itself stays off until legal_put_consent's log_enabled is set, which should only happen after the Datenschutz document has an 'einwilligungsnachweis' section describing it. Requires cvrt-legal 0.5.0+.",
+    {
+      site,
+      from: dateSchema.optional().describe("Range start, inclusive. Defaults to 30 days before to."),
+      to: dateSchema.optional().describe("Range end, inclusive. Defaults to today."),
+    },
+    async ({ site, ...args }) => {
+      const wp = forSite(site);
+      const params = Object.fromEntries(
+        Object.entries(args).filter(([, v]) => v !== undefined)
+      ) as Record<string, string>;
+      return jsonResult(
+        await wp.get<Record<string, unknown>>(`${NS}/consent/log/stats`, params)
+      );
+    }
+  );
+
+  server.tool(
+    "legal_consent_log_export",
+    "Export the raw consent decision log as CSV for a day range (same optional from/to rules as legal_consent_log_stats). Returns { filename, csv }; the csv is the full file text, ready to write out as-is. Requires manage_options. Logging itself stays off until legal_put_consent's log_enabled is set, which should only happen after the Datenschutz document has an 'einwilligungsnachweis' section describing it. Requires cvrt-legal 0.5.0+.",
+    {
+      site,
+      from: dateSchema.optional().describe("Range start, inclusive. Defaults to 30 days before to."),
+      to: dateSchema.optional().describe("Range end, inclusive. Defaults to today."),
+    },
+    async ({ site, ...args }) => {
+      const wp = forSite(site);
+      const params = Object.fromEntries(
+        Object.entries(args).filter(([, v]) => v !== undefined)
+      ) as Record<string, string>;
+      return jsonResult(
+        await wp.get<Record<string, unknown>>(`${NS}/consent/log/export`, params)
+      );
     }
   );
 }

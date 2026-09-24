@@ -4,7 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.12.1-blue.svg)](https://modelcontextprotocol.io)
 
-Lightweight WordPress MCP server for site management. **246 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
+Lightweight WordPress MCP server for site management. **249 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
+
+**v3.2**: `legal_consent_log_get` / `legal_consent_log_stats` / `legal_consent_log_export` for the cvrt-legal consent decision log (needs cvrt-legal 0.5.0+); `legal_put_consent` takes `log_enabled`.
 
 **v3.1**: Tools for our own plugins - `seo_*` (31) for [cvrt-seo-manager](https://github.com/cvrt-gmbh/cvrt-seo-manager), `legal_*` (15) for [cvrt-legal](https://github.com/cvrt-gmbh/cvrt-legal) incl. `legal_link_page` (cvrt-legal 0.4.2+), and `fulfillment_*` (8) for cvrt-order-fulfillment.
 
@@ -126,7 +128,7 @@ All responses are automatically trimmed. Example:
 | HTML tags | excerpts | Clean text output |
 | Pretty-print JSON | all | Compact single-line output |
 
-## Tools (246)
+## Tools (249)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself.
 
@@ -422,7 +424,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `seo_import_redirects` - Import redirects
 - `seo_import_migrate` - Run a migration import (e.g
 
-### Legal Module (15 tools) - Requires [cvrt-legal](https://github.com/cvrt-gmbh/cvrt-legal) (`legal_get_page` / `legal_link_page` need 0.4.2+)
+### Legal Module (18 tools) - Requires [cvrt-legal](https://github.com/cvrt-gmbh/cvrt-legal) (`legal_get_page` / `legal_link_page` need 0.4.2+, `legal_consent_log_*` need 0.5.0+)
 
 - `legal_status` - Legal document status for a site: which documents are required, filled and published, plus a single compliant flag
 - `legal_list_documents` - List all legal document types with their required/filled state and linked page
@@ -439,6 +441,9 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `legal_get_theme` - Get the banner theme: preset name, CSS custom property overrides and the rendered CSS
 - `legal_put_theme` - Set the banner theme preset and/or individual CSS custom properties
 - `legal_get_settings` - Get cvrt-legal settings
+- `legal_consent_log_get` - Get every logged consent decision for one consent_id
+- `legal_consent_log_stats` - Aggregate consent decision counts by action and banner_version over a day range
+- `legal_consent_log_export` - Export the raw consent decision log as CSV for a day range
 
 ### Order Fulfillment Module (8 tools) - Requires cvrt-order-fulfillment 0.2.0+
 

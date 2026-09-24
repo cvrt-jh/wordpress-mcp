@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2026-09-24
+
+### Added
+- `legal_consent_log_get` / `legal_consent_log_stats` / `legal_consent_log_export` for the cvrt-legal consent decision log (`mcp/legal/v1/consent/log*`, needs cvrt-legal 0.5.0+). Reads require `manage_options`; logging itself stays off on the plugin side until `legal_put_consent`'s new `log_enabled` is set, which should only happen after the Datenschutz document has an `einwilligungsnachweis` section describing it.
+- `legal_put_consent` takes optional `log_enabled: boolean`.
+
 ## [3.1.0] - 2026-09-24
 
 ### Added

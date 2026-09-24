@@ -44,7 +44,7 @@ import { register as registerSeo } from "./tools/seo.js";
 
 const server = new McpServer({
   name: "wordpress-mcp",
-  version: "3.1.0",
+  version: "3.2.0",
 });
 
 // Multi-site: list_sites has no `site` param; every other tool requires one.
