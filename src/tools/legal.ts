@@ -88,6 +88,38 @@ export function register(server: McpServer) {
   );
 
   server.tool(
+    "legal_get_page",
+    "Get which page a legal document is linked to: linked, page_id, the page's post status, and ok (linked AND published). A required document only counts as reachable, and legal_status only turns compliant, when ok is true. Requires cvrt-legal 0.4.2+.",
+    { site, doc },
+    async ({ site, doc }) => {
+      const wp = forSite(site);
+      return jsonResult(
+        await wp.get<Record<string, unknown>>(`${NS}/documents/${doc}/page`)
+      );
+    }
+  );
+
+  server.tool(
+    "legal_link_page",
+    "Link a legal document to its WordPress page (post type page only; posts and products are refused). The rendered document is written into the page's post_content at once (mirrored: true, false while the document is empty) and on every later save, so a deactivated plugin still leaves the text on the page. Linking impressum/datenschutz also fills the consent banner's imprint/privacy link if that is still unset (banner_linked). page_id 0 unlinks. Requires cvrt-legal 0.4.2+.",
+    {
+      site,
+      doc,
+      page_id: z
+        .number()
+        .int()
+        .min(0)
+        .describe("Page id to link, 0 to unlink"),
+    },
+    async ({ site, doc, page_id }) => {
+      const wp = forSite(site);
+      return jsonResult(
+        await wp.put<Record<string, unknown>>(`${NS}/documents/${doc}/page`, { page_id })
+      );
+    }
+  );
+
+  server.tool(
     "legal_add_section",
     "Append a section to a legal document. Returns the resolved slug, which is what shortcodes address.",
     {
