@@ -96,21 +96,34 @@ export function register(server: McpServer) {
   // Update element settings
   server.tool(
     "mcp_update_elementor_element",
-    "Update settings on a single Elementor element (merge, not replace)",
+    "Update settings on a single Elementor element (merge by default). With widget_type, replaces the widget in place (same id, position and parent), e.g. turn a V4 placeholder into a V3 html widget; the type must be registered with Elementor.",
     {
       site: z.string().describe("Site id (see list_sites)"),
       id: z.number().describe("Post/page ID"),
       element_id: z.string().describe("Elementor element ID"),
-      settings: z.record(z.unknown()).describe("Settings to merge into the element"),
+      settings: z.record(z.unknown()).describe("Settings to merge into (or, with settings_mode replace, to become) the element's settings"),
+      widget_type: z
+        .string()
+        .regex(/^[a-z0-9][a-z0-9_-]*$/)
+        .optional()
+        .describe("Replace the widget type in place (cvrt-mcp-endpoints 1.13.0+). Widgets only, not containers."),
+      settings_mode: z
+        .enum(["merge", "replace"])
+        .optional()
+        .describe("merge (default) or replace: settings become the element's complete settings"),
     },
-    async ({ site, id, element_id, settings }) => {
+    async ({ site, id, element_id, settings, widget_type, settings_mode }) => {
       const wp = forSite(site);
       const result = await wp.put<{
         post_id: number;
         element_id: string;
         updated: boolean;
         element: Record<string, unknown>;
-      }>(`/mcp/v1/elementor/posts/${id}/elements/${element_id}`, { settings });
+      }>(`/mcp/v1/elementor/posts/${id}/elements/${element_id}`, {
+        settings,
+        ...(widget_type !== undefined ? { widget_type } : {}),
+        ...(settings_mode !== undefined ? { settings_mode } : {}),
+      });
       return jsonResult(result);
     }
   );

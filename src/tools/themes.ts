@@ -60,11 +60,20 @@ export function register(server: McpServer) {
     },
     async ({ site, stylesheet }) => {
       const wp = forSite(site);
-      // WordPress REST API activates theme by POSTing to settings
-      const settings = await wp.post<Record<string, unknown>>("/wp/v2/settings", {
-        stylesheet,
-      });
-      return jsonResult({ activated: stylesheet, current_stylesheet: settings.stylesheet });
+      // Switch through cvrt-mcp-endpoints. /wp/v2/settings has no `stylesheet`
+      // field: WordPress ignored it, the theme never switched, and this tool
+      // still answered "activated" (boardcouture.shop, 2026-09-28).
+      const result = await wp.post<{ stylesheet: string; active: boolean; changed: boolean }>(
+        "/mcp/v1/themes/activate",
+        { stylesheet }
+      );
+      if (!result.active) {
+        return {
+          ...jsonResult({ ...result, error: `Theme "${stylesheet}" is not active after switching` }),
+          isError: true,
+        };
+      }
+      return jsonResult(result);
     }
   );
 }
