@@ -4,7 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.12.1-blue.svg)](https://modelcontextprotocol.io)
 
-Lightweight WordPress MCP server for site management. **264 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
+Lightweight WordPress MCP server for site management. **266 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
+
+**v3.4**: cvrt-legal 0.9.0 - markup repair switches (`repairs` on `legal_put_accessibility`) and report (`legal_get_accessibility_report` / `legal_reset_accessibility_report`), document type `barrierefreiheit`.
 
 **v3.3**: every cvrt-legal admin route is a tool - generator (`legal_*_generator*`, library import from a local file), Impressum facts, social-media section, settings, and the self-hosted accessibility tool (`legal_get_accessibility` / `legal_put_accessibility`, cvrt-legal 0.8.0+).
 
@@ -426,7 +428,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `seo_import_redirects` - Import redirects
 - `seo_import_migrate` - Run a migration import (e.g
 
-### Legal Module (32 tools) - Requires [cvrt-legal](https://github.com/cvrt-gmbh/cvrt-legal) (`legal_get_page` / `legal_link_page` need 0.4.2+, `legal_consent_log_*` 0.5.0+, social 0.6.0+, generator and facts 0.7.0+, accessibility 0.8.0+)
+### Legal Module (34 tools) - Requires [cvrt-legal](https://github.com/cvrt-gmbh/cvrt-legal) (`legal_get_page` / `legal_link_page` need 0.4.2+, `legal_consent_log_*` 0.5.0+, social 0.6.0+, generator and facts 0.7.0+, accessibility 0.8.0+)
 
 - `legal_status` - Legal document status for a site: which documents are required, filled and published, plus a single compliant flag
 - `legal_list_documents` - List all legal document types with their required/filled state and linked page
@@ -453,7 +455,8 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `legal_restore_generator` - Restore the document as it was before the generator first wrote it
 - `legal_get_social` / `legal_put_social` - Social-media section: networks and profile URLs
 - `legal_get_social_modules` / `legal_put_social_modules` - The social-media text modules (inline or `modules_file`)
-- `legal_get_accessibility` / `legal_put_accessibility` - The self-hosted accessibility tool (replaces the Ally widget, no third-party request)
+- `legal_get_accessibility` / `legal_put_accessibility` - The self-hosted accessibility tool (replaces the Ally widget, no third-party request); `repairs` switches the markup repair rules (0.9.0+)
+- `legal_get_accessibility_report` / `legal_reset_accessibility_report` - What the markup repair fixed and what is still open, per page (0.9.0+)
 
 ### Order Fulfillment Module (8 tools) - Requires cvrt-order-fulfillment 0.2.0+
 

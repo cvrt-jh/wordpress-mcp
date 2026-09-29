@@ -9,10 +9,11 @@ import { z } from "zod";
 const get = vi.fn();
 const put = vi.fn();
 const post = vi.fn();
+const del = vi.fn();
 vi.mock("../client.js", () => ({
   forSite: (id: string) => {
     if (id !== "a") throw new Error(`Unknown site "${id}"`);
-    return { get, put, post, delete: vi.fn() };
+    return { get, put, post, delete: del };
   },
 }));
 
@@ -365,3 +366,48 @@ describe("legal generator, facts, social, settings and accessibility tools", () 
     expect(get).toHaveBeenCalledWith("/mcp/legal/v1/accessibility");
   });
 });
+
+describe("cvrt-legal 0.9.0: repairs, report, BFSG document", () => {
+  beforeEach(() => {
+    get.mockReset();
+    put.mockReset();
+    post.mockReset();
+  });
+
+  it("legal_put_accessibility forwards repair switches", async () => {
+    const schema = z.object(tool("legal_put_accessibility").schema).strict();
+    expect(schema.safeParse({ site: "a", repairs: { "skip-link": true } }).success).toBe(true);
+    put.mockResolvedValue({});
+    await tool("legal_put_accessibility").handler({ site: "a", repairs: { "skip-link": true, zoom: false } });
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/accessibility", { repairs: { "skip-link": true, zoom: false } });
+  });
+
+  it("registers the repair report tools", () => {
+    const names = [...tools().keys()];
+    expect(names).toContain("legal_get_accessibility_report");
+    expect(names).toContain("legal_reset_accessibility_report");
+  });
+
+  it("legal_get_accessibility_report reads the report", async () => {
+    get.mockResolvedValue({ totals: {}, pages: [] });
+    await tool("legal_get_accessibility_report").handler({ site: "a" });
+    expect(get).toHaveBeenCalledWith("/mcp/legal/v1/accessibility/report");
+  });
+
+  it("legal_reset_accessibility_report deletes it", async () => {
+    del.mockReset();
+    del.mockResolvedValue({ deleted: true });
+    const result = await tool("legal_reset_accessibility_report").handler({ site: "a" });
+    expect(del).toHaveBeenCalledWith("/mcp/legal/v1/accessibility/report");
+    expect(JSON.parse(result.content[0].text)).toEqual({ deleted: true });
+  });
+
+  it("document and generator tools accept barrierefreiheit", () => {
+    for (const name of ["legal_get_document", "legal_put_document", "legal_get_page", "legal_link_page", "legal_get_generator", "legal_put_generator", "legal_put_generator_library", "legal_restore_generator"]) {
+      const schema = z.object(tool(name).schema);
+      const args: Record<string, unknown> = { site: "a", doc: "barrierefreiheit", page_id: 1, title: "t", sections: [] };
+      expect(schema.safeParse(args).success, name).toBe(true);
+    }
+  });
+});
+

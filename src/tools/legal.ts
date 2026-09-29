@@ -15,7 +15,7 @@ const NS = "/mcp/legal/v1";
 
 const site = z.string().describe("Site id (see list_sites)");
 const doc = z
-  .enum(["impressum", "datenschutz", "agb", "widerruf"])
+  .enum(["impressum", "datenschutz", "agb", "widerruf", "barrierefreiheit"])
   .describe("Document type");
 
 const dateSchema = z
@@ -34,8 +34,8 @@ const sectionSchema = z.object({
 });
 
 const generatedDoc = z
-  .enum(["impressum", "datenschutz"])
-  .describe("Generated document: impressum or datenschutz");
+  .enum(["impressum", "datenschutz", "barrierefreiheit"])
+  .describe("Generated document: impressum, datenschutz or barrierefreiheit (BFSG statement, cvrt-legal 0.9.0+)");
 
 const flags = z.record(z.boolean());
 
@@ -537,6 +537,11 @@ export function register(server: McpServer) {
       position: z.enum(["bottom-right", "bottom-left", "top-right", "top-left"]).optional(),
       color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe("Launcher colour, #rrggbb"),
       tools: flags.optional().describe("tool key => on/off (see available_tools in legal_get_accessibility)"),
+      repairs: flags
+        .optional()
+        .describe(
+          "Markup repair rule => on/off (cvrt-legal 0.9.0+): link-names, image-alt, iframe-title, form-labels, skip-link, lang, zoom, new-tab, duplicate-ids. Server-side, never invents or overwrites; see available_repairs"
+        ),
       statement_page: z.number().int().nonnegative().optional().describe("Page id of the accessibility statement; 0 = none"),
       statement_url: z.string().optional().describe("https URL of an external statement; the page wins"),
       sitemap_url: z.string().optional().describe("https URL for the Sitemap tool; empty = /wp-sitemap.xml"),
@@ -544,6 +549,26 @@ export function register(server: McpServer) {
     async ({ site, ...args }) => {
       const wp = forSite(site);
       return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/accessibility`, given(args)));
+    }
+  );
+
+  server.tool(
+    "legal_get_accessibility_report",
+    "Get the markup repair report: totals per rule (fixed / open) and per page what was repaired and what is still open, i.e. what the site's own markup must fix. Each page is recorded at most once a day, newest 100 pages. Requires cvrt-legal 0.9.0+.",
+    { site },
+    async ({ site }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/accessibility/report`));
+    }
+  );
+
+  server.tool(
+    "legal_reset_accessibility_report",
+    "Clear the markup repair report, e.g. after fixing the source, so new page views record afresh. Requires cvrt-legal 0.9.0+.",
+    { site },
+    async ({ site }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.delete<Record<string, unknown>>(`${NS}/accessibility/report`));
     }
   );
 }
