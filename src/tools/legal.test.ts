@@ -1,14 +1,18 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { z } from "zod";
 
 // Every tool resolves its site through forSite; stub it so no env or network
 // is needed and the exact REST call can be asserted.
 const get = vi.fn();
 const put = vi.fn();
+const post = vi.fn();
 vi.mock("../client.js", () => ({
   forSite: (id: string) => {
     if (id !== "a") throw new Error(`Unknown site "${id}"`);
-    return { get, put, post: vi.fn(), delete: vi.fn() };
+    return { get, put, post, delete: vi.fn() };
   },
 }));
 
@@ -227,5 +231,137 @@ describe("legal consent log tools", () => {
     await tool("legal_put_consent").handler({ site: "a", enabled: true });
 
     expect(put).toHaveBeenCalledWith("/mcp/legal/v1/consent", { enabled: true });
+  });
+});
+
+describe("legal generator, facts, social, settings and accessibility tools", () => {
+  let dir: string;
+
+  beforeEach(() => {
+    get.mockReset();
+    put.mockReset();
+    post.mockReset();
+    dir = mkdtempSync(join(tmpdir(), "legal-test-"));
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  // Every cvrt-legal admin route (mcp/legal/v1) must be reachable, or a rollout
+  // falls back to raw REST. POST /consent/log is the visitors' own beacon, not
+  // an admin route, and is deliberately left out.
+  it("registers a tool for every cvrt-legal admin route", () => {
+    const names = [...tools().keys()];
+    for (const n of [
+      "legal_update_settings",
+      "legal_get_facts", "legal_put_facts",
+      "legal_get_generator", "legal_put_generator",
+      "legal_get_generator_library", "legal_put_generator_library", "legal_restore_generator",
+      "legal_get_social", "legal_put_social", "legal_get_social_modules", "legal_put_social_modules",
+      "legal_get_accessibility", "legal_put_accessibility",
+    ]) {
+      expect(names, n).toContain(n);
+    }
+  });
+
+  it("legal_put_facts PUTs the fields as given", async () => {
+    put.mockResolvedValue({ facts: {} });
+    await tool("legal_put_facts").handler({ site: "a", facts: { company: "X GmbH", phone: "" } });
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/facts", { company: "X GmbH", phone: "" });
+  });
+
+  it("legal_put_generator sends only the parts given", async () => {
+    put.mockResolvedValue({ active: true });
+    await tool("legal_put_generator").handler({ site: "a", doc: "datenschutz", enabled: { "elementor-ally": false } });
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/generator/datenschutz", { enabled: { "elementor-ally": false } });
+  });
+
+  it("generator tools only accept the generated documents", () => {
+    for (const name of ["legal_get_generator", "legal_put_generator", "legal_get_generator_library", "legal_restore_generator"]) {
+      const schema = z.object(tool(name).schema);
+      expect(schema.safeParse({ site: "a", doc: "impressum" }).success, name).toBe(true);
+      expect(schema.safeParse({ site: "a", doc: "agb" }).success, name).toBe(false);
+    }
+  });
+
+  it("legal_put_generator_library reads the library from a local JSON file", async () => {
+    const lib = { doc: "datenschutz", version: "2026-09-29", sections: [{ key: "a", heading: "A" }] };
+    const file = join(dir, "library-datenschutz.json");
+    writeFileSync(file, JSON.stringify(lib));
+    put.mockResolvedValue({ saved: true, sections: 1 });
+
+    await tool("legal_put_generator_library").handler({ site: "a", doc: "datenschutz", library_file: file });
+
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/generator/datenschutz/library", lib);
+  });
+
+  it("legal_put_generator_library takes an inline library too", async () => {
+    put.mockResolvedValue({ saved: true });
+    await tool("legal_put_generator_library").handler({ site: "a", doc: "impressum", library: { sections: [] } });
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/generator/impressum/library", { sections: [] });
+  });
+
+  it("legal_put_generator_library refuses both or neither source, and a non-JSON file", async () => {
+    const t = tool("legal_put_generator_library");
+    await expect(t.handler({ site: "a", doc: "impressum" })).rejects.toThrow(/library or library_file/);
+    await expect(t.handler({ site: "a", doc: "impressum", library: {}, library_file: "/x.json" })).rejects.toThrow(/not both/);
+    const txt = join(dir, "lib.txt");
+    writeFileSync(txt, "{}");
+    await expect(t.handler({ site: "a", doc: "impressum", library_file: txt })).rejects.toThrow(/\.json/);
+    const bad = join(dir, "bad.json");
+    writeFileSync(bad, "{not json");
+    await expect(t.handler({ site: "a", doc: "impressum", library_file: bad })).rejects.toThrow(/bad\.json/);
+    const arr = join(dir, "arr.json");
+    writeFileSync(arr, "[1]");
+    await expect(t.handler({ site: "a", doc: "impressum", library_file: arr })).rejects.toThrow(/JSON object/);
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it("legal_restore_generator POSTs restore", async () => {
+    post.mockResolvedValue({ restored: true });
+    await tool("legal_restore_generator").handler({ site: "a", doc: "datenschutz" });
+    expect(post).toHaveBeenCalledWith("/mcp/legal/v1/generator/datenschutz/restore", {});
+  });
+
+  it("legal_put_social wraps the networks", async () => {
+    put.mockResolvedValue({});
+    const networks = { facebook: { enabled: true, urls: ["https://facebook.com/x"] } };
+    await tool("legal_put_social").handler({ site: "a", networks });
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/social", { networks });
+  });
+
+  it("legal_put_social_modules reads a local JSON file", async () => {
+    const mods = { heading: "Soziale Medien", networks: {} };
+    const file = join(dir, "library.json");
+    writeFileSync(file, JSON.stringify(mods));
+    put.mockResolvedValue(mods);
+    await tool("legal_put_social_modules").handler({ site: "a", modules_file: file });
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/social/modules", mods);
+  });
+
+  it("legal_update_settings POSTs only what is given", async () => {
+    post.mockResolvedValue({});
+    await tool("legal_update_settings").handler({ site: "a", required_override: { agb: false } });
+    expect(post).toHaveBeenCalledWith("/mcp/legal/v1/settings", { required_override: { agb: false } });
+  });
+
+  it("legal_put_accessibility PUTs only the fields given", async () => {
+    put.mockResolvedValue({ enabled: true });
+    await tool("legal_put_accessibility").handler({ site: "a", enabled: true, tools: { sitemap: true } });
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/accessibility", { enabled: true, tools: { sitemap: true } });
+  });
+
+  it("legal_put_accessibility schema checks colour and position", () => {
+    const schema = z.object(tool("legal_put_accessibility").schema);
+    expect(schema.safeParse({ site: "a", color: "#1d4ed8", position: "bottom-left" }).success).toBe(true);
+    expect(schema.safeParse({ site: "a", color: "blue" }).success).toBe(false);
+    expect(schema.safeParse({ site: "a", position: "middle" }).success).toBe(false);
+  });
+
+  it("legal_get_accessibility reads the settings", async () => {
+    get.mockResolvedValue({ enabled: false });
+    await tool("legal_get_accessibility").handler({ site: "a" });
+    expect(get).toHaveBeenCalledWith("/mcp/legal/v1/accessibility");
   });
 });

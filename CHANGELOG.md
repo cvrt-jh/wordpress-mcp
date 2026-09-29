@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.0] - 2026-09-29
+
+### Added
+- Every cvrt-legal admin route is now a tool, so a rollout never falls back to raw REST:
+  - `legal_get_facts` / `legal_put_facts` - Impressum fields (cvrt-legal 0.7.0+)
+  - `legal_get_generator` / `legal_put_generator` - tick Datenschutz modules and options, regenerate (0.7.0+)
+  - `legal_get_generator_library` / `legal_put_generator_library` - import a text library, inline or from a local `.json` file (`library_file`), since the Datenschutz library is ~120 KB (0.7.0+)
+  - `legal_restore_generator` - back to the document before generation (0.7.0+)
+  - `legal_get_social` / `legal_put_social` / `legal_get_social_modules` / `legal_put_social_modules` (`modules_file`) - the social-media section (0.6.0+)
+  - `legal_update_settings` - GitHub token (write-only) and required-document override
+  - `legal_get_accessibility` / `legal_put_accessibility` - the self-hosted accessibility tool that replaces the Ally widget (0.8.0+)
+- Tests for all of them, including the file-import errors (both/neither source, non-.json, invalid JSON, non-object).
+
 ## [3.2.1] - 2026-09-28
 
 ### Fixed
