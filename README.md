@@ -6,6 +6,8 @@
 
 Lightweight WordPress MCP server for site management. **266 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
 
+**v3.5**: `fields_*` (12 tools) for [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+ - status, settings, field types, location values, schemas and CRUD + JSON sync for field groups, post types, taxonomies and options pages.
+
 **v3.4**: cvrt-legal 0.9.0 - markup repair switches (`repairs` on `legal_put_accessibility`) and report (`legal_get_accessibility_report` / `legal_reset_accessibility_report`), document type `barrierefreiheit`.
 
 **v3.3**: every cvrt-legal admin route is a tool - generator (`legal_*_generator*`, library import from a local file), Impressum facts, social-media section, settings, and the self-hosted accessibility tool (`legal_get_accessibility` / `legal_put_accessibility`, cvrt-legal 0.8.0+).
@@ -457,6 +459,16 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `legal_get_social_modules` / `legal_put_social_modules` - The social-media text modules (inline or `modules_file`)
 - `legal_get_accessibility` / `legal_put_accessibility` - The self-hosted accessibility tool (replaces the Ally widget, no third-party request); `repairs` switches the markup repair rules (0.9.0+)
 - `legal_get_accessibility_report` / `legal_reset_accessibility_report` - What the markup repair fixed and what is still open, per page (0.9.0+)
+
+### Fields Module (12 tools) - Requires [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+
+
+- `fields_status` - Plugin version, definition counts, ACF / Elementor presence, JSON sync state
+- `fields_get_settings` / `fields_update_settings` - Update token (masked as `{ set }`, write-only, stored encrypted) and JSON sync path
+- `fields_list_types` - Available field types
+- `fields_get_location_values` - Values for location rules
+- `fields_get_schema` - Editor form schema of a definition kind
+- `fields_list_definitions` / `fields_get_definition` / `fields_create_definition` / `fields_update_definition` / `fields_delete_definition` - CRUD for `groups`, `post-types`, `taxonomies`, `options-pages`
+- `fields_sync_definition` - Copy a JSON-sourced definition into the database
 
 ### Order Fulfillment Module (8 tools) - Requires cvrt-order-fulfillment 0.2.0+
 

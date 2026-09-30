@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.0] - 2026-10-01
+
+### Added
+- `fields_*` (12 tools) for cvrt-fields 0.1.2+ (`mcp/fields/v1`): `fields_status`, `fields_get_settings` / `fields_update_settings` (update token write-only, stored encrypted), `fields_list_types`, `fields_get_location_values`, `fields_get_schema`, and `fields_list_definitions` / `fields_get_definition` / `fields_create_definition` / `fields_update_definition` / `fields_delete_definition` / `fields_sync_definition` for field groups, post types, taxonomies and options pages. Keys are validated against `[a-z0-9_]+` before they reach the URL.
+
 ## [3.4.0] - 2026-09-29
 
 ### Added

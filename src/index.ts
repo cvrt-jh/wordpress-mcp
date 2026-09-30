@@ -40,11 +40,12 @@ import { register as registerAcf } from "./tools/mcp-acf.js";
 import { register as registerWoo } from "./tools/mcp-woo.js";
 import { register as registerFulfillment } from "./tools/fulfillment.js";
 import { register as registerLegal } from "./tools/legal.js";
+import { register as registerFields } from "./tools/fields.js";
 import { register as registerSeo } from "./tools/seo.js";
 
 const server = new McpServer({
   name: "wordpress-mcp",
-  version: "3.4.0",
+  version: "3.5.0",
 });
 
 // Multi-site: list_sites has no `site` param; every other tool requires one.
@@ -85,6 +86,7 @@ registerAcf(server);
 registerWoo(server);
 registerFulfillment(server);
 registerLegal(server);
+registerFields(server);
 registerSeo(server);
 
 const transport = new StdioServerTransport();
