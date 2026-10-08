@@ -65,3 +65,13 @@ describe("forSite", () => {
     expect(fetchSpy.mock.calls[1][1]?.body).toBeUndefined();
   });
 });
+
+describe("forSite error bodies", () => {
+  it("masks secrets in a WordPress error body", async () => {
+    const body = JSON.stringify({ code: "x", data: { secret: "sk_live_" + "Q".repeat(40) } });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(body, { status: 500 }));
+    const err = await forSite("a").get("/x").catch((e: Error) => e);
+    expect((err as Error).message).toMatch(/WordPress API error 500/);
+    expect((err as Error).message).not.toContain("sk_live_");
+  });
+});

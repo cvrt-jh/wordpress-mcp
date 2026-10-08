@@ -3,6 +3,7 @@
  * URL and Basic-auth application password. Uses HTTP Basic auth (WP 5.6+).
  */
 import { getSite } from "./sites.js";
+import { maskText } from "./mask.js";
 
 export interface SiteClient {
   get<T>(endpoint: string, params?: Record<string, string | number>): Promise<T>;
@@ -32,7 +33,7 @@ export function forSite(siteId: string): SiteClient {
   async function handle<T>(res: Response): Promise<T> {
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`WordPress API error ${res.status}: ${text}`);
+      throw new Error(`WordPress API error ${res.status}: ${maskText(text)}`);
     }
     return res.json() as Promise<T>;
   }

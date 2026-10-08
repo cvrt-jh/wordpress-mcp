@@ -134,7 +134,7 @@ All responses are automatically trimmed. Example:
 | HTML tags | excerpts | Clean text output |
 | Pretty-print JSON | all | Compact single-line output |
 
-## Tools (249)
+## Tools (276)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself.
 
@@ -479,7 +479,6 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `fulfillment_reprint_job` - Reset a print job to pending so the agent prints it again
 - `fulfillment_fulfill_order` - Manually (force) run fulfillment for an order: renders the packing slip, creates the ClickUp task, notifies Slack
 - `fulfillment_update_check` - Force an immediate plugin-update check (bypassing PUC's throttle) and report whether a newer version is available
-- `fulfillment_update_apply` - Install a pending cvrt-order-fulfillment update via WordPress's own upgrader (same code path as the wp-admin one-click update)
 
 ## Architecture
 
@@ -513,6 +512,15 @@ src/
     mcp-acf.ts      # 31 tools - ACF integration
     mcp-woo.ts      # 42 tools - WooCommerce
 ```
+
+## Secret Masking
+
+Every tool result passes through `src/mask.ts` before it reaches the model. Values under
+secret-looking keys (`token`, `secret`, `password`, `api_key`, `whsec`, `signing_key`, ...)
+and credential-shaped values (`sk_live_`, `whsec_`, GitHub/Slack/AWS tokens, PEM blocks)
+become `[masked]`, recursively and inside JSON strings. Flag values (`yes`, `0`, empty)
+stay visible so "not set" is still readable. Writing a secret works; it is never read back.
+The same rules run server-side in cvrt-mcp-endpoints 1.15.0+.
 
 ## Multi-Site Support
 

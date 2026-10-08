@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.0] - 2026-10-08
+
+### Security
+- Every tool result is secret-masked on the way out (`src/mask.ts`, same rules as
+  cvrt-mcp-endpoints 1.15.0 `Cvrt_MCPE_Secrets`): values under secret-looking keys
+  (token, secret, password, api_key, whsec, signing_key, ...) and credential shapes
+  (`sk_live_`, `rk_live_`, `whsec_`, GitHub/GitLab/Slack/AWS/SendGrid tokens, any
+  PEM block) are replaced by `[masked]`, recursively and inside JSON strings. A fort
+  on an older mu-plugin or another plugin's endpoint can no longer leak a secret
+  through a tool. WordPress error bodies are masked too. Masking happens only at
+  the output, never on data a tool writes back.
+
+### Added
+- Drift check (`src/drift.test.ts`, `src/drift/*.json`): every tool is verified
+  against a fixture of the endpoint it calls (route, method, every accepted param).
+- Tools expose the filters and fields their endpoints accept; partial updates send
+  only the fields set.
+
+### Removed
+- `fulfillment_update_apply`: cvrt-order-fulfillment deliberately has no
+  update-apply route (a plugin must not upgrade itself in-request).
+
 ## [3.5.0] - 2026-10-01
 
 ### Added
