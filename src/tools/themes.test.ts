@@ -55,3 +55,28 @@ describe("wp_activate_theme", () => {
     expect(result.content[0].text).toMatch(/not active/i);
   });
 });
+
+describe("wp_list_themes / wp_get_active_theme", () => {
+  beforeEach(() => {
+    get.mockReset();
+  });
+
+  it("sends status as a list", async () => {
+    get.mockResolvedValue([]);
+    await tool("wp_list_themes")({ site: "a", status: ["active", "inactive"] });
+    expect(get).toHaveBeenCalledWith("/wp/v2/themes", { status: "active,inactive" });
+  });
+
+  it("sends no status when none is given", async () => {
+    get.mockResolvedValue([]);
+    await tool("wp_list_themes")({ site: "a" });
+    expect(get).toHaveBeenCalledWith("/wp/v2/themes", {});
+  });
+
+  it("wp_get_active_theme asks for status=active", async () => {
+    get.mockResolvedValue([{ stylesheet: "hello-elementor", name: { rendered: "Hello" }, status: "active" }]);
+    const result = await tool("wp_get_active_theme")({ site: "a" });
+    expect(get).toHaveBeenCalledWith("/wp/v2/themes", { status: "active" });
+    expect(JSON.parse(result.content[0].text)).toMatchObject({ stylesheet: "hello-elementor", status: "active" });
+  });
+});

@@ -1,0 +1,112 @@
+{
+  "fields_status": {
+    "method": "GET",
+    "route": "/mcp/fields/v1/status",
+    "source": "cvrt-fields 0.2.0 includes/class-rest-api.php get_status",
+    "server": []
+  },
+  "fields_get_settings": {
+    "method": "GET",
+    "route": "/mcp/fields/v1/settings",
+    "source": "cvrt-fields 0.2.0 includes/class-rest-api.php get_settings",
+    "server": []
+  },
+  "fields_update_settings": {
+    "method": "PUT",
+    "route": "/mcp/fields/v1/settings",
+    "source": "cvrt-fields 0.2.0 includes/class-rest-api.php update_settings -> class-settings.php update (reads github_token, clear_github_token)",
+    "server": [
+      "github_token",
+      "clear_github_token"
+    ],
+    "fields": [
+      "github_token",
+      "clear_github_token"
+    ]
+  },
+  "fields_list_types": {
+    "method": "GET",
+    "route": "/mcp/fields/v1/types",
+    "source": "cvrt-fields 0.2.0 includes/class-rest-api.php get_types",
+    "server": []
+  },
+  "fields_get_location_values": {
+    "method": "GET",
+    "route": "/mcp/fields/v1/location-values",
+    "source": "cvrt-fields 0.2.0 includes/class-rest-api.php get_location_values",
+    "server": []
+  },
+  "fields_get_schema": {
+    "method": "GET",
+    "route": "/mcp/fields/v1/schemas/{kind}",
+    "source": "cvrt-fields 0.2.0 includes/class-rest-api.php get_schema",
+    "server": [],
+    "path": [
+      "kind"
+    ]
+  },
+  "fields_list_definitions": {
+    "method": "GET",
+    "route": "/mcp/fields/v1/{kind}",
+    "source": "cvrt-fields 0.2.0 includes/class-rest-api.php list_items",
+    "server": [],
+    "path": [
+      "kind"
+    ]
+  },
+  "fields_get_definition": {
+    "method": "GET",
+    "route": "/mcp/fields/v1/{kind}/{key}",
+    "source": "cvrt-fields 0.2.0 includes/class-rest-api.php get_item",
+    "server": [],
+    "path": [
+      "kind",
+      "key"
+    ]
+  },
+  "fields_create_definition": {
+    "method": "POST",
+    "route": "/mcp/fields/v1/{kind}",
+    "source": "cvrt-fields 0.2.0 includes/class-rest-api.php create_item -> Cvrt_Fields_Definitions::save (definition body, keys per kind from class-definitions.php defaults(): field_group key,title,fields,location,menu_order,position,label_placement,instruction_placement,hide_on_screen,active,description; post_type/taxonomy/options_page analogous)",
+    "server": [],
+    "path": [
+      "kind"
+    ],
+    "spread": [
+      "definition"
+    ]
+  },
+  "fields_update_definition": {
+    "method": "PUT",
+    "route": "/mcp/fields/v1/{kind}/{key}",
+    "source": "cvrt-fields 0.2.0 includes/class-rest-api.php update_item -> Cvrt_Fields_Definitions::save, key forced from the URL (definition body, keys per kind from class-definitions.php defaults(): field_group key,title,fields,location,menu_order,position,label_placement,instruction_placement,hide_on_screen,active,description; post_type/taxonomy/options_page analogous)",
+    "server": [],
+    "path": [
+      "kind",
+      "key"
+    ],
+    "spread": [
+      "definition"
+    ]
+  },
+  "fields_delete_definition": {
+    "method": "DELETE",
+    "route": "/mcp/fields/v1/{kind}/{key}",
+    "source": "cvrt-fields 0.2.0 includes/class-rest-api.php delete_item",
+    "server": [],
+    "path": [
+      "kind",
+      "key"
+    ]
+  },
+  "fields_sync_definition": {
+    "method": "POST",
+    "route": "/mcp/fields/v1/{kind}/{key}/sync",
+    "source": "cvrt-fields 0.2.0 includes/class-rest-api.php sync_item",
+    "server": [],
+    "path": [
+      "kind",
+      "key"
+    ]
+  }
+}

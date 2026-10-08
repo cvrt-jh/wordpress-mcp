@@ -1,0 +1,209 @@
+{
+  "wp_list_comments": {
+    "method": "GET",
+    "route": "/wp/v2/comments",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php get_items (args get_collection_params)",
+    "server": [
+      "context",
+      "page",
+      "per_page",
+      "search",
+      "after",
+      "author",
+      "author_exclude",
+      "author_email",
+      "before",
+      "exclude",
+      "include",
+      "offset",
+      "order",
+      "orderby",
+      "parent",
+      "parent_exclude",
+      "post",
+      "status",
+      "type",
+      "password"
+    ],
+    "fields": [
+      "page",
+      "per_page",
+      "search",
+      "after",
+      "author",
+      "author_exclude",
+      "author_email",
+      "before",
+      "exclude",
+      "include",
+      "offset",
+      "order",
+      "orderby",
+      "parent",
+      "parent_exclude",
+      "post",
+      "status",
+      "type",
+      "password"
+    ],
+    "omitted": {
+      "context": "context: tool uses the default view context; the slimmed response (src/slim.ts) only reads view fields"
+    },
+    "response": []
+  },
+  "wp_get_comment": {
+    "method": "GET",
+    "route": "/wp/v2/comments/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php get_item (args context, password)",
+    "server": [
+      "context",
+      "password"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "password"
+    ],
+    "omitted": {
+      "context": "context: tool uses the default view context; the slimmed response (src/slim.ts) only reads view fields"
+    }
+  },
+  "wp_create_comment": {
+    "method": "POST",
+    "route": "/wp/v2/comments",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php create_item (schema args; callback also reads type: comment|note, and applies status via handle_status_param)",
+    "server": [
+      "author",
+      "author_email",
+      "author_ip",
+      "author_name",
+      "author_url",
+      "author_user_agent",
+      "content",
+      "date",
+      "date_gmt",
+      "parent",
+      "post",
+      "status",
+      "meta",
+      "type"
+    ],
+    "fields": [
+      "author",
+      "author_email",
+      "author_ip",
+      "author_name",
+      "author_url",
+      "author_user_agent",
+      "content",
+      "date",
+      "date_gmt",
+      "parent",
+      "post",
+      "status",
+      "meta",
+      "type"
+    ]
+  },
+  "wp_update_comment": {
+    "method": "PUT",
+    "route": "/wp/v2/comments/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php update_item (schema args; callback also reads type and rejects a change)",
+    "server": [
+      "author",
+      "author_email",
+      "author_ip",
+      "author_name",
+      "author_url",
+      "author_user_agent",
+      "content",
+      "date",
+      "date_gmt",
+      "parent",
+      "post",
+      "status",
+      "meta",
+      "type"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "author",
+      "author_email",
+      "author_ip",
+      "author_name",
+      "author_url",
+      "author_user_agent",
+      "content",
+      "date",
+      "date_gmt",
+      "parent",
+      "post",
+      "status",
+      "meta"
+    ],
+    "omitted": {
+      "type": "read only to reject a change of comment type (rest_comment_invalid_type); nothing to set"
+    }
+  },
+  "wp_delete_comment": {
+    "method": "DELETE",
+    "route": "/wp/v2/comments/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php delete_item (args force, password)",
+    "server": [
+      "force",
+      "password"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "force",
+      "password"
+    ]
+  },
+  "wp_moderate_comments": {
+    "method": "PUT",
+    "route": "/wp/v2/comments/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php update_item, once per id",
+    "server": [
+      "author",
+      "author_email",
+      "author_ip",
+      "author_name",
+      "author_url",
+      "author_user_agent",
+      "content",
+      "date",
+      "date_gmt",
+      "parent",
+      "post",
+      "status",
+      "meta",
+      "type"
+    ],
+    "fields": [
+      "status"
+    ],
+    "local": {
+      "ids": "fanned out client side: one PUT /wp/v2/comments/{id} per id"
+    },
+    "omitted": {
+      "author": "batch status tool; wp_update_comment exposes this field",
+      "author_email": "batch status tool; wp_update_comment exposes this field",
+      "author_ip": "batch status tool; wp_update_comment exposes this field",
+      "author_name": "batch status tool; wp_update_comment exposes this field",
+      "author_url": "batch status tool; wp_update_comment exposes this field",
+      "author_user_agent": "batch status tool; wp_update_comment exposes this field",
+      "content": "batch status tool; wp_update_comment exposes this field",
+      "date": "batch status tool; wp_update_comment exposes this field",
+      "date_gmt": "batch status tool; wp_update_comment exposes this field",
+      "parent": "batch status tool; wp_update_comment exposes this field",
+      "post": "batch status tool; wp_update_comment exposes this field",
+      "meta": "batch status tool; wp_update_comment exposes this field",
+      "type": "batch status tool; wp_update_comment exposes this field"
+    }
+  }
+}

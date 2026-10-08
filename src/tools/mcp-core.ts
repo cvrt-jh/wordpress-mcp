@@ -21,8 +21,11 @@ export function register(server: McpServer) {
         wordpress_version: string;
         php_version: string;
         mysql_version: string;
+        required_php: string;
+        required_mysql: string;
         update_available: boolean;
         latest_version: string;
+        multisite: boolean;
       }>("/mcp/v1/core/version");
       return jsonResult(result);
     }
@@ -50,7 +53,7 @@ export function register(server: McpServer) {
   // Check for updates
   server.tool(
     "mcp_check_updates",
-    "Check for WordPress core, plugin, and theme updates",
+    "Force a check for WordPress core, plugin, and theme updates. Returns { core: new core version or null, plugins: count, themes: count }.",
     {
       site: z.string().describe("Site id (see list_sites)"),
     },
@@ -68,13 +71,13 @@ export function register(server: McpServer) {
   // Update WordPress core
   server.tool(
     "mcp_update_core",
-    "Update WordPress to the latest version",
+    "Update WordPress to the latest version. Returns { updated: false, message } when already up to date.",
     {
       site: z.string().describe("Site id (see list_sites)"),
     },
     async ({ site }) => {
       const wp = forSite(site);
-      const result = await wp.post<{ updated: boolean; version: string }>(
+      const result = await wp.post<{ updated: boolean; version?: string; message?: string }>(
         "/mcp/v1/core/update",
         {}
       );
@@ -102,7 +105,7 @@ export function register(server: McpServer) {
   // Flush cache
   server.tool(
     "mcp_flush_cache",
-    "Clear all caches and transients",
+    "Flush the object cache and delete all transients and site transients",
     {
       site: z.string().describe("Site id (see list_sites)"),
     },

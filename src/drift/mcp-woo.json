@@ -1,0 +1,660 @@
+{
+  "woo_list_products": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/products",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php list_products (args)",
+    "server": [
+      "status",
+      "type",
+      "category",
+      "tag",
+      "featured",
+      "on_sale",
+      "stock_status",
+      "per_page",
+      "page",
+      "orderby",
+      "order",
+      "search"
+    ],
+    "fields": [
+      "status",
+      "type",
+      "category",
+      "tag",
+      "featured",
+      "on_sale",
+      "stock_status",
+      "per_page",
+      "page",
+      "orderby",
+      "order",
+      "search"
+    ]
+  },
+  "woo_get_product": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/products/{id}",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php get_product",
+    "server": [],
+    "path": [
+      "id"
+    ]
+  },
+  "woo_create_product": {
+    "method": "POST",
+    "route": "/mcp/v1/woo/products",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php create_product (args)",
+    "server": [
+      "name",
+      "type",
+      "status",
+      "regular_price",
+      "sale_price",
+      "description",
+      "short_description",
+      "sku",
+      "manage_stock",
+      "stock_quantity",
+      "stock_status",
+      "categories",
+      "tags",
+      "images",
+      "attributes",
+      "meta_data"
+    ],
+    "fields": [
+      "name",
+      "type",
+      "status",
+      "regular_price",
+      "sale_price",
+      "description",
+      "short_description",
+      "sku",
+      "manage_stock",
+      "stock_quantity",
+      "stock_status",
+      "categories",
+      "tags",
+      "images",
+      "attributes",
+      "meta_data"
+    ]
+  },
+  "woo_update_product": {
+    "method": "PUT",
+    "route": "/mcp/v1/woo/products/{id}",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php update_product (no args; isset($params[...]) reads; type/images/attributes not handled)",
+    "server": [
+      "name",
+      "status",
+      "description",
+      "short_description",
+      "sku",
+      "regular_price",
+      "sale_price",
+      "manage_stock",
+      "stock_quantity",
+      "stock_status",
+      "categories",
+      "tags",
+      "meta_data"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "name",
+      "status",
+      "description",
+      "short_description",
+      "sku",
+      "regular_price",
+      "sale_price",
+      "manage_stock",
+      "stock_quantity",
+      "stock_status",
+      "categories",
+      "tags",
+      "meta_data"
+    ]
+  },
+  "woo_delete_product": {
+    "method": "DELETE",
+    "route": "/mcp/v1/woo/products/{id}",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php delete_product (args: force)",
+    "server": [
+      "force"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "force"
+    ]
+  },
+  "woo_list_variations": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/products/{id}/variations",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php list_variations",
+    "server": [],
+    "path": [
+      "product_id"
+    ]
+  },
+  "woo_create_variation": {
+    "method": "POST",
+    "route": "/mcp/v1/woo/products/{id}/variations",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php create_variation (args; attributes declared type array, passed to WC_Product_Variation::set_attributes which needs a map)",
+    "server": [
+      "attributes",
+      "regular_price",
+      "sale_price",
+      "sku",
+      "manage_stock",
+      "stock_quantity",
+      "stock_status"
+    ],
+    "path": [
+      "product_id"
+    ],
+    "fields": [
+      "attributes",
+      "regular_price",
+      "sale_price",
+      "sku",
+      "manage_stock",
+      "stock_quantity",
+      "stock_status"
+    ]
+  },
+  "woo_update_variation": {
+    "method": "PUT",
+    "route": "/mcp/v1/woo/products/{id}/variations/{variation_id}",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php update_variation (no args; isset($params[...]) reads; attributes raw map to set_attributes)",
+    "server": [
+      "attributes",
+      "regular_price",
+      "sale_price",
+      "sku",
+      "manage_stock",
+      "stock_quantity",
+      "stock_status"
+    ],
+    "path": [
+      "product_id",
+      "variation_id"
+    ],
+    "fields": [
+      "attributes",
+      "regular_price",
+      "sale_price",
+      "sku",
+      "manage_stock",
+      "stock_quantity",
+      "stock_status"
+    ]
+  },
+  "woo_delete_variation": {
+    "method": "DELETE",
+    "route": "/mcp/v1/woo/products/{id}/variations/{variation_id}",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php delete_variation (always force)",
+    "server": [],
+    "path": [
+      "product_id",
+      "variation_id"
+    ]
+  },
+  "woo_list_attributes": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/attributes",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php list_attributes",
+    "server": []
+  },
+  "woo_list_attribute_terms": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/attributes/{id}/terms",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php list_attribute_terms",
+    "server": [],
+    "path": [
+      "attribute_id"
+    ]
+  },
+  "woo_create_attribute": {
+    "method": "POST",
+    "route": "/mcp/v1/woo/attributes",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php create_attribute (args)",
+    "server": [
+      "name",
+      "slug",
+      "type",
+      "order_by",
+      "has_archives"
+    ],
+    "fields": [
+      "name",
+      "slug",
+      "type",
+      "order_by",
+      "has_archives"
+    ]
+  },
+  "woo_create_attribute_term": {
+    "method": "POST",
+    "route": "/mcp/v1/woo/attributes/{id}/terms",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php create_attribute_term (args)",
+    "server": [
+      "name",
+      "slug"
+    ],
+    "path": [
+      "attribute_id"
+    ],
+    "fields": [
+      "name",
+      "slug"
+    ]
+  },
+  "woo_list_categories": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/categories",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php list_categories (args)",
+    "server": [
+      "hide_empty",
+      "parent"
+    ],
+    "fields": [
+      "hide_empty",
+      "parent"
+    ]
+  },
+  "woo_create_category": {
+    "method": "POST",
+    "route": "/mcp/v1/woo/categories",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php create_category (args)",
+    "server": [
+      "name",
+      "slug",
+      "parent",
+      "description",
+      "image_id"
+    ],
+    "fields": [
+      "name",
+      "slug",
+      "parent",
+      "description",
+      "image_id"
+    ]
+  },
+  "woo_update_category": {
+    "method": "PUT",
+    "route": "/mcp/v1/woo/categories/{id}",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php update_category (no args; isset($params[...]) reads)",
+    "server": [
+      "name",
+      "slug",
+      "parent",
+      "description",
+      "image_id"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "name",
+      "slug",
+      "parent",
+      "description",
+      "image_id"
+    ]
+  },
+  "woo_delete_category": {
+    "method": "DELETE",
+    "route": "/mcp/v1/woo/categories/{id}",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php delete_category",
+    "server": [],
+    "path": [
+      "id"
+    ]
+  },
+  "woo_list_tags": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/tags",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php list_tags",
+    "server": []
+  },
+  "woo_list_orders": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/orders",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php list_orders (args; product is declared but never read)",
+    "server": [
+      "status",
+      "customer",
+      "product",
+      "per_page",
+      "page",
+      "after",
+      "before"
+    ],
+    "fields": [
+      "status",
+      "customer",
+      "per_page",
+      "page",
+      "after",
+      "before"
+    ],
+    "omitted": {
+      "product": "declared in register_rest_route args but list_orders never reads it, so it has no effect (server bug)"
+    }
+  },
+  "woo_get_order": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/orders/{id}",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php get_order",
+    "server": [],
+    "path": [
+      "id"
+    ]
+  },
+  "woo_update_order_status": {
+    "method": "PUT",
+    "route": "/mcp/v1/woo/orders/{id}/status",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php update_order_status (args)",
+    "server": [
+      "status",
+      "note"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "status",
+      "note"
+    ]
+  },
+  "woo_add_order_note": {
+    "method": "POST",
+    "route": "/mcp/v1/woo/orders/{id}/notes",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php add_order_note (args)",
+    "server": [
+      "note",
+      "customer_note"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "note",
+      "customer_note"
+    ]
+  },
+  "woo_get_order_notes": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/orders/{id}/notes",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php get_order_notes",
+    "server": [],
+    "path": [
+      "id"
+    ]
+  },
+  "woo_list_customers": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/customers",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php list_customers (args)",
+    "server": [
+      "per_page",
+      "page",
+      "search",
+      "role"
+    ],
+    "fields": [
+      "per_page",
+      "page",
+      "search",
+      "role"
+    ]
+  },
+  "woo_get_customer": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/customers/{id}",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php get_customer",
+    "server": [],
+    "path": [
+      "id"
+    ]
+  },
+  "woo_create_customer": {
+    "method": "POST",
+    "route": "/mcp/v1/woo/customers",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php create_customer (args)",
+    "server": [
+      "email",
+      "first_name",
+      "last_name",
+      "username",
+      "password",
+      "billing",
+      "shipping"
+    ],
+    "fields": [
+      "email",
+      "first_name",
+      "last_name",
+      "username",
+      "password",
+      "billing",
+      "shipping"
+    ]
+  },
+  "woo_update_customer": {
+    "method": "PUT",
+    "route": "/mcp/v1/woo/customers/{id}",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php update_customer (no args; isset/!empty($params[...]) reads)",
+    "server": [
+      "email",
+      "first_name",
+      "last_name",
+      "billing",
+      "shipping"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "email",
+      "first_name",
+      "last_name",
+      "billing",
+      "shipping"
+    ]
+  },
+  "woo_get_customer_orders": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/customers/{id}/orders",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php get_customer_orders (limit 20 hardcoded)",
+    "server": [],
+    "path": [
+      "id"
+    ]
+  },
+  "woo_list_coupons": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/coupons",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php list_coupons (args)",
+    "server": [
+      "per_page",
+      "page",
+      "search"
+    ],
+    "fields": [
+      "per_page",
+      "page",
+      "search"
+    ]
+  },
+  "woo_get_coupon": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/coupons/{id}",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php get_coupon",
+    "server": [],
+    "path": [
+      "id"
+    ]
+  },
+  "woo_create_coupon": {
+    "method": "POST",
+    "route": "/mcp/v1/woo/coupons",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php create_coupon (args)",
+    "server": [
+      "code",
+      "discount_type",
+      "amount",
+      "individual_use",
+      "usage_limit",
+      "usage_limit_per_user",
+      "date_expires",
+      "free_shipping",
+      "product_ids",
+      "excluded_product_ids",
+      "minimum_amount",
+      "maximum_amount"
+    ],
+    "fields": [
+      "code",
+      "discount_type",
+      "amount",
+      "individual_use",
+      "usage_limit",
+      "usage_limit_per_user",
+      "date_expires",
+      "free_shipping",
+      "product_ids",
+      "excluded_product_ids",
+      "minimum_amount",
+      "maximum_amount"
+    ]
+  },
+  "woo_update_coupon": {
+    "method": "PUT",
+    "route": "/mcp/v1/woo/coupons/{id}",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php update_coupon (no args; isset($params[...]) reads)",
+    "server": [
+      "code",
+      "discount_type",
+      "amount",
+      "individual_use",
+      "usage_limit",
+      "usage_limit_per_user",
+      "date_expires",
+      "free_shipping",
+      "product_ids",
+      "excluded_product_ids",
+      "minimum_amount",
+      "maximum_amount"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "code",
+      "discount_type",
+      "amount",
+      "individual_use",
+      "usage_limit",
+      "usage_limit_per_user",
+      "date_expires",
+      "free_shipping",
+      "product_ids",
+      "excluded_product_ids",
+      "minimum_amount",
+      "maximum_amount"
+    ]
+  },
+  "woo_delete_coupon": {
+    "method": "DELETE",
+    "route": "/mcp/v1/woo/coupons/{id}",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php delete_coupon (always force)",
+    "server": [],
+    "path": [
+      "id"
+    ]
+  },
+  "woo_sales_report": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/reports/sales",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php get_sales_report (args)",
+    "server": [
+      "period",
+      "date_min",
+      "date_max"
+    ],
+    "fields": [
+      "period",
+      "date_min",
+      "date_max"
+    ]
+  },
+  "woo_top_sellers": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/reports/top-sellers",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php get_top_sellers (args; period week|year|else month)",
+    "server": [
+      "period",
+      "limit"
+    ],
+    "fields": [
+      "period",
+      "limit"
+    ]
+  },
+  "woo_stock_report": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/reports/stock",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php get_stock_report (args)",
+    "server": [
+      "status",
+      "limit"
+    ],
+    "fields": [
+      "status",
+      "limit"
+    ]
+  },
+  "woo_get_product_meta": {
+    "method": "GET",
+    "route": "/mcp/v1/woo/products/{id}/meta",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php get_product_meta",
+    "server": [],
+    "path": [
+      "id"
+    ]
+  },
+  "woo_update_product_meta": {
+    "method": "POST",
+    "route": "/mcp/v1/woo/products/{id}/meta",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php update_product_meta (args: meta object)",
+    "server": [
+      "meta"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "meta"
+    ]
+  },
+  "woo_bulk_update_stock": {
+    "method": "POST",
+    "route": "/mcp/v1/woo/inventory/bulk-update",
+    "source": "wp-pilot-pro 1.1.0 modules/class-woocommerce-module.php bulk_update_stock (args: products [{id, stock_quantity, stock_status}])",
+    "server": [
+      "products"
+    ],
+    "fields": [
+      "products"
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "mcp_list_taxonomies": {
+    "method": "GET", "route": "/mcp/v1/taxonomies",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-taxonomies-endpoint.php list_taxonomies",
+    "server": []
+  },
+  "mcp_get_taxonomy": {
+    "method": "GET", "route": "/mcp/v1/taxonomies/{taxonomy}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-taxonomies-endpoint.php get_taxonomy",
+    "server": [], "path": ["taxonomy"]
+  },
+  "mcp_list_terms": {
+    "method": "GET", "route": "/mcp/v1/taxonomies/{taxonomy}/terms",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-taxonomies-endpoint.php get_terms (args hide_empty,parent,search)",
+    "server": ["hide_empty", "parent", "search"],
+    "path": ["taxonomy"],
+    "fields": ["hide_empty", "parent", "search"]
+  },
+  "mcp_create_term": {
+    "method": "POST", "route": "/mcp/v1/taxonomies/{taxonomy}/terms",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-taxonomies-endpoint.php create_term (args name,slug,description,parent)",
+    "server": ["name", "slug", "description", "parent"],
+    "path": ["taxonomy"],
+    "fields": ["name", "slug", "description", "parent"]
+  },
+  "mcp_update_term": {
+    "method": "PUT", "route": "/mcp/v1/taxonomies/{taxonomy}/terms/{id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-taxonomies-endpoint.php update_term (no args; has_param name,slug,description,parent)",
+    "server": ["name", "slug", "description", "parent"],
+    "path": ["taxonomy", "id"],
+    "fields": ["name", "slug", "description", "parent"]
+  },
+  "mcp_delete_term": {
+    "method": "DELETE", "route": "/mcp/v1/taxonomies/{taxonomy}/terms/{id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-taxonomies-endpoint.php delete_term",
+    "server": [], "path": ["taxonomy", "id"]
+  },
+  "mcp_assign_terms": {
+    "method": "POST", "route": "/mcp/v1/taxonomies/assign",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-taxonomies-endpoint.php assign_terms (args post_id,taxonomy,terms,append)",
+    "server": ["post_id", "taxonomy", "terms", "append"],
+    "fields": ["post_id", "taxonomy", "terms", "append"]
+  }
+}

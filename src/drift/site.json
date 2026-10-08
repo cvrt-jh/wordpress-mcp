@@ -1,0 +1,79 @@
+{
+  "wp_site_info": {
+    "method": "GET",
+    "route": "/",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/class-wp-rest-server.php get_index (args context)",
+    "server": [
+      "context"
+    ],
+    "omitted": {
+      "context": "index context only changes route descriptions; the tool returns slimmed site fields"
+    }
+  },
+  "wp_get_namespaces": {
+    "method": "GET",
+    "route": "/",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/class-wp-rest-server.php get_index (args context)",
+    "server": [
+      "context"
+    ],
+    "omitted": {
+      "context": "index context only changes route descriptions; the tool returns namespaces only"
+    }
+  },
+  "wp_get_settings": {
+    "method": "GET",
+    "route": "/wp/v2/settings",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-settings-controller.php get_item (args none)",
+    "server": []
+  },
+  "wp_update_settings": {
+    "method": "POST",
+    "route": "/wp/v2/settings",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-settings-controller.php update_item (args: core settings registered with show_in_rest in wp-includes/option.php register_initial_settings + blocks/site-logo.php site_logo, site_icon; url/email single site only)",
+    "server": [
+      "title",
+      "description",
+      "url",
+      "email",
+      "timezone",
+      "date_format",
+      "time_format",
+      "start_of_week",
+      "language",
+      "use_smilies",
+      "default_category",
+      "default_post_format",
+      "posts_per_page",
+      "show_on_front",
+      "page_on_front",
+      "page_for_posts",
+      "default_ping_status",
+      "default_comment_status",
+      "site_logo",
+      "site_icon"
+    ],
+    "fields": [
+      "title",
+      "description",
+      "url",
+      "email",
+      "timezone",
+      "date_format",
+      "time_format",
+      "start_of_week",
+      "language",
+      "use_smilies",
+      "default_category",
+      "default_post_format",
+      "posts_per_page",
+      "show_on_front",
+      "page_on_front",
+      "page_for_posts",
+      "default_ping_status",
+      "default_comment_status",
+      "site_logo",
+      "site_icon"
+    ]
+  }
+}

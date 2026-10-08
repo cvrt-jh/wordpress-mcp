@@ -411,3 +411,131 @@ describe("cvrt-legal 0.9.0: repairs, report, BFSG document", () => {
   });
 });
 
+
+describe("field audit against cvrt-legal 0.10.3", () => {
+  beforeEach(() => {
+    get.mockReset();
+    put.mockReset();
+    post.mockReset();
+  });
+
+  it("legal_put_consent sends gtm_services and ads_id, which used to need mcp_set_option", async () => {
+    put.mockResolvedValue({ saved: true });
+    const gtm_services = { analytics: ["Microsoft Clarity"], marketing: ["Meta Pixel"] };
+
+    await tool("legal_put_consent").handler({ site: "a", ads_id: "AW-123456789", gtm_services });
+
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/consent", { ads_id: "AW-123456789", gtm_services });
+  });
+
+  it("legal_put_consent is a partial update: enabled is optional and only given keys are sent", async () => {
+    put.mockResolvedValue({ saved: true });
+
+    await tool("legal_put_consent").handler({ site: "a", backdrop: false, gtm_id: "" });
+
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/consent", { backdrop: false, gtm_id: "" });
+  });
+
+  it("legal_put_consent schema checks ids the way save_config does", () => {
+    const schema = z.object(tool("legal_put_consent").schema).strict();
+    const ok = (args: Record<string, unknown>) => schema.safeParse({ site: "a", ...args }).success;
+
+    expect(ok({ ads_id: "AW-123456789" })).toBe(true);
+    expect(ok({ ads_id: "" })).toBe(true);
+    expect(ok({ ads_id: "123456789" })).toBe(false);
+    expect(ok({ ads_id: "AW-12ab" })).toBe(false);
+    expect(ok({ gtm_id: "GTM-ABC123" })).toBe(true);
+    expect(ok({ gtm_id: "UA-1" })).toBe(false);
+    expect(ok({ ga4_id: "G-ABC123" })).toBe(true);
+    expect(ok({ ga4_id: "G-abc" })).toBe(false);
+    expect(ok({ ahrefs_key: "abc/DEF+_-==" })).toBe(true);
+    expect(ok({ ahrefs_key: "a b" })).toBe(false);
+    expect(ok({ privacy_page: -1 })).toBe(false);
+  });
+
+  it("legal_put_consent gtm_services must hold both category lists and nothing else", () => {
+    const schema = z.object(tool("legal_put_consent").schema);
+    const ok = (gtm_services: unknown) => schema.safeParse({ site: "a", gtm_services }).success;
+
+    expect(ok({ analytics: [], marketing: ["LinkedIn Insight Tag"] })).toBe(true);
+    expect(ok({ analytics: ["Clarity"] })).toBe(false);
+    expect(ok({ analytics: [], marketing: [], external: [] })).toBe(false);
+    expect(ok({ analytics: "Clarity", marketing: [] })).toBe(false);
+    expect(ok(["Clarity"])).toBe(false);
+    expect(ok({ analytics: ["x".repeat(81)], marketing: [] })).toBe(false);
+    expect(ok({ analytics: Array.from({ length: 21 }, (_, i) => `s${i}`), marketing: [] })).toBe(false);
+  });
+
+  it("legal_put_accessibility repairs only take the current rule keys as booleans", () => {
+    const schema = z.object(tool("legal_put_accessibility").schema);
+    const ok = (repairs: unknown) => schema.safeParse({ site: "a", repairs }).success;
+
+    expect(
+      ok({
+        "link-names": true, "image-alt": true, "iframe-title": true, "form-labels": true, "skip-link": true,
+        lang: true, zoom: true, "new-tab": false, "duplicate-ids": true,
+      }),
+    ).toBe(true);
+    // Old schema: a string, or rule names the plugin silently ignores.
+    expect(ok("skip-link,zoom")).toBe(false);
+    expect(ok({ "alt-text": true })).toBe(false);
+    expect(ok({ skip_link: true })).toBe(false);
+    expect(ok({ zoom: "yes" })).toBe(false);
+  });
+
+  it("legal_put_accessibility tools only take the panel's tool keys", () => {
+    const schema = z.object(tool("legal_put_accessibility").schema);
+    expect(schema.safeParse({ site: "a", tools: { "reading-mask": true, sitemap: false } }).success).toBe(true);
+    expect(schema.safeParse({ site: "a", tools: { "text-to-speech": true } }).success).toBe(false);
+  });
+
+  it("legal_put_document leaves title out when not given (the plugin uses the type label)", async () => {
+    put.mockResolvedValue({ saved: true });
+    const sections = [{ heading: "Angaben", body: "<p>x</p>", level: 3 }];
+
+    await tool("legal_put_document").handler({ site: "a", doc: "impressum", sections });
+
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/documents/impressum", { sections });
+  });
+
+  it("section levels are 2 or 3", () => {
+    const add = z.object(tool("legal_add_section").schema);
+    expect(add.safeParse({ site: "a", doc: "agb", heading: "h", body: "b", level: 3 }).success).toBe(true);
+    expect(add.safeParse({ site: "a", doc: "agb", heading: "h", body: "b", level: 4 }).success).toBe(false);
+    const upd = z.object(tool("legal_update_section").schema);
+    expect(upd.safeParse({ site: "a", doc: "agb", slug: "s", level: 1 }).success).toBe(false);
+  });
+
+  it("legal_update_section sends only the fields given", async () => {
+    put.mockResolvedValue({ saved: true });
+    await tool("legal_update_section").handler({ site: "a", doc: "agb", slug: "geltung", heading: "Geltung" });
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/documents/agb/sections/geltung", { heading: "Geltung" });
+  });
+
+  it("legal_put_theme takes the two presets and only --cvrt-consent-* names", async () => {
+    const schema = z.object(tool("legal_put_theme").schema);
+    expect(schema.safeParse({ site: "a", preset: "dark", vars: { "--cvrt-consent-bg": "#000" } }).success).toBe(true);
+    expect(schema.safeParse({ site: "a", preset: "neon" }).success).toBe(false);
+    expect(schema.safeParse({ site: "a", vars: { "--other-bg": "#000" } }).success).toBe(false);
+
+    put.mockResolvedValue({ saved: true });
+    await tool("legal_put_theme").handler({ site: "a", preset: "dark" });
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/consent/theme", { preset: "dark" });
+  });
+
+  it("legal_update_settings required_override only names known documents", () => {
+    const schema = z.object(tool("legal_update_settings").schema);
+    expect(schema.safeParse({ site: "a", required_override: { barrierefreiheit: false } }).success).toBe(true);
+    expect(schema.safeParse({ site: "a", required_override: { cookies: true } }).success).toBe(false);
+  });
+
+  it("library and modules tools treat a null source as absent", async () => {
+    put.mockResolvedValue({ saved: true });
+    await tool("legal_put_generator_library").handler({ site: "a", doc: "impressum", library: { sections: [] }, library_file: null });
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/generator/impressum/library", { sections: [] });
+
+    const mods = { heading: "Soziale Medien", general: "{networks}", networks: {} };
+    await tool("legal_put_social_modules").handler({ site: "a", modules: mods, modules_file: null });
+    expect(put).toHaveBeenLastCalledWith("/mcp/legal/v1/social/modules", mods);
+  });
+});

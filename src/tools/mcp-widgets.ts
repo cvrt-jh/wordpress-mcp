@@ -5,7 +5,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { forSite } from "../client.js";
-import { jsonResult } from "../types.js";
+import { defined, jsonResult } from "../types.js";
 
 export function register(server: McpServer) {
   // List sidebars
@@ -22,6 +22,7 @@ export function register(server: McpServer) {
           id: string;
           name: string;
           description: string;
+          class: string;
           widget_count: number;
         }>;
         count: number;
@@ -68,6 +69,7 @@ export function register(server: McpServer) {
           id_base: string;
           name: string;
           description: string;
+          class: string;
         }>;
         count: number;
       }>("/mcp/v1/widgets/types");
@@ -103,15 +105,24 @@ export function register(server: McpServer) {
     {
       site: z.string().describe("Site id (see list_sites)"),
       sidebar_id: z.string().describe("Target sidebar ID"),
-      widget_type: z.string().describe("Widget type (e.g., text, search)"),
-      settings: z.record(z.unknown()).optional().default({}).describe("Widget settings"),
-      position: z.number().optional().describe("Position in sidebar"),
+      widget_type: z.string().describe("Widget type id_base (e.g., text, search; see mcp_list_widget_types)"),
+      settings: z
+        .record(z.unknown())
+        .optional()
+        .default({})
+        .describe("Widget instance settings, e.g. { title, text } for a text widget (default {})"),
+      position: z
+        .number()
+        .int()
+        .min(0)
+        .optional()
+        .describe("0-based position in the sidebar (default: append at the end)"),
     },
     async ({ site, sidebar_id, widget_type, settings, position }) => {
       const wp = forSite(site);
       const result = await wp.post<{ widget_id: string; sidebar_id: string; created: boolean }>(
         "/mcp/v1/widgets",
-        { sidebar_id, widget_type, settings, position }
+        defined({ sidebar_id, widget_type, settings, position })
       );
       return jsonResult(result);
     }
@@ -120,11 +131,11 @@ export function register(server: McpServer) {
   // Update widget
   server.tool(
     "mcp_update_widget",
-    "Update a widget's settings",
+    "Update a widget's settings. The given keys are merged into the stored settings; keys not given are kept.",
     {
       site: z.string().describe("Site id (see list_sites)"),
       widget_id: z.string().describe("Widget ID"),
-      settings: z.record(z.unknown()).describe("Settings to update"),
+      settings: z.record(z.unknown()).describe("Settings keys to change (merged into the existing settings)"),
     },
     async ({ site, widget_id, settings }) => {
       const wp = forSite(site);
@@ -156,11 +167,11 @@ export function register(server: McpServer) {
   // Reorder widgets in sidebar
   server.tool(
     "mcp_reorder_widgets",
-    "Reorder widgets within a sidebar",
+    "Set the widget order of a sidebar. Pass the COMPLETE list: widgets of the sidebar left out are removed from it (their settings stay, but they end up in no sidebar, not even Inactive Widgets).",
     {
       site: z.string().describe("Site id (see list_sites)"),
       sidebar_id: z.string().describe("Sidebar ID"),
-      widget_ids: z.array(z.string()).describe("Ordered list of widget IDs"),
+      widget_ids: z.array(z.string()).describe("All widget IDs of the sidebar in the new order (each must already be in this sidebar)"),
     },
     async ({ site, sidebar_id, widget_ids }) => {
       const wp = forSite(site);
@@ -181,7 +192,12 @@ export function register(server: McpServer) {
       site: z.string().describe("Site id (see list_sites)"),
       widget_id: z.string().describe("Widget ID"),
       sidebar_id: z.string().describe("Target sidebar ID"),
-      position: z.number().optional().describe("Position in target sidebar"),
+      position: z
+        .number()
+        .int()
+        .min(0)
+        .optional()
+        .describe("0-based position in the target sidebar (default: append at the end)"),
     },
     async ({ site, widget_id, sidebar_id, position }) => {
       const wp = forSite(site);
@@ -190,7 +206,7 @@ export function register(server: McpServer) {
         from_sidebar: string;
         to_sidebar: string;
         moved: boolean;
-      }>(`/mcp/v1/widgets/${encodeURIComponent(widget_id)}/move`, { sidebar_id, position });
+      }>(`/mcp/v1/widgets/${encodeURIComponent(widget_id)}/move`, defined({ sidebar_id, position }));
       return jsonResult(result);
     }
   );

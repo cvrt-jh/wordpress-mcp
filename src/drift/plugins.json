@@ -1,0 +1,67 @@
+{
+  "wp_list_plugins": {
+    "method": "GET",
+    "route": "/wp/v2/plugins",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-plugins-controller.php get_items (args context, search, status; page/per_page unset)",
+    "server": [
+      "context",
+      "search",
+      "status"
+    ],
+    "fields": [
+      "search",
+      "status"
+    ],
+    "omitted": {
+      "context": "context: tool uses the default view context; the slimmed response (src/slim.ts) only reads view fields"
+    },
+    "response": []
+  },
+  "wp_get_plugin": {
+    "method": "GET",
+    "route": "/wp/v2/plugins/{plugin}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-plugins-controller.php get_item (route args context, plugin)",
+    "server": [
+      "context"
+    ],
+    "path": [
+      "plugin"
+    ],
+    "omitted": {
+      "context": "context: tool uses the default view context; the slimmed response (src/slim.ts) only reads view fields"
+    }
+  },
+  "wp_activate_plugin": {
+    "method": "POST",
+    "route": "/mcp/v1/plugins/activate",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-plugins-endpoint.php activate_plugin_route (args plugin)",
+    "server": [
+      "plugin"
+    ],
+    "fields": [
+      "plugin"
+    ]
+  },
+  "wp_deactivate_plugin": {
+    "method": "POST",
+    "route": "/mcp/v1/plugins/deactivate",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-plugins-endpoint.php deactivate_plugin_route (args plugin)",
+    "server": [
+      "plugin"
+    ],
+    "fields": [
+      "plugin"
+    ]
+  },
+  "wp_delete_plugin": {
+    "method": "POST",
+    "route": "/mcp/v1/plugins/delete",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-plugins-endpoint.php delete_plugin_route (args plugin)",
+    "server": [
+      "plugin"
+    ],
+    "fields": [
+      "plugin"
+    ]
+  }
+}

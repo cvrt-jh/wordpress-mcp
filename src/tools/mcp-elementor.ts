@@ -5,22 +5,29 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { forSite } from "../client.js";
-import { jsonResult } from "../types.js";
+import { defined, jsonResult } from "../types.js";
+
+const site = z.string().describe("Site id (see list_sites)");
+const postId = z.number().int().describe("Post/page ID");
+// The routes only match hex element ids.
+const elementId = z
+  .string()
+  .regex(/^[a-fA-F0-9]+$/)
+  .describe("Elementor element ID (hex, usually 7-8 chars)");
+const fields = z
+  .string()
+  .optional()
+  .describe("Comma-separated setting keys to keep in each element's settings (default: all)");
+const widgetType = z.string().optional().describe("Filter by widget type (heading, button, image, text-editor, html, ...)");
 
 export function register(server: McpServer) {
   // Get page build tree
   server.tool(
     "mcp_get_elementor_build",
-    "Get full Elementor page build (containers, widgets, settings tree)",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Post/page ID"),
-      fields: z.string().optional().default("").describe("Comma-separated setting keys to include (empty = all)"),
-    },
+    "Get full Elementor page build (containers, widgets, settings tree) with element and widget counts",
+    { site, id: postId, fields },
     async ({ site, id, fields }) => {
       const wp = forSite(site);
-      const params: Record<string, string | number> = {};
-      if (fields) params.fields = fields;
       const result = await wp.get<{
         post_id: number;
         title: string;
@@ -29,7 +36,7 @@ export function register(server: McpServer) {
         element_count: number;
         widget_count: number;
         elements: unknown[];
-      }>(`/mcp/v1/elementor/posts/${id}`, params);
+      }>(`/mcp/v1/elementor/posts/${id}`, defined({ fields: fields || undefined }));
       return jsonResult(result);
     }
   );
@@ -37,20 +44,16 @@ export function register(server: McpServer) {
   // Get flat element list
   server.tool(
     "mcp_get_elementor_flat",
-    "Get flat list of all Elementor elements on a page (easier to search/filter than tree)",
+    "Get flat list of all Elementor elements on a page (id, elType, widgetType, parent_id, depth, settings); easier to search/filter than the tree",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Post/page ID"),
-      widget_type: z.string().optional().default("").describe("Filter by widget type (heading, button, image, etc.)"),
-      el_type: z.string().optional().default("").describe("Filter by element type (container, widget)"),
-      fields: z.string().optional().default("").describe("Comma-separated setting keys to include"),
+      site,
+      id: postId,
+      widget_type: widgetType,
+      el_type: z.string().optional().describe("Filter by element type (container, section, column, widget, or a V4 type like e-div-block)"),
+      fields,
     },
     async ({ site, id, widget_type, el_type, fields }) => {
       const wp = forSite(site);
-      const params: Record<string, string | number> = {};
-      if (widget_type) params.widget_type = widget_type;
-      if (el_type) params.el_type = el_type;
-      if (fields) params.fields = fields;
       const result = await wp.get<{
         post_id: number;
         elements: Array<{
@@ -62,7 +65,10 @@ export function register(server: McpServer) {
           settings: Record<string, unknown>;
         }>;
         total: number;
-      }>(`/mcp/v1/elementor/posts/${id}/flat`, params);
+      }>(
+        `/mcp/v1/elementor/posts/${id}/flat`,
+        defined({ widget_type: widget_type || undefined, el_type: el_type || undefined, fields: fields || undefined })
+      );
       return jsonResult(result);
     }
   );
@@ -70,12 +76,8 @@ export function register(server: McpServer) {
   // Get single element
   server.tool(
     "mcp_get_elementor_element",
-    "Get a single Elementor element with full settings",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Post/page ID"),
-      element_id: z.string().describe("Elementor element ID (8-char hex)"),
-    },
+    "Get a single Elementor element with full settings, its parent id and child ids",
+    { site, id: postId, element_id: elementId },
     async ({ site, id, element_id }) => {
       const wp = forSite(site);
       const result = await wp.get<{
@@ -96,12 +98,15 @@ export function register(server: McpServer) {
   // Update element settings
   server.tool(
     "mcp_update_elementor_element",
-    "Update settings on a single Elementor element (merge by default). With widget_type, replaces the widget in place (same id, position and parent), e.g. turn a V4 placeholder into a V3 html widget; the type must be registered with Elementor.",
+    "Update settings on a single Elementor element (merge by default). With widget_type, replaces the widget in place (same id, position and parent), e.g. turn a V4 placeholder into a V3 html widget; the type must be registered with Elementor. Give settings, widget_type, or both.",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Post/page ID"),
-      element_id: z.string().describe("Elementor element ID"),
-      settings: z.record(z.unknown()).describe("Settings to merge into (or, with settings_mode replace, to become) the element's settings"),
+      site,
+      id: postId,
+      element_id: elementId,
+      settings: z
+        .record(z.unknown())
+        .optional()
+        .describe("Settings to merge into (or, with settings_mode replace, to become) the element's settings. Optional when widget_type is given."),
       widget_type: z
         .string()
         .regex(/^[a-z0-9][a-z0-9_-]*$/)
@@ -110,20 +115,19 @@ export function register(server: McpServer) {
       settings_mode: z
         .enum(["merge", "replace"])
         .optional()
-        .describe("merge (default) or replace: settings become the element's complete settings"),
+        .describe("merge (default): top-level keys are merged into the current settings; replace: settings become the element's complete settings"),
     },
     async ({ site, id, element_id, settings, widget_type, settings_mode }) => {
+      if (settings === undefined && widget_type === undefined) {
+        throw new Error("mcp_update_elementor_element: give settings, widget_type, or both");
+      }
       const wp = forSite(site);
       const result = await wp.put<{
         post_id: number;
         element_id: string;
         updated: boolean;
-        element: Record<string, unknown>;
-      }>(`/mcp/v1/elementor/posts/${id}/elements/${element_id}`, {
-        settings,
-        ...(widget_type !== undefined ? { widget_type } : {}),
-        ...(settings_mode !== undefined ? { settings_mode } : {}),
-      });
+        element: { id: string; elType: string; widgetType: string | null; settings: Record<string, unknown> };
+      }>(`/mcp/v1/elementor/posts/${id}/elements/${element_id}`, defined({ settings, widget_type, settings_mode }));
       return jsonResult(result);
     }
   );
@@ -131,11 +135,8 @@ export function register(server: McpServer) {
   // Get page settings
   server.tool(
     "mcp_get_elementor_page_settings",
-    "Get Elementor page-level settings (hide title, custom CSS, etc.)",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Post/page ID"),
-    },
+    "Get Elementor page-level settings (hide title, custom CSS, etc.). Fails if the post is not built with Elementor.",
+    { site, id: postId },
     async ({ site, id }) => {
       const wp = forSite(site);
       const result = await wp.get<{
@@ -151,11 +152,11 @@ export function register(server: McpServer) {
   // Update page settings
   server.tool(
     "mcp_update_elementor_page_settings",
-    "Update Elementor page-level settings",
+    "Update Elementor page-level settings. Top-level keys are merged into the stored settings (a nested value replaces the old one whole); returns the merged settings.",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Post/page ID"),
-      settings: z.record(z.unknown()).describe("Settings to merge"),
+      site,
+      id: postId,
+      settings: z.record(z.unknown()).describe("Settings to merge (non-empty)"),
     },
     async ({ site, id, settings }) => {
       const wp = forSite(site);
@@ -171,15 +172,16 @@ export function register(server: McpServer) {
   // List templates
   server.tool(
     "mcp_list_elementor_templates",
-    "List all Elementor library templates (headers, footers, singles, loop items, popups)",
+    "List Elementor library templates (headers, footers, singles, loop items, popups) with theme builder conditions; at most 100, ordered by title",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      type: z.string().optional().default("").describe("Filter by type (header, footer, single, archive, loop-item, page, popup)"),
+      site,
+      type: z
+        .string()
+        .optional()
+        .describe("Filter by template type (header, footer, single, single-post, single-page, archive, loop-item, page, section, container, popup, kit, ...)"),
     },
     async ({ site, type }) => {
       const wp = forSite(site);
-      const params: Record<string, string | number> = {};
-      if (type) params.type = type;
       const result = await wp.get<{
         templates: Array<{
           id: number;
@@ -190,7 +192,7 @@ export function register(server: McpServer) {
           date: string;
         }>;
         count: number;
-      }>("/mcp/v1/elementor/templates", params);
+      }>("/mcp/v1/elementor/templates", defined({ type: type || undefined }));
       return jsonResult(result);
     }
   );
@@ -198,11 +200,8 @@ export function register(server: McpServer) {
   // Get template conditions
   server.tool(
     "mcp_get_elementor_conditions",
-    "Get theme builder display conditions for an Elementor template",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Template post ID"),
-    },
+    "Get theme builder display conditions for an Elementor template (Elementor Pro)",
+    { site, id: z.number().int().describe("Template post ID") },
     async ({ site, id }) => {
       const wp = forSite(site);
       const result = await wp.get<{
@@ -219,9 +218,7 @@ export function register(server: McpServer) {
   server.tool(
     "mcp_get_elementor_kit",
     "Get Elementor global kit settings (colors, fonts, typography, spacing, button defaults)",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-    },
+    { site },
     async ({ site }) => {
       const wp = forSite(site);
       const result = await wp.get<{
@@ -236,10 +233,10 @@ export function register(server: McpServer) {
   // Update global kit
   server.tool(
     "mcp_update_elementor_kit",
-    "Update Elementor global kit settings (colors, fonts, typography)",
+    "Update Elementor global kit settings (colors, fonts, typography). Top-level keys are merged; a nested value such as system_colors replaces the old one whole, so send the complete list. Returns the merged settings.",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      settings: z.record(z.unknown()).describe("Kit settings to merge"),
+      site,
+      settings: z.record(z.unknown()).describe("Kit settings to merge (non-empty)"),
     },
     async ({ site, settings }) => {
       const wp = forSite(site);
@@ -255,22 +252,17 @@ export function register(server: McpServer) {
   // Search across pages
   server.tool(
     "mcp_search_elementor",
-    "Search all Elementor pages for specific widgets, settings, or text content",
+    "Search published Elementor-built posts for widgets, settings, or text in string setting values (case-insensitive)",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      widget_type: z.string().optional().default("").describe("Filter by widget type (heading, button, image, etc.)"),
-      setting: z.string().optional().default("").describe("Setting key to search in"),
-      contains: z.string().optional().default("").describe("Text to search for in setting values"),
-      post_type: z.string().optional().default("any").describe("Limit to specific post type"),
-      per_page: z.number().optional().default(50).describe("Max results"),
+      site,
+      widget_type: widgetType,
+      setting: z.string().optional().describe("Setting key: alone, matches elements that have it; with contains, searches only that key"),
+      contains: z.string().optional().describe("Text to search for in string setting values"),
+      post_type: z.string().optional().describe("Limit to one post type (default any)"),
+      per_page: z.number().int().min(1).max(200).optional().describe("Max results (default 50, max 200)"),
     },
     async ({ site, widget_type, setting, contains, post_type, per_page }) => {
       const wp = forSite(site);
-      const params: Record<string, string | number> = { per_page };
-      if (widget_type) params.widget_type = widget_type;
-      if (setting) params.setting = setting;
-      if (contains) params.contains = contains;
-      if (post_type !== "any") params.post_type = post_type;
       const result = await wp.get<{
         results: Array<{
           post_id: number;
@@ -282,7 +274,16 @@ export function register(server: McpServer) {
         }>;
         total: number;
         posts_searched: number;
-      }>("/mcp/v1/elementor/search", params);
+      }>(
+        "/mcp/v1/elementor/search",
+        defined({
+          widget_type: widget_type || undefined,
+          setting: setting || undefined,
+          contains: contains || undefined,
+          post_type: post_type || undefined,
+          per_page,
+        })
+      );
       return jsonResult(result);
     }
   );

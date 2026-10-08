@@ -1,0 +1,62 @@
+{
+  "mcp_get_elementor_build": {
+    "method": "GET", "route": "/mcp/v1/elementor/posts/{id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-elementor-endpoint.php get_build (args fields)",
+    "server": ["fields"], "path": ["id"], "fields": ["fields"]
+  },
+  "mcp_get_elementor_flat": {
+    "method": "GET", "route": "/mcp/v1/elementor/posts/{id}/flat",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-elementor-endpoint.php get_flat (args widget_type,el_type,fields)",
+    "server": ["widget_type", "el_type", "fields"],
+    "path": ["id"],
+    "fields": ["widget_type", "el_type", "fields"]
+  },
+  "mcp_get_elementor_element": {
+    "method": "GET", "route": "/mcp/v1/elementor/posts/{id}/elements/{element_id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-elementor-endpoint.php get_element",
+    "server": [], "path": ["id", "element_id"]
+  },
+  "mcp_update_elementor_element": {
+    "method": "PUT", "route": "/mcp/v1/elementor/posts/{id}/elements/{element_id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-elementor-endpoint.php update_element (get_json_params: settings, widget_type, settings_mode)",
+    "server": ["settings", "widget_type", "settings_mode"],
+    "path": ["id", "element_id"],
+    "fields": ["settings", "widget_type", "settings_mode"]
+  },
+  "mcp_get_elementor_page_settings": {
+    "method": "GET", "route": "/mcp/v1/elementor/posts/{id}/settings",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-elementor-endpoint.php get_page_settings",
+    "server": [], "path": ["id"]
+  },
+  "mcp_update_elementor_page_settings": {
+    "method": "PUT", "route": "/mcp/v1/elementor/posts/{id}/settings",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-elementor-endpoint.php update_page_settings (get_json_params: settings)",
+    "server": ["settings"], "path": ["id"], "fields": ["settings"]
+  },
+  "mcp_list_elementor_templates": {
+    "method": "GET", "route": "/mcp/v1/elementor/templates",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-elementor-endpoint.php list_templates (args type)",
+    "server": ["type"], "fields": ["type"]
+  },
+  "mcp_get_elementor_conditions": {
+    "method": "GET", "route": "/mcp/v1/elementor/templates/{id}/conditions",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-elementor-endpoint.php get_conditions",
+    "server": [], "path": ["id"]
+  },
+  "mcp_get_elementor_kit": {
+    "method": "GET", "route": "/mcp/v1/elementor/kit",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-elementor-endpoint.php get_kit",
+    "server": []
+  },
+  "mcp_update_elementor_kit": {
+    "method": "PUT", "route": "/mcp/v1/elementor/kit",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-elementor-endpoint.php update_kit (get_json_params: settings)",
+    "server": ["settings"], "fields": ["settings"]
+  },
+  "mcp_search_elementor": {
+    "method": "GET", "route": "/mcp/v1/elementor/search",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-elementor-endpoint.php search_elements (args widget_type,setting,contains,post_type,per_page)",
+    "server": ["widget_type", "setting", "contains", "post_type", "per_page"],
+    "fields": ["widget_type", "setting", "contains", "post_type", "per_page"]
+  }
+}

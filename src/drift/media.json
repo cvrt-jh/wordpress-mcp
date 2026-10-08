@@ -1,0 +1,130 @@
+{
+  "wp_list_media": {
+    "method": "GET",
+    "route": "/wp/v2/media",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php get_items (posts collection params for attachment + media_type, mime_type; status inherit/private/trash)",
+    "server": [
+      "context",
+      "page",
+      "per_page",
+      "search",
+      "after",
+      "modified_after",
+      "author",
+      "author_exclude",
+      "before",
+      "modified_before",
+      "exclude",
+      "include",
+      "search_semantics",
+      "offset",
+      "order",
+      "orderby",
+      "search_columns",
+      "slug",
+      "status",
+      "parent",
+      "parent_exclude",
+      "media_type",
+      "mime_type"
+    ],
+    "fields": [
+      "page",
+      "per_page",
+      "search",
+      "after",
+      "modified_after",
+      "author",
+      "author_exclude",
+      "before",
+      "modified_before",
+      "exclude",
+      "include",
+      "search_semantics",
+      "offset",
+      "order",
+      "orderby",
+      "search_columns",
+      "slug",
+      "status",
+      "parent",
+      "parent_exclude",
+      "media_type",
+      "mime_type"
+    ],
+    "omitted": {
+      "context": "context: tool uses the default view context; the slimmed response (src/slim.ts) only reads view fields"
+    },
+    "response": []
+  },
+  "wp_get_media": {
+    "method": "GET",
+    "route": "/wp/v2/media/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php get_item (args context; no excerpt/password in the attachment schema)",
+    "server": [
+      "context"
+    ],
+    "path": [
+      "id"
+    ],
+    "omitted": {
+      "context": "context: tool uses the default view context; the slimmed response (src/slim.ts) only reads view fields"
+    }
+  },
+  "wp_update_media": {
+    "method": "PUT",
+    "route": "/wp/v2/media/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php update_item (args get_endpoint_args_for_item_schema EDITABLE)",
+    "server": [
+      "date",
+      "date_gmt",
+      "slug",
+      "status",
+      "title",
+      "author",
+      "featured_media",
+      "comment_status",
+      "ping_status",
+      "meta",
+      "template",
+      "alt_text",
+      "caption",
+      "description",
+      "post"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "date",
+      "date_gmt",
+      "slug",
+      "status",
+      "title",
+      "author",
+      "featured_media",
+      "comment_status",
+      "ping_status",
+      "meta",
+      "template",
+      "alt_text",
+      "caption",
+      "description",
+      "post"
+    ]
+  },
+  "wp_delete_media": {
+    "method": "DELETE",
+    "route": "/wp/v2/media/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php delete_item (args force; 501 without force unless MEDIA_TRASH)",
+    "server": [
+      "force"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "force"
+    ]
+  }
+}

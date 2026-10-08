@@ -1,0 +1,32 @@
+{
+  "mcp_get_health": {
+    "method": "GET", "route": "/mcp/v1/health",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-health-endpoint.php get_health (no args)",
+    "server": []
+  },
+  "mcp_get_debug_info": {
+    "method": "GET", "route": "/mcp/v1/health/debug",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-health-endpoint.php get_debug_info (no args)",
+    "server": []
+  },
+  "mcp_get_php_info": {
+    "method": "GET", "route": "/mcp/v1/health/php",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-health-endpoint.php get_php_info (no args)",
+    "server": []
+  },
+  "mcp_get_plugins_health": {
+    "method": "GET", "route": "/mcp/v1/health/plugins",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-health-endpoint.php get_plugins_health (no args)",
+    "server": []
+  },
+  "mcp_get_cron_status": {
+    "method": "GET", "route": "/mcp/v1/health/cron",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-health-endpoint.php get_cron_status (no args)",
+    "server": []
+  },
+  "mcp_run_cron": {
+    "method": "POST", "route": "/mcp/v1/health/cron/run",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-health-endpoint.php run_cron (args hook)",
+    "server": ["hook"], "fields": ["hook"]
+  }
+}

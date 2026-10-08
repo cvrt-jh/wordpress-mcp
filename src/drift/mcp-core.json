@@ -1,0 +1,32 @@
+{
+  "mcp_get_version": {
+    "method": "GET", "route": "/mcp/v1/core/version",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-core-endpoint.php get_version (no args)",
+    "server": []
+  },
+  "mcp_get_system_info": {
+    "method": "GET", "route": "/mcp/v1/core/system-info",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-core-endpoint.php get_system_info (no args)",
+    "server": []
+  },
+  "mcp_check_updates": {
+    "method": "POST", "route": "/mcp/v1/core/check-updates",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-core-endpoint.php check_updates (no args)",
+    "server": []
+  },
+  "mcp_update_core": {
+    "method": "POST", "route": "/mcp/v1/core/update",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-core-endpoint.php update_core (no args)",
+    "server": []
+  },
+  "mcp_flush_rewrite": {
+    "method": "POST", "route": "/mcp/v1/core/flush-rewrite",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-core-endpoint.php flush_rewrite_rules (no args)",
+    "server": []
+  },
+  "mcp_flush_cache": {
+    "method": "POST", "route": "/mcp/v1/core/flush-cache",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-core-endpoint.php flush_cache (no args)",
+    "server": []
+  }
+}

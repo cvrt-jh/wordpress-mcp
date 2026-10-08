@@ -1,0 +1,60 @@
+{
+  "acf_list_field_groups": {
+    "method": "GET", "route": "/mcp/v1/acf/field-groups",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-acf-endpoint.php list_field_groups",
+    "server": []
+  },
+  "acf_get_field_group": {
+    "method": "GET", "route": "/mcp/v1/acf/field-groups/{key}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-acf-endpoint.php get_field_group",
+    "server": [], "path": ["key"]
+  },
+  "acf_create_field_group": {
+    "method": "POST", "route": "/mcp/v1/acf/field-groups",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-acf-endpoint.php create_field_group (get_json_params: title,key,fields,location,position,style,hide_on_screen)",
+    "server": ["title", "key", "fields", "location", "position", "style", "hide_on_screen"],
+    "fields": ["title", "key", "fields", "location", "position", "style", "hide_on_screen"]
+  },
+  "acf_update_field_group": {
+    "method": "PUT", "route": "/mcp/v1/acf/field-groups/{key}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-acf-endpoint.php update_field_group ($allowed_keys title,location,menu_order,position,style,label_placement,instruction_placement,active,show_in_rest,hide_on_screen; plus fields)",
+    "server": ["title", "fields", "location", "menu_order", "position", "style", "label_placement", "instruction_placement", "active", "show_in_rest", "hide_on_screen"],
+    "path": ["key"],
+    "fields": ["title", "fields", "location", "menu_order", "position", "style", "label_placement", "instruction_placement", "active", "show_in_rest", "hide_on_screen"]
+  },
+  "acf_delete_field_group": {
+    "method": "DELETE", "route": "/mcp/v1/acf/field-groups/{key}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-acf-endpoint.php delete_field_group",
+    "server": [], "path": ["key"]
+  },
+  "acf_export_field_group": {
+    "method": "GET", "route": "/mcp/v1/acf/field-groups/{key}/export",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-acf-endpoint.php export_field_group",
+    "server": [], "path": ["key"]
+  },
+  "acf_import_field_groups": {
+    "method": "POST", "route": "/mcp/v1/acf/import",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-acf-endpoint.php import_field_groups (get_json_params: groups, or a bare top-level array)",
+    "server": ["groups"], "fields": ["groups"]
+  },
+  "acf_get_post_fields": {
+    "method": "GET", "route": "/mcp/v1/acf/posts/{post_id}/fields",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-acf-endpoint.php get_post_fields (args format)",
+    "server": ["format"], "path": ["post_id"], "fields": ["format"]
+  },
+  "acf_update_post_fields": {
+    "method": "POST", "route": "/mcp/v1/acf/posts/{post_id}/fields",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-acf-endpoint.php update_post_fields (get_json_params: fields)",
+    "server": ["fields"], "path": ["post_id"], "fields": ["fields"]
+  },
+  "acf_get_post_field": {
+    "method": "GET", "route": "/mcp/v1/acf/posts/{post_id}/fields/{field}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-acf-endpoint.php get_post_field (args format)",
+    "server": ["format"], "path": ["post_id", "field"], "fields": ["format"]
+  },
+  "acf_update_post_field": {
+    "method": "PUT", "route": "/mcp/v1/acf/posts/{post_id}/fields/{field}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-acf-endpoint.php update_post_field (get_json_params: value)",
+    "server": ["value"], "path": ["post_id", "field"], "fields": ["value"]
+  }
+}

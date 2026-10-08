@@ -1,0 +1,57 @@
+{
+  "mcp_list_menus": {
+    "method": "GET", "route": "/mcp/v1/menus",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-menus-endpoint.php list_menus",
+    "server": []
+  },
+  "mcp_get_menu_locations": {
+    "method": "GET", "route": "/mcp/v1/menus/locations",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-menus-endpoint.php get_locations",
+    "server": []
+  },
+  "mcp_get_menu": {
+    "method": "GET", "route": "/mcp/v1/menus/{id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-menus-endpoint.php get_menu",
+    "server": [], "path": ["id"]
+  },
+  "mcp_create_menu": {
+    "method": "POST", "route": "/mcp/v1/menus",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-menus-endpoint.php create_menu (args: name)",
+    "server": ["name"], "fields": ["name"]
+  },
+  "mcp_update_menu": {
+    "method": "PUT", "route": "/mcp/v1/menus/{id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-menus-endpoint.php update_menu (reads name)",
+    "server": ["name"], "path": ["id"], "fields": ["name"]
+  },
+  "mcp_delete_menu": {
+    "method": "DELETE", "route": "/mcp/v1/menus/{id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-menus-endpoint.php delete_menu",
+    "server": [], "path": ["id"]
+  },
+  "mcp_add_menu_item": {
+    "method": "POST", "route": "/mcp/v1/menus/{id}/items",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-menus-endpoint.php add_menu_item (args title,url,object_type,object_id,parent,position; callback also reads object)",
+    "server": ["title", "url", "object_type", "object", "object_id", "parent", "position"],
+    "path": ["menu_id"],
+    "fields": ["title", "url", "object_type", "object", "object_id", "parent", "position"]
+  },
+  "mcp_update_menu_item": {
+    "method": "PUT", "route": "/mcp/v1/menus/items/{item_id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-menus-endpoint.php update_menu_item ($changes map; type/object/object_id are NOT accepted)",
+    "server": ["title", "url", "parent", "position", "target", "classes", "xfn", "attr_title", "description", "status"],
+    "path": ["item_id"],
+    "fields": ["title", "url", "parent", "position", "target", "classes", "xfn", "attr_title", "description", "status"]
+  },
+  "mcp_delete_menu_item": {
+    "method": "DELETE", "route": "/mcp/v1/menus/items/{item_id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-menus-endpoint.php delete_menu_item",
+    "server": [], "path": ["item_id"]
+  },
+  "mcp_assign_menu_location": {
+    "method": "POST", "route": "/mcp/v1/menus/locations/assign",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-menus-endpoint.php assign_location (args menu_id, location)",
+    "server": ["menu_id", "location"],
+    "fields": ["menu_id", "location"]
+  }
+}

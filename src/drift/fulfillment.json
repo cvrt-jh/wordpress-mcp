@@ -1,0 +1,71 @@
+{
+  "fulfillment_get_settings": {
+    "method": "GET",
+    "route": "/mcp/fulfillment/v1/admin/settings",
+    "source": "cvrt-order-fulfillment 0.7.4 src/Admin/AdminController.php getSettings",
+    "server": []
+  },
+  "fulfillment_update_settings": {
+    "method": "POST",
+    "route": "/mcp/fulfillment/v1/admin/settings",
+    "source": "cvrt-order-fulfillment 0.7.4 src/Admin/AdminController.php postSettings -> src/Admin/Settings.php update/sanitize (defaults() keys; secrets keep on blank, '__clear' deletes)",
+    "server": [
+      "clickup_token",
+      "clickup_list_id",
+      "clickup_assignee_id",
+      "agent_token",
+      "webhook_secret",
+      "github_updater_token",
+      "slack_webhook_url",
+      "slack_bot_token",
+      "slack_channel_id"
+    ],
+    "fields": [
+      "clickup_token",
+      "clickup_list_id",
+      "clickup_assignee_id",
+      "agent_token",
+      "webhook_secret",
+      "github_updater_token",
+      "slack_webhook_url",
+      "slack_bot_token",
+      "slack_channel_id"
+    ]
+  },
+  "fulfillment_status": {
+    "method": "GET",
+    "route": "/mcp/fulfillment/v1/admin/status",
+    "source": "cvrt-order-fulfillment 0.7.4 src/Admin/AdminController.php status",
+    "server": []
+  },
+  "fulfillment_queue": {
+    "method": "GET",
+    "route": "/mcp/fulfillment/v1/admin/queue",
+    "source": "cvrt-order-fulfillment 0.7.4 src/Admin/AdminController.php queue",
+    "server": []
+  },
+  "fulfillment_reprint_job": {
+    "method": "POST",
+    "route": "/mcp/fulfillment/v1/admin/jobs/{id}/reprint",
+    "source": "cvrt-order-fulfillment 0.7.4 src/Admin/AdminController.php reprint",
+    "server": [],
+    "path": [
+      "job_id"
+    ]
+  },
+  "fulfillment_fulfill_order": {
+    "method": "POST",
+    "route": "/mcp/fulfillment/v1/admin/orders/{id}/fulfill",
+    "source": "cvrt-order-fulfillment 0.7.4 src/Admin/AdminController.php fulfill (force=true, audit-logged)",
+    "server": [],
+    "path": [
+      "order_id"
+    ]
+  },
+  "fulfillment_update_check": {
+    "method": "POST",
+    "route": "/mcp/fulfillment/v1/admin/update-check",
+    "source": "cvrt-order-fulfillment 0.7.4 src/Admin/AdminController.php updateCheck -> Updater::checkNow (no update-apply route exists)",
+    "server": []
+  }
+}

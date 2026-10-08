@@ -1,0 +1,264 @@
+{
+  "wp_list_posts": {
+    "method": "GET",
+    "route": "/wp/v2/posts",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php get_items (args get_collection_params, post type post)",
+    "server": [
+      "context",
+      "page",
+      "per_page",
+      "search",
+      "after",
+      "modified_after",
+      "author",
+      "author_exclude",
+      "before",
+      "modified_before",
+      "exclude",
+      "include",
+      "search_semantics",
+      "offset",
+      "order",
+      "orderby",
+      "search_columns",
+      "slug",
+      "status",
+      "tax_relation",
+      "categories",
+      "categories_exclude",
+      "tags",
+      "tags_exclude",
+      "sticky",
+      "ignore_sticky",
+      "format"
+    ],
+    "fields": [
+      "page",
+      "per_page",
+      "search",
+      "after",
+      "modified_after",
+      "author",
+      "author_exclude",
+      "before",
+      "modified_before",
+      "exclude",
+      "include",
+      "search_semantics",
+      "offset",
+      "order",
+      "orderby",
+      "search_columns",
+      "slug",
+      "status",
+      "tax_relation",
+      "categories",
+      "categories_exclude",
+      "tags",
+      "tags_exclude",
+      "sticky",
+      "ignore_sticky",
+      "format"
+    ],
+    "omitted": {
+      "context": "context: tool uses the default view context; the slimmed response (src/slim.ts) only reads view fields"
+    },
+    "response": []
+  },
+  "wp_get_post": {
+    "method": "GET",
+    "route": "/wp/v2/posts/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php get_item (args context, excerpt_length, password)",
+    "server": [
+      "context",
+      "excerpt_length",
+      "password"
+    ],
+    "path": [
+      "id"
+    ],
+    "constants": [
+      "context"
+    ],
+    "local": {
+      "content": "client side: whether to copy content.raw into the slimmed result"
+    },
+    "omitted": {
+      "excerpt_length": "only shapes the auto-generated rendered excerpt; slim.ts strips and truncates the excerpt to 200 chars anyway",
+      "password": "tool reads in edit context as the authenticated editor, where the post password does not gate content"
+    }
+  },
+  "wp_create_post": {
+    "method": "POST",
+    "route": "/wp/v2/posts",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php create_item (args get_endpoint_args_for_item_schema CREATABLE)",
+    "server": [
+      "date",
+      "date_gmt",
+      "slug",
+      "status",
+      "password",
+      "title",
+      "content",
+      "author",
+      "excerpt",
+      "featured_media",
+      "comment_status",
+      "ping_status",
+      "meta",
+      "template",
+      "format",
+      "sticky",
+      "categories",
+      "tags"
+    ],
+    "fields": [
+      "date",
+      "date_gmt",
+      "slug",
+      "status",
+      "password",
+      "title",
+      "content",
+      "author",
+      "excerpt",
+      "featured_media",
+      "comment_status",
+      "ping_status",
+      "meta",
+      "template",
+      "format",
+      "sticky",
+      "categories",
+      "tags"
+    ]
+  },
+  "wp_update_post": {
+    "method": "PUT",
+    "route": "/wp/v2/posts/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php update_item (args get_endpoint_args_for_item_schema EDITABLE)",
+    "server": [
+      "date",
+      "date_gmt",
+      "slug",
+      "status",
+      "password",
+      "title",
+      "content",
+      "author",
+      "excerpt",
+      "featured_media",
+      "comment_status",
+      "ping_status",
+      "meta",
+      "template",
+      "format",
+      "sticky",
+      "categories",
+      "tags"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "date",
+      "date_gmt",
+      "slug",
+      "status",
+      "password",
+      "title",
+      "content",
+      "author",
+      "excerpt",
+      "featured_media",
+      "comment_status",
+      "ping_status",
+      "meta",
+      "template",
+      "format",
+      "sticky",
+      "categories",
+      "tags"
+    ]
+  },
+  "wp_delete_post": {
+    "method": "DELETE",
+    "route": "/wp/v2/posts/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php delete_item (args force)",
+    "server": [
+      "force"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "force"
+    ]
+  },
+  "wp_search_posts": {
+    "method": "GET",
+    "route": "/wp/v2/posts",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php get_items",
+    "server": [
+      "context",
+      "page",
+      "per_page",
+      "search",
+      "after",
+      "modified_after",
+      "author",
+      "author_exclude",
+      "before",
+      "modified_before",
+      "exclude",
+      "include",
+      "search_semantics",
+      "offset",
+      "order",
+      "orderby",
+      "search_columns",
+      "slug",
+      "status",
+      "tax_relation",
+      "categories",
+      "categories_exclude",
+      "tags",
+      "tags_exclude",
+      "sticky",
+      "ignore_sticky",
+      "format"
+    ],
+    "fields": [
+      "search",
+      "per_page",
+      "page"
+    ],
+    "omitted": {
+      "context": "context: tool uses the default view context; the slimmed response (src/slim.ts) only reads view fields",
+      "after": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "modified_after": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "author": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "author_exclude": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "before": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "modified_before": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "exclude": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "include": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "search_semantics": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "offset": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "order": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "orderby": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "search_columns": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "slug": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "status": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "tax_relation": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "categories": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "categories_exclude": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "tags": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "tags_exclude": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "sticky": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "ignore_sticky": "shortcut tool for a keyword search; wp_list_posts exposes this filter",
+      "format": "shortcut tool for a keyword search; wp_list_posts exposes this filter"
+    },
+    "response": []
+  }
+}

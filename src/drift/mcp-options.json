@@ -1,0 +1,27 @@
+{
+  "mcp_list_options": {
+    "method": "GET", "route": "/mcp/v1/options",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-options-endpoint.php list_options (args prefix, per_page)",
+    "server": ["prefix", "per_page"], "fields": ["prefix", "per_page"]
+  },
+  "mcp_get_option": {
+    "method": "GET", "route": "/mcp/v1/options/{key}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-options-endpoint.php get_option (path key only)",
+    "server": [], "path": ["key"]
+  },
+  "mcp_set_option": {
+    "method": "POST", "route": "/mcp/v1/options/{key}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-options-endpoint.php set_option (args value, autoload; key is the path; no allow-list, response value masked by Cvrt_MCPE_Secrets)",
+    "server": ["value", "autoload"], "path": ["key"], "fields": ["value", "autoload"]
+  },
+  "mcp_delete_option": {
+    "method": "DELETE", "route": "/mcp/v1/options/{key}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-options-endpoint.php delete_option (path key only)",
+    "server": [], "path": ["key"]
+  },
+  "mcp_bulk_get_options": {
+    "method": "POST", "route": "/mcp/v1/options-bulk",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-options-endpoint.php bulk_get_options (args keys)",
+    "server": ["keys"], "fields": ["keys"]
+  }
+}

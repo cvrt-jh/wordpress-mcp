@@ -48,11 +48,14 @@ export function register(server: McpServer) {
 
   server.tool(
     "fields_update_settings",
-    "Update cvrt-fields settings. github_token is write-only and stored encrypted; a blank or omitted token keeps the stored one. clear_github_token: true deletes it.",
+    "Update cvrt-fields settings. github_token is write-only and stored encrypted; a blank or omitted token keeps the stored one. clear_github_token: true deletes it. Returns the settings as fields_get_settings does (token as { set }).",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      github_token: z.string().optional(),
-      clear_github_token: z.boolean().optional(),
+      github_token: z
+        .string()
+        .optional()
+        .describe("GitHub token for plugin updates; write-only, stored encrypted, blank keeps the stored one"),
+      clear_github_token: z.boolean().optional().describe("true deletes the stored token (wins over github_token)"),
     },
     async ({ site, ...args }) => {
       const wp = forSite(site);
@@ -113,7 +116,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "fields_create_definition",
-    "Create a definition (field group, post type, taxonomy or options page). Fails with 409 when the key exists.",
+    "Create a definition (field group, post type, taxonomy or options page). The body is the definition itself; omitted keys take the kind's defaults, and a missing key is generated (group_..., post_type_..., taxonomy_..., ui_options_page_...). Fails with 409 when the key exists, 400 when it does not validate. Returns the stored definition (201).",
     { site: z.string().describe("Site id (see list_sites)"), kind, definition },
     async ({ site, kind, definition }) => {
       const wp = forSite(site);
@@ -123,7 +126,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "fields_update_definition",
-    "Replace a definition. 409 cvrt_fields_json_shadowed means a read-only JSON file still overrides the database copy.",
+    "Replace a definition as a whole: omitted keys fall back to the kind's defaults (it is not a merge, so send the full definition from fields_get_definition with your changes). The key always comes from the path; a key in the body is ignored. 404 when it does not exist, 409 cvrt_fields_defined_in_code for a PHP definition, 409 cvrt_fields_json_shadowed when a read-only JSON file still overrides the database copy. Returns the stored definition.",
     { site: z.string().describe("Site id (see list_sites)"), kind, key, definition },
     async ({ site, kind, key, definition }) => {
       const wp = forSite(site);

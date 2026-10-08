@@ -9,7 +9,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
 import { forSite } from "../client.js";
-import { jsonResult } from "../types.js";
+import { defined, jsonResult } from "../types.js";
 
 const NS = "/mcp/legal/v1";
 
@@ -23,14 +23,16 @@ const dateSchema = z
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .describe("YYYY-MM-DD");
 
+const level = z.number().int().min(2).max(3).describe("Heading level, 2 (H2) or 3 (H3); default 2");
+
 const sectionSchema = z.object({
   slug: z
     .string()
     .optional()
-    .describe("Stable slug; derived from the heading when omitted"),
-  heading: z.string(),
-  body: z.string().describe("HTML body"),
-  level: z.number().optional().describe("2 or 3, default 2"),
+    .describe("Stable slug; derived from the heading when omitted, de-duplicated against the other sections"),
+  heading: z.string().describe("Section heading (plain text)"),
+  body: z.string().describe("HTML body, filtered through wp_kses_post"),
+  level: level.optional(),
 });
 
 const generatedDoc = z
@@ -39,10 +41,53 @@ const generatedDoc = z
 
 const flags = z.record(z.boolean());
 
-/** Drop the keys a caller left out, so the plugin's merge keeps their values. */
-function given(args: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(args).filter(([, v]) => v !== undefined));
+/** Tool keys of the accessibility panel (Cvrt_Legal_Accessibility::tools()). */
+const A11Y_TOOLS = [
+  "bigger-text",
+  "bigger-line-height",
+  "text-align",
+  "readable-font",
+  "grayscale",
+  "contrast",
+  "highlight-links",
+  "focus-outline",
+  "reading-mask",
+  "hide-images",
+  "pause-animations",
+  "page-structure",
+  "sitemap",
+] as const;
+
+/** Markup repair rule keys (Cvrt_Legal_Repair::rules(), cvrt-legal 0.9.0+). */
+const REPAIR_RULES = [
+  "link-names",
+  "image-alt",
+  "iframe-title",
+  "form-labels",
+  "skip-link",
+  "lang",
+  "zoom",
+  "new-tab",
+  "duplicate-ids",
+] as const;
+
+/**
+ * A strict {key: boolean} map over a fixed key set: every key optional (the
+ * plugin merges, an omitted key keeps its value), an unknown key refused here
+ * because the plugin would silently ignore it.
+ */
+function switches(keys: readonly string[]) {
+  return z.object(Object.fromEntries(keys.map((k) => [k, z.boolean().optional()]))).strict();
 }
+
+/** Empty (clears the field) or the given pattern. */
+const idOrEmpty = (re: RegExp, example: string) =>
+  z.string().regex(new RegExp(`^(${re.source})?$`), `must look like ${example}, or be empty to clear`);
+
+const serviceNames = z
+  .array(z.string().max(80))
+  .max(20)
+  .describe("Plain-text service names, at most 20 of 80 characters; tags are stripped, duplicates dropped");
 
 /**
  * The body of a large import: inline, or read from a local JSON file. A
@@ -50,17 +95,17 @@ function given(args: Record<string, unknown>): Record<string, unknown> {
  * file is what websites/bin/legal-v4 builds anyway.
  */
 async function jsonBody(
-  inline: Record<string, unknown> | undefined,
-  file: string | undefined,
+  inline: Record<string, unknown> | null | undefined,
+  file: string | null | undefined,
   name: string
 ): Promise<Record<string, unknown>> {
-  if (inline !== undefined && file !== undefined) {
+  if (inline != null && file != null) {
     throw new Error(`Give ${name} or ${name}_file, not both`);
   }
-  if (inline !== undefined) {
+  if (inline != null) {
     return inline;
   }
-  if (file === undefined) {
+  if (file == null) {
     throw new Error(`Give ${name} or ${name}_file`);
   }
   if (!file.endsWith(".json")) {
@@ -112,17 +157,17 @@ export function register(server: McpServer) {
 
   server.tool(
     "legal_put_document",
-    "Replace a legal document. Sections are ordered; omit slug to derive it from the heading. The plugin ships no legal prose - it stores and renders what it is given.",
+    "Replace a whole legal document (every section not listed is gone). Sections are ordered; omit slug to derive it from the heading. The linked page's post_content is rewritten at once. The plugin ships no legal prose - it stores and renders what it is given. Returns { saved: true }.",
     {
       site,
       doc,
-      title: z.string().describe("Document title, rendered as the H1"),
+      title: z.string().optional().describe("Document title, rendered as the H1; defaults to the document type's label (e.g. Impressum)"),
       sections: z.array(sectionSchema).describe("Ordered sections"),
     },
     async ({ site, doc, title, sections }) => {
       const wp = forSite(site);
       return jsonResult(
-        await wp.put<Record<string, unknown>>(`${NS}/documents/${doc}`, { title, sections })
+        await wp.put<Record<string, unknown>>(`${NS}/documents/${doc}`, defined({ title, sections }))
       );
     }
   );
@@ -173,20 +218,18 @@ export function register(server: McpServer) {
 
   server.tool(
     "legal_add_section",
-    "Append a section to a legal document. Returns the resolved slug, which is what shortcodes address.",
+    "Append a section to a legal document (creates the document if it is still empty). On a generated document the section is kept across regenerations. Returns { slug }, the resolved slug, which is what shortcodes address.",
     {
       site,
       doc,
-      heading: z.string(),
-      body: z.string().describe("HTML body"),
-      level: z.number().optional().describe("2 or 3, default 2"),
-      slug: z.string().optional(),
+      heading: z.string().describe("Section heading (plain text)"),
+      body: z.string().describe("HTML body, filtered through wp_kses_post"),
+      level: level.optional(),
+      slug: z.string().optional().describe("Stable slug; derived from the heading when omitted, de-duplicated against existing sections"),
     },
     async ({ site, doc, ...args }) => {
       const wp = forSite(site);
-      const body = Object.fromEntries(
-        Object.entries(args).filter(([, v]) => v !== undefined)
-      );
+      const body = defined(args);
       return jsonResult(
         await wp.post<Record<string, unknown>>(`${NS}/documents/${doc}/sections`, body)
       );
@@ -200,15 +243,13 @@ export function register(server: McpServer) {
       site,
       doc,
       slug: z.string().describe("Section slug"),
-      heading: z.string().optional(),
-      body: z.string().optional(),
-      level: z.number().optional(),
+      heading: z.string().optional().describe("New heading (plain text)"),
+      body: z.string().optional().describe("New HTML body, filtered through wp_kses_post"),
+      level: level.optional(),
     },
     async ({ site, doc, slug, ...args }) => {
       const wp = forSite(site);
-      const body = Object.fromEntries(
-        Object.entries(args).filter(([, v]) => v !== undefined)
-      );
+      const body = defined(args);
       return jsonResult(
         await wp.put<Record<string, unknown>>(`${NS}/documents/${doc}/sections/${slug}`, body)
       );
@@ -229,7 +270,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "legal_get_consent",
-    "Get the cookie consent banner configuration.",
+    "Get the cookie consent banner configuration: enabled, gtm_id, loader_url, ga4_id, ahrefs_key, ads_id, gtm_services { analytics, marketing }, privacy_page, imprint_page, log_enabled, backdrop. Change it with legal_put_consent.",
     { site },
     async ({ site }) => {
       const wp = forSite(site);
@@ -239,44 +280,65 @@ export function register(server: McpServer) {
 
   server.tool(
     "legal_put_consent",
-    "Configure the consent banner and every tracking credential the site uses. Nothing is handed to the browser until the visitor accepts - this plugin owns GTM, GA4 and Ahrefs Web Analytics precisely because it owns the gate. Search-engine verification meta tags are NOT here; those belong to cvrt-seo-manager because they fire no request.",
+    "Configure the consent banner and every tracking credential the site uses. Merges: only the keys given change, an omitted key keeps its stored value, an empty string clears an id. Nothing is handed to the browser until the visitor accepts - this plugin owns GTM, GA4, Google Ads and Ahrefs Web Analytics precisely because it owns the gate. Search-engine verification meta tags are NOT here; those belong to cvrt-seo-manager because they fire no request. Returns { saved: true }; read the result back with legal_get_consent.",
     {
       site,
-      enabled: z.boolean(),
-      gtm_id: z.string().optional().describe("GTM-XXXXXXX"),
+      enabled: z
+        .boolean()
+        .optional()
+        .describe("Banner on/off. Off also switches every consent gate off, so nothing tracked loads at all"),
+      gtm_id: idOrEmpty(/GTM-[A-Z0-9]+/, "GTM-XXXXXXX")
+        .optional()
+        .describe("GTM container id GTM-XXXXXXX, loaded only after consent; empty clears it"),
       loader_url: z
         .string()
         .optional()
         .describe(
           "Optional first-party GTM loader URL. Leave empty to load straight from googletagmanager.com (the default on all our sites)"
         ),
-      ga4_id: z
-        .string()
+      ga4_id: idOrEmpty(/G-[A-Z0-9]+/, "G-XXXXXXXXXX")
         .optional()
         .describe(
-          "GA4 measurement id G-XXXXXXXXXX, for a site running GA4 WITHOUT a GTM container. Ignored when gtm_id is set, since loading both double-counts every hit."
+          "GA4 measurement id G-XXXXXXXXXX. Without a GTM container gtag.js loads it after Statistik consent; with a container it names the property the container loads, which the banner keeps off until Statistik consent. Empty clears it."
         ),
-      ahrefs_key: z
-        .string()
+      ads_id: idOrEmpty(/AW-[0-9]+/, "AW-123456789")
         .optional()
         .describe(
-          "Ahrefs Web Analytics data-key. Cookieless but still a third-party request, so it is consent-gated and must be named in the Datenschutz text before enabling."
+          "Google Ads conversion id AW-123456789 (cvrt-legal 0.10.0+). On a GA4-direct site (no GTM container) gtag configures it after Marketing consent; with a container it only documents the account (the container fires Ads) and makes the banner list Google Ads under Marketing. Empty clears it."
         ),
-      privacy_page: z.number().optional().describe("Page id of the Datenschutz page"),
-      imprint_page: z.number().optional().describe("Page id of the Impressum page"),
+      gtm_services: z
+        .object({
+          analytics: serviceNames.describe("Services the container fires under Statistik, e.g. [\"Microsoft Clarity\"]"),
+          marketing: serviceNames.describe("Services the container fires under Marketing, e.g. [\"Meta Pixel\", \"LinkedIn Insight Tag\"]"),
+        })
+        .strict()
+        .optional()
+        .describe(
+          "What the GTM container fires, per category, for the banner's service list only (cvrt-legal 0.10.0+); what the container actually runs is configured in GTM. Replaces both lists as a whole: send [] to empty a category. Only shown while gtm_id is set."
+        ),
+      ahrefs_key: idOrEmpty(/[A-Za-z0-9_\/+-]+={0,2}/, "an Ahrefs Web Analytics data-key")
+        .optional()
+        .describe(
+          "Ahrefs Web Analytics data-key. Cookieless but still a third-party request, so it is consent-gated and must be named in the Datenschutz text before enabling. Empty clears it."
+        ),
+      privacy_page: z.number().int().nonnegative().optional().describe("Page id of the Datenschutz page (banner link); 0 = none"),
+      imprint_page: z.number().int().nonnegative().optional().describe("Page id of the Impressum page (banner link); 0 = none"),
       log_enabled: z
         .boolean()
         .optional()
         .describe(
-          "Turn the consent decision log on or off. Stays off (the default) until a 'einwilligungsnachweis' section exists in the Datenschutz document - set it only after that section is in place."
+          "Turn the consent decision log on or off. Stays off (the default) until a 'einwilligungsnachweis' section exists in the Datenschutz document - set it only after that section is in place. Switching it rewrites a generated Datenschutz."
+        ),
+      backdrop: z
+        .boolean()
+        .optional()
+        .describe(
+          "Dim and block the page behind the banner until the visitor decides (default true). Never applied on the privacy, imprint or any linked legal page."
         ),
     },
     async ({ site, ...args }) => {
       const wp = forSite(site);
-      const body = Object.fromEntries(
-        Object.entries(args).filter(([, v]) => v !== undefined)
-      );
-      return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/consent`, body));
+      return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/consent`, defined(args)));
     }
   );
 
@@ -292,17 +354,23 @@ export function register(server: McpServer) {
 
   server.tool(
     "legal_put_theme",
-    "Set the banner theme preset and/or individual CSS custom properties. Only --cvrt-consent-* properties are accepted.",
+    "Set the banner theme preset and/or individual CSS custom properties. All or nothing: one invalid name or value rejects the whole request (400, names in data.invalid). Returns { saved: true }.",
     {
       site,
-      preset: z.string().optional().describe("default or dark"),
-      vars: z.record(z.string()).optional().describe("--cvrt-consent-* overrides"),
+      preset: z.enum(["default", "dark"]).optional().describe("Theme preset; an unknown preset renders as default"),
+      vars: z
+        .record(
+          z.string().regex(/^--cvrt-consent-[a-z-]+$/, "must be a --cvrt-consent-* property"),
+          z.string().max(200)
+        )
+        .optional()
+        .describe(
+          "--cvrt-consent-* overrides (bg, fg, accent, radius, font, shadow, link, title, backdrop). REPLACES the stored overrides as a whole: send every override you want to keep, {} clears them. Values are plain CSS (no ; { } < \\ or comments, max 200 chars)."
+        ),
     },
     async ({ site, ...args }) => {
       const wp = forSite(site);
-      const body = Object.fromEntries(
-        Object.entries(args).filter(([, v]) => v !== undefined)
-      );
+      const body = defined(args);
       return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/consent/theme`, body));
     }
   );
@@ -334,17 +402,15 @@ export function register(server: McpServer) {
 
   server.tool(
     "legal_consent_log_stats",
-    "Aggregate consent decision counts by action and banner_version over a day range (both from and to are optional, default the last 30 days; the range cannot exceed 366 days). Requires manage_options. Logging itself stays off until legal_put_consent's log_enabled is set, which should only happen after the Datenschutz document has an 'einwilligungsnachweis' section describing it. Requires cvrt-legal 0.5.0+.",
+    "Aggregate consent decision counts by action and banner_version over a day range [from, to) (both optional, default the last 30 days including today; at most 366 days). Returns { from, to, rows: [{ action, banner_version, count }] }. Requires manage_options. Logging itself stays off until legal_put_consent's log_enabled is set, which should only happen after the Datenschutz document has an 'einwilligungsnachweis' section describing it. Requires cvrt-legal 0.5.0+.",
     {
       site,
-      from: dateSchema.optional().describe("Range start, inclusive. Defaults to 30 days before to."),
-      to: dateSchema.optional().describe("Range end, inclusive. Defaults to today."),
+      from: dateSchema.optional().describe("First day counted (inclusive). Defaults to 30 days before to; must be before to."),
+      to: dateSchema.optional().describe("First day NOT counted (exclusive, the range is [from, to)). Defaults to tomorrow, so today is included."),
     },
     async ({ site, ...args }) => {
       const wp = forSite(site);
-      const params = Object.fromEntries(
-        Object.entries(args).filter(([, v]) => v !== undefined)
-      ) as Record<string, string>;
+      const params = defined(args) as Record<string, string>;
       return jsonResult(
         await wp.get<Record<string, unknown>>(`${NS}/consent/log/stats`, params)
       );
@@ -356,14 +422,12 @@ export function register(server: McpServer) {
     "Export the raw consent decision log as CSV for a day range (same optional from/to rules as legal_consent_log_stats). Returns { filename, csv }; the csv is the full file text, ready to write out as-is. Requires manage_options. Logging itself stays off until legal_put_consent's log_enabled is set, which should only happen after the Datenschutz document has an 'einwilligungsnachweis' section describing it. Requires cvrt-legal 0.5.0+.",
     {
       site,
-      from: dateSchema.optional().describe("Range start, inclusive. Defaults to 30 days before to."),
-      to: dateSchema.optional().describe("Range end, inclusive. Defaults to today."),
+      from: dateSchema.optional().describe("First day counted (inclusive). Defaults to 30 days before to; must be before to."),
+      to: dateSchema.optional().describe("First day NOT counted (exclusive, the range is [from, to)). Defaults to tomorrow, so today is included."),
     },
     async ({ site, ...args }) => {
       const wp = forSite(site);
-      const params = Object.fromEntries(
-        Object.entries(args).filter(([, v]) => v !== undefined)
-      ) as Record<string, string>;
+      const params = defined(args) as Record<string, string>;
       return jsonResult(
         await wp.get<Record<string, unknown>>(`${NS}/consent/log/export`, params)
       );
@@ -371,15 +435,18 @@ export function register(server: McpServer) {
   );
   server.tool(
     "legal_update_settings",
-    "Update cvrt-legal settings. github_token (PUC auto-updates on a private repo) is write-only: a blank value keeps the stored one. required_override forces a document required or not ({agb: false}).",
+    "Update cvrt-legal settings. github_token (PUC auto-updates on a private repo) is write-only: a blank value keeps the stored one. required_override forces a document required or not ({agb: false}). Returns the settings as legal_get_settings does (secrets as { set }).",
     {
       site,
-      github_token: z.string().optional().describe("GitHub token for plugin updates; blank keeps the stored one"),
-      required_override: z.record(z.boolean()).optional().describe("doc => required, overriding the WooCommerce rule"),
+      github_token: z.string().optional().describe("GitHub token for plugin updates (write-only, never returned); blank keeps the stored one"),
+      required_override: z
+        .record(z.enum(["impressum", "datenschutz", "agb", "widerruf", "barrierefreiheit"]), z.boolean())
+        .optional()
+        .describe("doc => required, overriding the built-in rule (shop documents are required while WooCommerce is active). REPLACES the stored map as a whole; {} removes every override."),
     },
     async ({ site, ...args }) => {
       const wp = forSite(site);
-      return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/settings`, given(args)));
+      return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/settings`, defined(args)));
     }
   );
 
@@ -395,7 +462,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "legal_put_facts",
-    "Set Impressum fields. Merges: only the keys given change; an empty string clears a field. Regenerates every generated document. Requires cvrt-legal 0.7.0+.",
+    "Set Impressum fields. Merges: only the keys given change; an empty string clears a field. An unknown key, a value outside a select field's options or an invalid email is refused (400); a checkbox field stores \"ja\" or empty. Needs an imported Impressum library (409 otherwise). Regenerates every generated document and returns the new state as legal_get_facts does. Requires cvrt-legal 0.7.0+.",
     {
       site,
       facts: z.record(z.string()).describe("field key => value, keys as legal_get_facts lists them"),
@@ -418,17 +485,20 @@ export function register(server: McpServer) {
 
   server.tool(
     "legal_put_generator",
-    "Tick or untick modules and options, then regenerate the document (the Datenschutz tab over the API). Merges into the stored selection; unknown module or option keys are refused. Sections tied to a switch (Einwilligungsnachweis, Barrierefreiheits-Werkzeug) follow that switch and are not ticked here. Requires cvrt-legal 0.7.0+.",
+    "Tick or untick modules and options, then regenerate the document (the Datenschutz tab over the API). Merges into the stored selection; unknown module or option keys are refused (400). Needs the library imported (409), and for datenschutz the required Impressum facts filled (409). Returns the new state as legal_get_generator does. Sections tied to a switch (Einwilligungsnachweis, Barrierefreiheits-Werkzeug) follow that switch and are not ticked here. Requires cvrt-legal 0.7.0+.",
     {
       site,
       doc: generatedDoc,
-      enabled: flags.optional().describe("module key => on/off"),
-      options: z.record(flags).optional().describe("module key => { option key => on/off }"),
-      keep: z.array(z.string()).optional().describe("slugs of sections added through the API that survive regeneration"),
+      enabled: flags.optional().describe("module (section) key => on/off; merged into the stored selection"),
+      options: z.record(flags).optional().describe("module key => { option key => on/off }; merged into the stored selection"),
+      keep: z
+        .array(z.string())
+        .optional()
+        .describe("Slugs of sections added through the API that survive regeneration. REPLACES the stored list; omit to keep it"),
     },
     async ({ site, doc, ...args }) => {
       const wp = forSite(site);
-      return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/generator/${doc}`, given(args)));
+      return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/generator/${doc}`, defined(args)));
     }
   );
 
@@ -480,12 +550,17 @@ export function register(server: McpServer) {
 
   server.tool(
     "legal_put_social",
-    "Switch social networks and set their profile URLs (https only), then rewrite the Datenschutz social-media section; with nothing on, the section is removed. Requires cvrt-legal 0.6.0+.",
+    "Switch social networks and set their profile URLs (plain https only), then rewrite the Datenschutz social-media section; with nothing on, the section is removed. NOT a merge: every network missing from networks is switched off, so always send the full set you want on. Needs the modules imported and a Datenschutz document (409 otherwise). Returns the new state as legal_get_social does. Requires cvrt-legal 0.6.0+.",
     {
       site,
       networks: z
-        .record(z.object({ enabled: z.boolean(), urls: z.array(z.string()).optional() }))
-        .describe("network key => { enabled, urls }"),
+        .record(
+          z.object({
+            enabled: z.boolean().describe("Network on/off; on needs at least one URL"),
+            urls: z.array(z.string()).optional().describe("Profile URLs, plain https; blanks are dropped"),
+          })
+        )
+        .describe("network key (as legal_get_social lists under available) => { enabled, urls }"),
     },
     async ({ site, networks }) => {
       const wp = forSite(site);
@@ -533,14 +608,21 @@ export function register(server: McpServer) {
     "Configure the self-hosted accessibility tool (replaces the Ally widget; no third-party request, needs no consent). Merges: omitted keys keep their value. Switching enabled rewrites a generated Datenschutz (section Barrierefreiheits-Werkzeug). Returns the stored settings. Requires cvrt-legal 0.8.0+.",
     {
       site,
-      enabled: z.boolean().optional(),
-      position: z.enum(["bottom-right", "bottom-left", "top-right", "top-left"]).optional(),
-      color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe("Launcher colour, #rrggbb"),
-      tools: flags.optional().describe("tool key => on/off (see available_tools in legal_get_accessibility)"),
-      repairs: flags
+      enabled: z.boolean().optional().describe("Show the accessibility panel (default off)"),
+      position: z
+        .enum(["bottom-right", "bottom-left", "top-right", "top-left"])
+        .optional()
+        .describe("Launcher position, default bottom-right"),
+      color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().describe("Launcher colour, #rrggbb (default #1d4ed8)"),
+      tools: switches(A11Y_TOOLS)
         .optional()
         .describe(
-          "Markup repair rule => on/off (cvrt-legal 0.9.0+): link-names, image-alt, iframe-title, form-labels, skip-link, lang, zoom, new-tab, duplicate-ids. Server-side, never invents or overwrites; see available_repairs"
+          `Panel tool => on/off, merged (omitted tools keep their value). Keys: ${A11Y_TOOLS.join(", ")}. All on by default except sitemap. See available_tools in legal_get_accessibility`
+        ),
+      repairs: switches(REPAIR_RULES)
+        .optional()
+        .describe(
+          `Markup repair rule => on/off, merged (omitted rules keep their value; all off by default). cvrt-legal 0.9.0+. Keys: ${REPAIR_RULES.join(", ")}. Server-side, works with or without the panel, never invents or overwrites; duplicate-ids only reports. See available_repairs in legal_get_accessibility`
         ),
       statement_page: z.number().int().nonnegative().optional().describe("Page id of the accessibility statement; 0 = none"),
       statement_url: z.string().optional().describe("https URL of an external statement; the page wins"),
@@ -548,7 +630,7 @@ export function register(server: McpServer) {
     },
     async ({ site, ...args }) => {
       const wp = forSite(site);
-      return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/accessibility`, given(args)));
+      return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/accessibility`, defined(args)));
     }
   );
 

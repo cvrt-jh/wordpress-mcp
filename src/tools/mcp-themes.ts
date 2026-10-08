@@ -11,18 +11,25 @@ export function register(server: McpServer) {
   // Search WordPress.org themes
   server.tool(
     "mcp_search_themes",
-    "Search WordPress.org theme repository",
+    "Search the WordPress.org theme repository. Returns { total, themes: [{ name, slug, version, author, rating, description }] }.",
     {
       site: z.string().describe("Site id (see list_sites)"),
       search: z.string().describe("Search query"),
-      per_page: z.number().optional().default(10).describe("Results per page"),
+      per_page: z.number().int().positive().optional().default(10).describe("Results per page (default 10)"),
     },
     async ({ site, search, per_page }) => {
       const wp = forSite(site);
-      const result = await wp.get<{ total: number; themes: unknown[] }>(
-        "/mcp/v1/themes/search",
-        { search, per_page }
-      );
+      const result = await wp.get<{
+        total: number;
+        themes: Array<{
+          name: string;
+          slug: string;
+          version: string;
+          author: string;
+          rating: number;
+          description: string;
+        }>;
+      }>("/mcp/v1/themes/search", { search, per_page });
       return jsonResult(result);
     }
   );
@@ -34,14 +41,17 @@ export function register(server: McpServer) {
     {
       site: z.string().describe("Site id (see list_sites)"),
       slug: z.string().describe("Theme slug from WordPress.org"),
-      activate: z.boolean().optional().default(false).describe("Activate after install"),
+      activate: z.boolean().optional().default(false).describe("Switch to the theme after install (default false)"),
     },
     async ({ site, slug, activate }) => {
       const wp = forSite(site);
-      const result = await wp.post<{ installed: boolean; activated: boolean; stylesheet: string }>(
-        "/mcp/v1/themes/install",
-        { slug, activate }
-      );
+      const result = await wp.post<{
+        installed: boolean;
+        activated: boolean;
+        stylesheet: string;
+        name: string;
+        version: string;
+      }>("/mcp/v1/themes/install", { slug, activate });
       return jsonResult(result);
     }
   );
@@ -52,7 +62,7 @@ export function register(server: McpServer) {
     "Update a single theme to latest version",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      stylesheet: z.string().describe("Theme folder name"),
+      stylesheet: z.string().describe("Theme stylesheet (folder name)"),
     },
     async ({ site, stylesheet }) => {
       const wp = forSite(site);
@@ -73,7 +83,7 @@ export function register(server: McpServer) {
     },
     async ({ site }) => {
       const wp = forSite(site);
-      const result = await wp.post<{ updated: string[]; failed: string[] }>(
+      const result = await wp.post<{ updated: string[]; failed?: string[]; message?: string }>(
         "/mcp/v1/themes/update-all",
         {}
       );
@@ -84,10 +94,10 @@ export function register(server: McpServer) {
   // Delete theme
   server.tool(
     "mcp_delete_theme",
-    "Delete an inactive theme",
+    "Delete an inactive theme (the active theme is refused)",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      stylesheet: z.string().describe("Theme folder name"),
+      stylesheet: z.string().describe("Theme stylesheet (folder name)"),
     },
     async ({ site, stylesheet }) => {
       const wp = forSite(site);
@@ -102,12 +112,16 @@ export function register(server: McpServer) {
   // Install theme from ZIP URL
   server.tool(
     "mcp_install_theme_zip",
-    "Install a theme from a ZIP URL (GitHub releases, custom sources)",
+    "Install a theme from a public ZIP URL (must end in .zip). Unlike mcp_install_plugin_zip there is no GitHub token support: private release assets cannot be installed this way.",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      url: z.string().describe("URL to theme ZIP file"),
-      activate: z.boolean().optional().default(false).describe("Activate after install"),
-      overwrite: z.boolean().optional().default(true).describe("Overwrite if theme already exists"),
+      url: z.string().describe("URL to the theme ZIP file (must end in .zip)"),
+      activate: z.boolean().optional().default(false).describe("Switch to the theme after install (default false)"),
+      overwrite: z
+        .boolean()
+        .optional()
+        .default(true)
+        .describe("Replace the theme folder if it already exists (default true; the active theme is never overwritten)"),
     },
     async ({ site, url, activate, overwrite }) => {
       const wp = forSite(site);

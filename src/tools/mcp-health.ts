@@ -11,7 +11,7 @@ export function register(server: McpServer) {
   // Get health status
   server.tool(
     "mcp_get_health",
-    "Get site health status and score",
+    "Get a quick site health status and score (100 minus 20 per issue: WP_DEBUG on, no HTTPS, pending updates)",
     {
       site: z.string().describe("Site id (see list_sites)"),
     },
@@ -36,7 +36,7 @@ export function register(server: McpServer) {
   // Get debug info
   server.tool(
     "mcp_get_debug_info",
-    "Get detailed debug information",
+    "Get debug information: WordPress settings, server, database (name, prefix, charset), paths and debug constants",
     {
       site: z.string().describe("Site id (see list_sites)"),
     },
@@ -69,6 +69,10 @@ export function register(server: McpServer) {
         max_execution_time: string;
         upload_max_filesize: string;
         post_max_size: string;
+        max_input_vars: string;
+        display_errors: string;
+        error_reporting: number;
+        opcache: { enabled: boolean };
         extensions: string[];
         disabled_functions: string[];
       }>("/mcp/v1/health/php");
@@ -106,7 +110,7 @@ export function register(server: McpServer) {
   // Get cron status
   server.tool(
     "mcp_get_cron_status",
-    "Get WordPress cron jobs status",
+    "Get WordPress cron status: schedules and the next 50 events (total_events counts all)",
     {
       site: z.string().describe("Site id (see list_sites)"),
     },
@@ -121,6 +125,7 @@ export function register(server: McpServer) {
           next_run: string;
           schedule: string;
           interval: number | null;
+          args: unknown[];
         }>;
         total_events: number;
       }>("/mcp/v1/health/cron");
@@ -131,7 +136,7 @@ export function register(server: McpServer) {
   // Run cron job
   server.tool(
     "mcp_run_cron",
-    "Manually trigger a cron hook",
+    "Run a scheduled cron hook now with the args of its first scheduled event (404 if the hook is not scheduled). The event stays scheduled.",
     {
       site: z.string().describe("Site id (see list_sites)"),
       hook: z.string().describe("Cron hook name to run"),

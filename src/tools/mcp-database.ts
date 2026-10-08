@@ -5,20 +5,21 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { forSite } from "../client.js";
-import { jsonResult } from "../types.js";
+import { defined, jsonResult } from "../types.js";
 
 export function register(server: McpServer) {
   // Get database tables
   server.tool(
     "mcp_get_tables",
-    "List all database tables with sizes",
+    "List the site's database tables (current table prefix only) with data/index size in MB and approximate row count, largest first",
     {
       site: z.string().describe("Site id (see list_sites)"),
     },
     async ({ site }) => {
       const wp = forSite(site);
       const result = await wp.get<{
-        tables: Array<{ name: string; data_mb: number; index_mb: number; rows: number }>;
+        // MySQL values arrive as numeric strings (wpdb does not cast).
+        tables: Array<{ name: string; data_mb: string; index_mb: string; row_count: string }>;
         total_size_mb: number;
       }>("/mcp/v1/db/tables");
       return jsonResult(result);
@@ -28,13 +29,16 @@ export function register(server: McpServer) {
   // Search and replace
   server.tool(
     "mcp_search_replace",
-    "Search and replace strings in database (serialization-safe)",
+    "Search and replace a string in every text column of the site's tables (current table prefix only). Plain SQL REPLACE: it is NOT serialization-safe, so a replacement of different length corrupts serialized PHP values (options, postmeta, widgets). Both strings pass through sanitize_text_field on the server (tags and line breaks are stripped). total_changes and tables count matching rows per column, not occurrences.",
     {
       site: z.string().describe("Site id (see list_sites)"),
       search: z.string().describe("String to search for"),
       replace: z.string().describe("Replacement string"),
-      tables: z.array(z.string()).optional().describe("Specific tables (empty = all)"),
-      dry_run: z.boolean().optional().default(true).describe("Preview without applying"),
+      tables: z
+        .array(z.string())
+        .optional()
+        .describe("Full table names to limit the run to (must start with the table prefix; empty or omitted = all prefixed tables)"),
+      dry_run: z.boolean().optional().default(true).describe("Only count matches without writing (default true)"),
     },
     async ({ site, search, replace, tables, dry_run }) => {
       const wp = forSite(site);
@@ -44,7 +48,7 @@ export function register(server: McpServer) {
         replace: string;
         total_changes: number;
         tables: Record<string, number>;
-      }>("/mcp/v1/db/search-replace", { search, replace, tables, dry_run });
+      }>("/mcp/v1/db/search-replace", defined({ search, replace, tables, dry_run }));
       return jsonResult(result);
     }
   );
@@ -52,7 +56,7 @@ export function register(server: McpServer) {
   // Optimize tables
   server.tool(
     "mcp_optimize_tables",
-    "Optimize all database tables",
+    "Run OPTIMIZE TABLE on every table with the site's table prefix",
     {
       site: z.string().describe("Site id (see list_sites)"),
     },
@@ -69,10 +73,10 @@ export function register(server: McpServer) {
   // Clean revisions
   server.tool(
     "mcp_clean_revisions",
-    "Delete old post revisions",
+    "Delete old post revisions, keeping the newest `keep` per post",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      keep: z.number().optional().default(5).describe("Revisions to keep per post"),
+      keep: z.number().int().min(0).optional().default(5).describe("Newest revisions to keep per post (default 5; 0 deletes all)"),
     },
     async ({ site, keep }) => {
       const wp = forSite(site);
@@ -87,7 +91,7 @@ export function register(server: McpServer) {
   // Clean comments
   server.tool(
     "mcp_clean_comments",
-    "Delete spam and trashed comments",
+    "Permanently delete all spam and trashed comments",
     {
       site: z.string().describe("Site id (see list_sites)"),
     },

@@ -1,11 +1,119 @@
 /**
  * WooCommerce tools using wp-pilot-pro plugin
- * Requires: wp-pilot-pro WordPress plugin with WooCommerce module
+ * Requires: wp-pilot-pro WordPress plugin (1.1.0) with WooCommerce module
+ * (modules/class-woocommerce-module.php, namespace mcp/v1, routes /woo/*).
+ * Every route needs the manage_woocommerce capability.
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { forSite } from "../client.js";
-import { jsonResult } from "../types.js";
+import { defined, jsonResult } from "../types.js";
+
+const site = z.string().describe("Site id (see list_sites)");
+const id = (what: string) => z.number().int().describe(`${what} ID`);
+
+const productStatus = z.enum(["draft", "pending", "private", "publish"]);
+const productType = z.enum(["simple", "grouped", "external", "variable"]);
+const stockStatus = z.enum(["instock", "outofstock", "onbackorder"]);
+const discountType = z.enum(["fixed_cart", "percent", "fixed_product"]);
+
+// WC_Customer setters the endpoint maps billing/shipping keys onto
+// (set_billing_{key} / set_shipping_{key}); unknown keys are silently dropped.
+const addressFields = {
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
+  company: z.string().optional(),
+  address_1: z.string().optional(),
+  address_2: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional().describe("State/county code, e.g. BY"),
+  postcode: z.string().optional(),
+  country: z.string().optional().describe("ISO 3166-1 alpha-2 country code, e.g. DE"),
+  phone: z.string().optional(),
+};
+const billing = z
+  .object({ ...addressFields, email: z.string().optional() })
+  .strict()
+  .describe("Billing address; only the given keys are set");
+const shipping = z.object(addressFields).strict().describe("Shipping address; only the given keys are set");
+
+// Variation attribute map: attribute taxonomy (pa_color) or custom attribute
+// name -> term slug / option value. Empty value means "any".
+const variationAttributes = z
+  .record(z.string())
+  .describe('Attribute map, e.g. {"pa_color": "red", "size": "XL"} (key: attribute taxonomy or custom attribute name; value: term slug or option; "" = any)');
+
+/** Query params for wp.get/delete: undefined dropped, booleans as "true"/"false". */
+function query(params: Record<string, string | number | boolean | undefined>): Record<string, string | number> {
+  const out: Record<string, string | number> = {};
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined) continue;
+    out[k] = typeof v === "boolean" ? String(v) : v;
+  }
+  return out;
+}
+
+export interface ProductSlim {
+  id: number;
+  name: string;
+  slug: string;
+  type: string;
+  status: string;
+  sku: string;
+  price: string;
+  regular_price: string;
+  sale_price: string;
+  stock_status: string;
+  stock_quantity: number | null;
+  categories: number[];
+}
+
+export interface ProductFull extends ProductSlim {
+  description: string;
+  short_description: string;
+  manage_stock: boolean;
+  featured: boolean;
+  on_sale: boolean;
+  purchasable: boolean;
+  tags: number[];
+  image_id: number | string;
+  gallery_image_ids: number[];
+  date_created: string | null;
+  date_modified: string | null;
+  attributes: Array<{ name: string; options: Array<string | number>; visible: boolean; variation: boolean }>;
+}
+
+export interface OrderSlim {
+  id: number;
+  number: string;
+  status: string;
+  total: string;
+  currency: string;
+  customer_id: number;
+  billing_email: string;
+  date_created: string | null;
+  item_count: number;
+}
+
+export interface CustomerSlim {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  order_count: number;
+  total_spent: string;
+  date_created: string;
+}
+
+export interface CouponSlim {
+  id: number;
+  code: string;
+  discount_type: string;
+  amount: string;
+  usage_count: number;
+  usage_limit: number | null;
+  date_expires: string | null;
+}
 
 export function register(server: McpServer) {
   // ============================================
@@ -14,52 +122,41 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_list_products",
-    "List WooCommerce products",
+    "List WooCommerce products (slim: id, name, slug, type, status, sku, prices, stock, category ids)",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      status: z.enum(["any", "draft", "pending", "private", "publish", "trash"]).optional().default("any"),
-      type: z.enum(["simple", "grouped", "external", "variable", ""]).optional().default(""),
-      category: z.number().optional().describe("Category ID"),
-      tag: z.number().optional().describe("Tag ID"),
-      featured: z.boolean().optional(),
-      on_sale: z.boolean().optional(),
-      stock_status: z.enum(["", "instock", "outofstock", "onbackorder"]).optional().default(""),
-      per_page: z.number().optional().default(20),
-      page: z.number().optional().default(1),
-      orderby: z.string().optional().default("date"),
-      order: z.enum(["asc", "desc"]).optional().default("desc"),
-      search: z.string().optional().default(""),
+      site,
+      status: z.enum(["any", "draft", "pending", "private", "publish", "trash"]).optional().describe("Post status (default any)"),
+      type: productType.optional().describe("Product type (default: all types)"),
+      category: z.number().int().optional().describe("Product category ID"),
+      tag: z.number().int().optional().describe("Product tag ID"),
+      featured: z.boolean().optional().describe("Only featured (true) or only non-featured (false) products"),
+      on_sale: z.boolean().optional().describe("Only products on sale (true) or not on sale (false)"),
+      stock_status: stockStatus.optional().describe("Stock status filter (default: all)"),
+      per_page: z.number().int().optional().describe("Products per page (default 20, -1 for all)"),
+      page: z.number().int().optional().describe("Page number (default 1)"),
+      orderby: z.string().optional().describe("Sort field: date (default), ID, name, title, type, modified, menu_order, rand, none"),
+      order: z.enum(["asc", "desc"]).optional().describe("Sort direction (default desc)"),
+      search: z.string().optional().describe("Search term"),
     },
     async ({ site, ...params }) => {
       const wp = forSite(site);
-      const urlParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== "") {
-          urlParams.append(key, String(value));
-        }
-      });
       const result = await wp.get<{
-        products: Array<Record<string, unknown>>;
+        products: ProductSlim[];
         count: number;
         page: number;
         per_page: number;
-      }>(`/mcp/v1/woo/products?${urlParams}`);
+      }>("/mcp/v1/woo/products", query(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_get_product",
-    "Get WooCommerce product details",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Product ID"),
-    },
+    "Get WooCommerce product details (descriptions, stock, tags, images, attributes, dates)",
+    { site, id: id("Product") },
     async ({ site, id }) => {
       const wp = forSite(site);
-      const result = await wp.get<{
-        product: Record<string, unknown>;
-      }>(`/mcp/v1/woo/products/${id}`);
+      const result = await wp.get<{ product: ProductFull }>(`/mcp/v1/woo/products/${id}`);
       return jsonResult(result);
     }
   );
@@ -68,73 +165,83 @@ export function register(server: McpServer) {
     "woo_create_product",
     "Create a WooCommerce product",
     {
-      site: z.string().describe("Site id (see list_sites)"),
+      site,
       name: z.string().describe("Product name"),
-      type: z.enum(["simple", "grouped", "external", "variable"]).optional().default("simple"),
-      status: z.string().optional().default("publish"),
-      regular_price: z.string().optional().default(""),
-      sale_price: z.string().optional().default(""),
-      description: z.string().optional().default(""),
-      short_description: z.string().optional().default(""),
-      sku: z.string().optional().default(""),
-      manage_stock: z.boolean().optional().default(false),
-      stock_quantity: z.number().optional(),
-      stock_status: z.string().optional().default("instock"),
-      categories: z.array(z.number()).optional().default([]),
-      tags: z.array(z.number()).optional().default([]),
-      images: z.array(z.number()).optional().default([]),
-      attributes: z.array(z.record(z.unknown())).optional().default([]),
-      meta_data: z.array(z.object({ key: z.string(), value: z.unknown() })).optional().default([]),
+      type: productType.optional().describe("Product type (default simple)"),
+      status: productStatus.optional().describe("Status (default publish)"),
+      regular_price: z.string().optional().describe('Regular price as decimal string, e.g. "19.90"'),
+      sale_price: z.string().optional().describe("Sale price as decimal string"),
+      description: z.string().optional().describe("Long description (HTML)"),
+      short_description: z.string().optional().describe("Short description (HTML)"),
+      sku: z.string().optional().describe("SKU (must be unique)"),
+      manage_stock: z.boolean().optional().describe("Track stock quantity (default false)"),
+      stock_quantity: z.number().int().optional().describe("Stock quantity (used when manage_stock is true)"),
+      stock_status: stockStatus.optional().describe("Stock status (default instock)"),
+      categories: z.array(z.number().int()).optional().describe("Product category IDs"),
+      tags: z.array(z.number().int()).optional().describe("Product tag IDs"),
+      images: z.array(z.number().int()).optional().describe("Attachment IDs; the first is the main image, the rest the gallery"),
+      attributes: z
+        .array(
+          z.object({
+            name: z.string().describe("Attribute name (custom) or taxonomy (pa_color)"),
+            options: z.array(z.string()).optional().describe("Option values (default [])"),
+            visible: z.boolean().optional().describe("Show on the product page (default true)"),
+            variation: z.boolean().optional().describe("Used for variations (default false)"),
+          })
+        )
+        .optional()
+        .describe("Product attributes"),
+      meta_data: z.array(z.object({ key: z.string(), value: z.unknown() })).optional().describe("Custom meta to set"),
     },
     async ({ site, ...params }) => {
       const wp = forSite(site);
       const result = await wp.post<{
         id: number;
         created: boolean;
-        product: Record<string, unknown>;
-      }>("/mcp/v1/woo/products", params);
+        product: ProductSlim;
+      }>("/mcp/v1/woo/products", defined(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_update_product",
-    "Update a WooCommerce product",
+    "Update a WooCommerce product; only the given fields change (type, images and attributes cannot be changed here)",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Product ID"),
-      name: z.string().optional(),
-      status: z.string().optional(),
-      regular_price: z.string().optional(),
-      sale_price: z.string().optional(),
-      description: z.string().optional(),
-      short_description: z.string().optional(),
-      sku: z.string().optional(),
-      manage_stock: z.boolean().optional(),
-      stock_quantity: z.number().optional(),
-      stock_status: z.string().optional(),
-      categories: z.array(z.number()).optional(),
-      tags: z.array(z.number()).optional(),
-      meta_data: z.array(z.object({ key: z.string(), value: z.unknown() })).optional(),
+      site,
+      id: id("Product"),
+      name: z.string().optional().describe("Product name"),
+      status: productStatus.optional().describe("Status"),
+      regular_price: z.string().optional().describe('Regular price as decimal string, e.g. "19.90"'),
+      sale_price: z.string().optional().describe('Sale price as decimal string ("" removes the sale price)'),
+      description: z.string().optional().describe("Long description (HTML)"),
+      short_description: z.string().optional().describe("Short description (HTML)"),
+      sku: z.string().optional().describe("SKU (must be unique)"),
+      manage_stock: z.boolean().optional().describe("Track stock quantity"),
+      stock_quantity: z.number().int().optional().describe("Stock quantity"),
+      stock_status: stockStatus.optional().describe("Stock status"),
+      categories: z.array(z.number().int()).optional().describe("Product category IDs (replaces the current set)"),
+      tags: z.array(z.number().int()).optional().describe("Product tag IDs (replaces the current set)"),
+      meta_data: z.array(z.object({ key: z.string(), value: z.unknown() })).optional().describe("Custom meta to set (merged)"),
     },
     async ({ site, id, ...params }) => {
       const wp = forSite(site);
       const result = await wp.put<{
         id: number;
         updated: boolean;
-        product: Record<string, unknown>;
-      }>(`/mcp/v1/woo/products/${id}`, params);
+        product: ProductSlim;
+      }>(`/mcp/v1/woo/products/${id}`, defined(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_delete_product",
-    "Delete a WooCommerce product",
+    "Delete a WooCommerce product (to trash unless force)",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Product ID"),
-      force: z.boolean().optional().default(false).describe("Force delete (skip trash)"),
+      site,
+      id: id("Product"),
+      force: z.boolean().optional().default(false).describe("Delete permanently instead of moving to trash (default false)"),
     },
     async ({ site, id, force }) => {
       const wp = forSite(site);
@@ -142,7 +249,7 @@ export function register(server: McpServer) {
         id: number;
         deleted: boolean;
         force: boolean;
-      }>(`/mcp/v1/woo/products/${id}?force=${force}`);
+      }>(`/mcp/v1/woo/products/${id}`, query({ force }));
       return jsonResult(result);
     }
   );
@@ -153,16 +260,21 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_list_variations",
-    "List variations for a variable product",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      product_id: z.number().describe("Parent product ID"),
-    },
+    "List the available (purchasable, visible) variations of a variable product",
+    { site, product_id: id("Parent product") },
     async ({ site, product_id }) => {
       const wp = forSite(site);
       const result = await wp.get<{
         product_id: number;
-        variations: Array<Record<string, unknown>>;
+        variations: Array<{
+          id: number;
+          sku: string;
+          price: number;
+          regular_price: number;
+          attributes: Record<string, string>;
+          is_in_stock: boolean;
+          stock_quantity: number | null;
+        }>;
         count: number;
       }>(`/mcp/v1/woo/products/${product_id}/variations`);
       return jsonResult(result);
@@ -171,17 +283,17 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_create_variation",
-    "Create a product variation",
+    "Create a variation of a variable product. Note: wp-pilot-pro 1.1.0 declares `attributes` as a list and rejects this map with 400 until the plugin declares it as an object",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      product_id: z.number().describe("Parent product ID"),
-      attributes: z.array(z.record(z.string())).describe("Variation attributes"),
-      regular_price: z.string().optional().default(""),
-      sale_price: z.string().optional().default(""),
-      sku: z.string().optional().default(""),
-      manage_stock: z.boolean().optional().default(false),
-      stock_quantity: z.number().optional(),
-      stock_status: z.string().optional().default("instock"),
+      site,
+      product_id: id("Parent product"),
+      attributes: variationAttributes,
+      regular_price: z.string().optional().describe("Regular price as decimal string"),
+      sale_price: z.string().optional().describe("Sale price as decimal string"),
+      sku: z.string().optional().describe("SKU (must be unique)"),
+      manage_stock: z.boolean().optional().describe("Track stock quantity (default false)"),
+      stock_quantity: z.number().int().optional().describe("Stock quantity"),
+      stock_status: stockStatus.optional().describe("Stock status (default instock)"),
     },
     async ({ site, product_id, ...params }) => {
       const wp = forSite(site);
@@ -189,43 +301,43 @@ export function register(server: McpServer) {
         id: number;
         product_id: number;
         created: boolean;
-      }>(`/mcp/v1/woo/products/${product_id}/variations`, params);
+      }>(`/mcp/v1/woo/products/${product_id}/variations`, defined(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_update_variation",
-    "Update a product variation",
+    "Update a product variation; only the given fields change",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      product_id: z.number().describe("Parent product ID"),
-      variation_id: z.number().describe("Variation ID"),
-      regular_price: z.string().optional(),
-      sale_price: z.string().optional(),
-      sku: z.string().optional(),
-      manage_stock: z.boolean().optional(),
-      stock_quantity: z.number().optional(),
-      stock_status: z.string().optional(),
-      attributes: z.array(z.record(z.string())).optional(),
+      site,
+      product_id: id("Parent product"),
+      variation_id: id("Variation"),
+      regular_price: z.string().optional().describe("Regular price as decimal string"),
+      sale_price: z.string().optional().describe('Sale price as decimal string ("" removes it)'),
+      sku: z.string().optional().describe("SKU (must be unique)"),
+      manage_stock: z.boolean().optional().describe("Track stock quantity"),
+      stock_quantity: z.number().int().optional().describe("Stock quantity"),
+      stock_status: stockStatus.optional().describe("Stock status"),
+      attributes: variationAttributes.optional(),
     },
     async ({ site, product_id, variation_id, ...params }) => {
       const wp = forSite(site);
       const result = await wp.put<{
         id: number;
         updated: boolean;
-      }>(`/mcp/v1/woo/products/${product_id}/variations/${variation_id}`, params);
+      }>(`/mcp/v1/woo/products/${product_id}/variations/${variation_id}`, defined(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_delete_variation",
-    "Delete a product variation",
+    "Delete a product variation permanently",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      product_id: z.number().describe("Parent product ID"),
-      variation_id: z.number().describe("Variation ID"),
+      site,
+      product_id: id("Parent product"),
+      variation_id: id("Variation"),
     },
     async ({ site, product_id, variation_id }) => {
       const wp = forSite(site);
@@ -243,10 +355,8 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_list_attributes",
-    "List product attributes",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-    },
+    "List global product attributes",
+    { site },
     async ({ site }) => {
       const wp = forSite(site);
       const result = await wp.get<{
@@ -266,11 +376,8 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_list_attribute_terms",
-    "List terms for an attribute",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      attribute_id: z.number().describe("Attribute ID"),
-    },
+    "List terms of a global attribute (including empty ones)",
+    { site, attribute_id: id("Attribute") },
     async ({ site, attribute_id }) => {
       const wp = forSite(site);
       const result = await wp.get<{
@@ -289,40 +396,40 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_create_attribute",
-    "Create a product attribute",
+    "Create a global product attribute (taxonomy pa_{slug})",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      name: z.string().describe("Attribute name"),
-      slug: z.string().optional().default(""),
-      type: z.string().optional().default("select"),
-      order_by: z.string().optional().default("menu_order"),
-      has_archives: z.boolean().optional().default(false),
+      site,
+      name: z.string().describe("Attribute name (label)"),
+      slug: z.string().optional().describe("Slug, max 28 chars (default: derived from name)"),
+      type: z.string().optional().describe('Attribute type (default "select"; plugins may add others)'),
+      order_by: z.enum(["menu_order", "name", "name_num", "id"]).optional().describe("Default term sort order (default menu_order)"),
+      has_archives: z.boolean().optional().describe("Enable archive pages for terms (default false)"),
     },
     async ({ site, ...params }) => {
       const wp = forSite(site);
       const result = await wp.post<{
         id: number;
         created: boolean;
-      }>("/mcp/v1/woo/attributes", params);
+      }>("/mcp/v1/woo/attributes", defined(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_create_attribute_term",
-    "Create a term for an attribute",
+    "Create a term for a global attribute",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      attribute_id: z.number().describe("Attribute ID"),
+      site,
+      attribute_id: id("Attribute"),
       name: z.string().describe("Term name"),
-      slug: z.string().optional().default(""),
+      slug: z.string().optional().describe("Term slug (default: derived from name)"),
     },
     async ({ site, attribute_id, ...params }) => {
       const wp = forSite(site);
       const result = await wp.post<{
         id: number;
         created: boolean;
-      }>(`/mcp/v1/woo/attributes/${attribute_id}/terms`, params);
+      }>(`/mcp/v1/woo/attributes/${attribute_id}/terms`, defined(params));
       return jsonResult(result);
     }
   );
@@ -335,15 +442,12 @@ export function register(server: McpServer) {
     "woo_list_categories",
     "List product categories",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      hide_empty: z.boolean().optional().default(false),
-      parent: z.number().optional(),
+      site,
+      hide_empty: z.boolean().optional().describe("Hide categories without products (default false)"),
+      parent: z.number().int().optional().describe("Only direct children of this category ID (0 = top level)"),
     },
-    async ({ site, hide_empty, parent }) => {
+    async ({ site, ...params }) => {
       const wp = forSite(site);
-      const params = new URLSearchParams();
-      params.append("hide_empty", String(hide_empty));
-      if (parent !== undefined) params.append("parent", String(parent));
       const result = await wp.get<{
         categories: Array<{
           id: number;
@@ -354,7 +458,7 @@ export function register(server: McpServer) {
           image_id: number | null;
         }>;
         count: number;
-      }>(`/mcp/v1/woo/categories?${params}`);
+      }>("/mcp/v1/woo/categories", query(params));
       return jsonResult(result);
     }
   );
@@ -363,41 +467,41 @@ export function register(server: McpServer) {
     "woo_create_category",
     "Create a product category",
     {
-      site: z.string().describe("Site id (see list_sites)"),
+      site,
       name: z.string().describe("Category name"),
-      slug: z.string().optional().default(""),
-      parent: z.number().optional().default(0),
-      description: z.string().optional().default(""),
-      image_id: z.number().optional().default(0),
+      slug: z.string().optional().describe("Slug (default: derived from name)"),
+      parent: z.number().int().optional().describe("Parent category ID (default 0 = top level)"),
+      description: z.string().optional().describe("Description"),
+      image_id: z.number().int().optional().describe("Thumbnail attachment ID"),
     },
     async ({ site, ...params }) => {
       const wp = forSite(site);
       const result = await wp.post<{
         id: number;
         created: boolean;
-      }>("/mcp/v1/woo/categories", params);
+      }>("/mcp/v1/woo/categories", defined(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_update_category",
-    "Update a product category",
+    "Update a product category; only the given fields change",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Category ID"),
-      name: z.string().optional(),
-      slug: z.string().optional(),
-      parent: z.number().optional(),
-      description: z.string().optional(),
-      image_id: z.number().optional(),
+      site,
+      id: id("Category"),
+      name: z.string().optional().describe("Category name"),
+      slug: z.string().optional().describe("Slug"),
+      parent: z.number().int().optional().describe("Parent category ID (0 = top level)"),
+      description: z.string().optional().describe("Description"),
+      image_id: z.number().int().optional().describe("Thumbnail attachment ID (0 removes it)"),
     },
     async ({ site, id, ...params }) => {
       const wp = forSite(site);
       const result = await wp.put<{
         id: number;
         updated: boolean;
-      }>(`/mcp/v1/woo/categories/${id}`, params);
+      }>(`/mcp/v1/woo/categories/${id}`, defined(params));
       return jsonResult(result);
     }
   );
@@ -405,10 +509,7 @@ export function register(server: McpServer) {
   server.tool(
     "woo_delete_category",
     "Delete a product category",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Category ID"),
-    },
+    { site, id: id("Category") },
     async ({ site, id }) => {
       const wp = forSite(site);
       const result = await wp.delete<{
@@ -421,10 +522,8 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_list_tags",
-    "List product tags",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-    },
+    "List product tags (including empty ones)",
+    { site },
     async ({ site }) => {
       const wp = forSite(site);
       const result = await wp.get<{
@@ -446,41 +545,31 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_list_orders",
-    "List WooCommerce orders",
+    "List WooCommerce orders (slim)",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      status: z.string().optional().default("any"),
-      customer: z.number().optional().describe("Customer ID"),
-      product: z.number().optional().describe("Product ID"),
-      per_page: z.number().optional().default(20),
-      page: z.number().optional().default(1),
-      after: z.string().optional().describe("Orders after date (YYYY-MM-DD)"),
-      before: z.string().optional().describe("Orders before date (YYYY-MM-DD)"),
+      site,
+      status: z.string().optional().describe("Order status: any (default), pending, processing, on-hold, completed, cancelled, refunded, failed"),
+      customer: z.number().int().optional().describe("Customer (user) ID"),
+      per_page: z.number().int().optional().describe("Orders per page (default 20, -1 for all)"),
+      page: z.number().int().optional().describe("Page number (default 1)"),
+      after: z.string().optional().describe("Only orders created after this date (YYYY-MM-DD). Not combinable with before: before wins"),
+      before: z.string().optional().describe("Only orders created before this date (YYYY-MM-DD)"),
     },
     async ({ site, ...params }) => {
       const wp = forSite(site);
-      const urlParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== 0 && value !== "") {
-          urlParams.append(key, String(value));
-        }
-      });
       const result = await wp.get<{
-        orders: Array<Record<string, unknown>>;
+        orders: OrderSlim[];
         count: number;
         page: number;
-      }>(`/mcp/v1/woo/orders?${urlParams}`);
+      }>("/mcp/v1/woo/orders", query(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_get_order",
-    "Get WooCommerce order details",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Order ID"),
-    },
+    "Get WooCommerce order details (payment, billing, shipping, line items, totals)",
+    { site, id: id("Order") },
     async ({ site, id }) => {
       const wp = forSite(site);
       const result = await wp.get<{
@@ -492,20 +581,20 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_update_order_status",
-    "Update order status",
+    "Update order status (triggers the usual WooCommerce status emails)",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Order ID"),
-      status: z.string().describe("New status (pending, processing, on-hold, completed, cancelled, refunded, failed)"),
-      note: z.string().optional().default("").describe("Optional status change note"),
+      site,
+      id: id("Order"),
+      status: z.string().describe("New status: pending, processing, on-hold, completed, cancelled, refunded, failed (or a custom status)"),
+      note: z.string().optional().describe("Note added to the status change"),
     },
-    async ({ site, id, status, note }) => {
+    async ({ site, id, ...params }) => {
       const wp = forSite(site);
       const result = await wp.put<{
         id: number;
         status: string;
         updated: boolean;
-      }>(`/mcp/v1/woo/orders/${id}/status`, { status, note });
+      }>(`/mcp/v1/woo/orders/${id}/status`, defined(params));
       return jsonResult(result);
     }
   );
@@ -514,18 +603,18 @@ export function register(server: McpServer) {
     "woo_add_order_note",
     "Add a note to an order",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Order ID"),
+      site,
+      id: id("Order"),
       note: z.string().describe("Note content"),
-      customer_note: z.boolean().optional().default(false).describe("Send to customer"),
+      customer_note: z.boolean().optional().describe("Customer-facing note, emailed to the customer (default false = private)"),
     },
-    async ({ site, id, note, customer_note }) => {
+    async ({ site, id, ...params }) => {
       const wp = forSite(site);
       const result = await wp.post<{
         id: number;
         order_id: number;
         created: boolean;
-      }>(`/mcp/v1/woo/orders/${id}/notes`, { note, customer_note });
+      }>(`/mcp/v1/woo/orders/${id}/notes`, defined(params));
       return jsonResult(result);
     }
   );
@@ -533,10 +622,7 @@ export function register(server: McpServer) {
   server.tool(
     "woo_get_order_notes",
     "Get order notes",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Order ID"),
-    },
+    { site, id: id("Order") },
     async ({ site, id }) => {
       const wp = forSite(site);
       const result = await wp.get<{
@@ -560,38 +646,29 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_list_customers",
-    "List WooCommerce customers",
+    "List WooCommerce customers (users with the given role)",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      per_page: z.number().optional().default(20),
-      page: z.number().optional().default(1),
-      search: z.string().optional().default(""),
-      role: z.string().optional().default("customer"),
+      site,
+      per_page: z.number().int().optional().describe("Customers per page (default 20)"),
+      page: z.number().int().optional().describe("Page number (default 1)"),
+      search: z.string().optional().describe("Search in login, email, URL, display name (wildcard both sides)"),
+      role: z.string().optional().describe("User role (default customer)"),
     },
     async ({ site, ...params }) => {
       const wp = forSite(site);
-      const urlParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== "") {
-          urlParams.append(key, String(value));
-        }
-      });
       const result = await wp.get<{
-        customers: Array<Record<string, unknown>>;
+        customers: CustomerSlim[];
         count: number;
         page: number;
-      }>(`/mcp/v1/woo/customers?${urlParams}`);
+      }>("/mcp/v1/woo/customers", query(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_get_customer",
-    "Get customer details",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Customer ID"),
-    },
+    "Get customer details (incl. billing and shipping address)",
+    { site, id: id("Customer") },
     async ({ site, id }) => {
       const wp = forSite(site);
       const result = await wp.get<{
@@ -605,59 +682,56 @@ export function register(server: McpServer) {
     "woo_create_customer",
     "Create a customer",
     {
-      site: z.string().describe("Site id (see list_sites)"),
+      site,
       email: z.string().describe("Customer email"),
-      first_name: z.string().optional().default(""),
-      last_name: z.string().optional().default(""),
-      username: z.string().optional().default(""),
-      password: z.string().optional().default(""),
-      billing: z.record(z.string()).optional().default({}),
-      shipping: z.record(z.string()).optional().default({}),
+      first_name: z.string().optional().describe("First name"),
+      last_name: z.string().optional().describe("Last name"),
+      username: z.string().optional().describe("Login name (default: generated by WooCommerce)"),
+      password: z.string().optional().describe("Password (write-only, never returned; default: generated by WooCommerce)"),
+      billing: billing.optional(),
+      shipping: shipping.optional(),
     },
     async ({ site, ...params }) => {
       const wp = forSite(site);
       const result = await wp.post<{
         id: number;
         created: boolean;
-      }>("/mcp/v1/woo/customers", params);
+      }>("/mcp/v1/woo/customers", defined(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_update_customer",
-    "Update a customer",
+    "Update a customer; only the given fields (and address keys) change",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Customer ID"),
-      email: z.string().optional(),
-      first_name: z.string().optional(),
-      last_name: z.string().optional(),
-      billing: z.record(z.string()).optional(),
-      shipping: z.record(z.string()).optional(),
+      site,
+      id: id("Customer"),
+      email: z.string().optional().describe("Customer email"),
+      first_name: z.string().optional().describe("First name"),
+      last_name: z.string().optional().describe("Last name"),
+      billing: billing.optional(),
+      shipping: shipping.optional(),
     },
     async ({ site, id, ...params }) => {
       const wp = forSite(site);
       const result = await wp.put<{
         id: number;
         updated: boolean;
-      }>(`/mcp/v1/woo/customers/${id}`, params);
+      }>(`/mcp/v1/woo/customers/${id}`, defined(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_get_customer_orders",
-    "Get customer's order history",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Customer ID"),
-    },
+    "Get a customer's latest 20 orders plus total spent and order count",
+    { site, id: id("Customer") },
     async ({ site, id }) => {
       const wp = forSite(site);
       const result = await wp.get<{
         customer_id: number;
-        orders: Array<Record<string, unknown>>;
+        orders: OrderSlim[];
         count: number;
         total_spent: string;
         order_count: number;
@@ -672,26 +746,20 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_list_coupons",
-    "List WooCommerce coupons",
+    "List published WooCommerce coupons",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      per_page: z.number().optional().default(20),
-      page: z.number().optional().default(1),
-      search: z.string().optional().default(""),
+      site,
+      per_page: z.number().int().optional().describe("Coupons per page (default 20)"),
+      page: z.number().int().optional().describe("Page number (default 1)"),
+      search: z.string().optional().describe("Search term"),
     },
     async ({ site, ...params }) => {
       const wp = forSite(site);
-      const urlParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== "") {
-          urlParams.append(key, String(value));
-        }
-      });
       const result = await wp.get<{
-        coupons: Array<Record<string, unknown>>;
+        coupons: CouponSlim[];
         count: number;
         page: number;
-      }>(`/mcp/v1/woo/coupons?${urlParams}`);
+      }>("/mcp/v1/woo/coupons", query(params));
       return jsonResult(result);
     }
   );
@@ -699,36 +767,46 @@ export function register(server: McpServer) {
   server.tool(
     "woo_get_coupon",
     "Get coupon details",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Coupon ID"),
-    },
+    { site, id: id("Coupon") },
     async ({ site, id }) => {
       const wp = forSite(site);
       const result = await wp.get<{
-        coupon: Record<string, unknown>;
+        coupon: CouponSlim & {
+          individual_use: boolean;
+          usage_limit_per_user: number | null;
+          free_shipping: boolean;
+          product_ids: number[];
+          excluded_product_ids: number[];
+          minimum_amount: string;
+          maximum_amount: string;
+          used_by: string[];
+        };
       }>(`/mcp/v1/woo/coupons/${id}`);
       return jsonResult(result);
     }
   );
 
+  const couponFields = {
+    discount_type: discountType.optional().describe("Discount type (default fixed_cart)"),
+    amount: z.string().optional().describe('Discount amount as decimal string (default "0")'),
+    individual_use: z.boolean().optional().describe("Cannot be combined with other coupons (default false)"),
+    usage_limit: z.number().int().optional().describe("Total usage limit"),
+    usage_limit_per_user: z.number().int().optional().describe("Usage limit per customer"),
+    date_expires: z.string().optional().describe("Expiry date (YYYY-MM-DD)"),
+    free_shipping: z.boolean().optional().describe("Grants free shipping (default false)"),
+    product_ids: z.array(z.number().int()).optional().describe("Products the coupon applies to"),
+    excluded_product_ids: z.array(z.number().int()).optional().describe("Products the coupon does not apply to"),
+    minimum_amount: z.string().optional().describe("Minimum cart subtotal as decimal string"),
+    maximum_amount: z.string().optional().describe("Maximum cart subtotal as decimal string"),
+  };
+
   server.tool(
     "woo_create_coupon",
     "Create a coupon",
     {
-      site: z.string().describe("Site id (see list_sites)"),
+      site,
       code: z.string().describe("Coupon code"),
-      discount_type: z.enum(["fixed_cart", "percent", "fixed_product"]).optional().default("fixed_cart"),
-      amount: z.string().optional().default("0"),
-      individual_use: z.boolean().optional().default(false),
-      usage_limit: z.number().optional(),
-      usage_limit_per_user: z.number().optional(),
-      date_expires: z.string().optional().describe("Expiry date (YYYY-MM-DD)"),
-      free_shipping: z.boolean().optional().default(false),
-      product_ids: z.array(z.number()).optional().default([]),
-      excluded_product_ids: z.array(z.number()).optional().default([]),
-      minimum_amount: z.string().optional().default(""),
-      maximum_amount: z.string().optional().default(""),
+      ...couponFields,
     },
     async ({ site, ...params }) => {
       const wp = forSite(site);
@@ -736,47 +814,34 @@ export function register(server: McpServer) {
         id: number;
         code: string;
         created: boolean;
-      }>("/mcp/v1/woo/coupons", params);
+      }>("/mcp/v1/woo/coupons", defined(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_update_coupon",
-    "Update a coupon",
+    "Update a coupon; only the given fields change",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Coupon ID"),
-      code: z.string().optional(),
-      discount_type: z.string().optional(),
-      amount: z.string().optional(),
-      individual_use: z.boolean().optional(),
-      usage_limit: z.number().optional(),
-      usage_limit_per_user: z.number().optional(),
-      date_expires: z.string().optional(),
-      free_shipping: z.boolean().optional(),
-      product_ids: z.array(z.number()).optional(),
-      excluded_product_ids: z.array(z.number()).optional(),
-      minimum_amount: z.string().optional(),
-      maximum_amount: z.string().optional(),
+      site,
+      id: id("Coupon"),
+      code: z.string().optional().describe("Coupon code"),
+      ...couponFields,
     },
     async ({ site, id, ...params }) => {
       const wp = forSite(site);
       const result = await wp.put<{
         id: number;
         updated: boolean;
-      }>(`/mcp/v1/woo/coupons/${id}`, params);
+      }>(`/mcp/v1/woo/coupons/${id}`, defined(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_delete_coupon",
-    "Delete a coupon",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Coupon ID"),
-    },
+    "Delete a coupon permanently",
+    { site, id: id("Coupon") },
     async ({ site, id }) => {
       const wp = forSite(site);
       const result = await wp.delete<{
@@ -793,21 +858,15 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_sales_report",
-    "Get sales report",
+    "Get sales report (completed + processing orders)",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      period: z.enum(["week", "month", "last_month", "year"]).optional().default("month"),
-      date_min: z.string().optional().describe("Start date (YYYY-MM-DD)"),
-      date_max: z.string().optional().describe("End date (YYYY-MM-DD)"),
+      site,
+      period: z.enum(["week", "month", "last_month", "year"]).optional().describe("Preset range (default month); ignored when both date_min and date_max are given"),
+      date_min: z.string().optional().describe("Start date (YYYY-MM-DD); only used together with date_max"),
+      date_max: z.string().optional().describe("End date (YYYY-MM-DD); only used together with date_min"),
     },
     async ({ site, ...params }) => {
       const wp = forSite(site);
-      const urlParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== "") {
-          urlParams.append(key, String(value));
-        }
-      });
       const result = await wp.get<{
         period: string;
         date_min: string;
@@ -818,20 +877,20 @@ export function register(server: McpServer) {
         total_shipping: number;
         total_tax: number;
         average_order_value: number;
-      }>(`/mcp/v1/woo/reports/sales?${urlParams}`);
+      }>("/mcp/v1/woo/reports/sales", query(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_top_sellers",
-    "Get top selling products",
+    "Get top selling products by quantity (completed + processing orders)",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      period: z.string().optional().default("month"),
-      limit: z.number().optional().default(10),
+      site,
+      period: z.enum(["week", "month", "year"]).optional().describe("week = last 7 days, month = this month (default), year = this year"),
+      limit: z.number().int().optional().describe("Number of products (default 10)"),
     },
-    async ({ site, period, limit }) => {
+    async ({ site, ...params }) => {
       const wp = forSite(site);
       const result = await wp.get<{
         period: string;
@@ -841,20 +900,20 @@ export function register(server: McpServer) {
           quantity_sold: number;
         }>;
         count: number;
-      }>(`/mcp/v1/woo/reports/top-sellers?period=${period}&limit=${limit}`);
+      }>("/mcp/v1/woo/reports/top-sellers", query(params));
       return jsonResult(result);
     }
   );
 
   server.tool(
     "woo_stock_report",
-    "Get stock status report",
+    "Get stock status report (stock-managed products, lowest stock first)",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      status: z.enum(["lowstock", "outofstock", "onbackorder"]).optional().default("lowstock"),
-      limit: z.number().optional().default(20),
+      site,
+      status: z.enum(["lowstock", "outofstock", "onbackorder"]).optional().describe("lowstock (default: in stock at or below the low-stock threshold), outofstock, onbackorder"),
+      limit: z.number().int().optional().describe("Number of products (default 20)"),
     },
-    async ({ site, status, limit }) => {
+    async ({ site, ...params }) => {
       const wp = forSite(site);
       const result = await wp.get<{
         status: string;
@@ -862,11 +921,11 @@ export function register(server: McpServer) {
           id: number;
           name: string;
           sku: string;
-          stock_quantity: number;
+          stock_quantity: number | null;
           stock_status: string;
         }>;
         count: number;
-      }>(`/mcp/v1/woo/reports/stock?status=${status}&limit=${limit}`);
+      }>("/mcp/v1/woo/reports/stock", query(params));
       return jsonResult(result);
     }
   );
@@ -877,11 +936,8 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_get_product_meta",
-    "Get all product meta data",
-    {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Product ID"),
-    },
+    "Get all product meta data plus _regular_price, _sale_price, _price, _stock, _stock_status, _sku",
+    { site, id: id("Product") },
     async ({ site, id }) => {
       const wp = forSite(site);
       const result = await wp.get<{
@@ -894,10 +950,10 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_update_product_meta",
-    "Update product meta data",
+    "Update product meta data (merged; _regular_price, _sale_price, _stock, _stock_status, _sku go through the product setters)",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Product ID"),
+      site,
+      id: id("Product"),
       meta: z.record(z.unknown()).describe("Meta key-value pairs"),
     },
     async ({ site, id, meta }) => {
@@ -916,14 +972,18 @@ export function register(server: McpServer) {
 
   server.tool(
     "woo_bulk_update_stock",
-    "Bulk update product stock",
+    "Bulk update product stock; per product only the given fields change",
     {
-      site: z.string().describe("Site id (see list_sites)"),
-      products: z.array(z.object({
-        id: z.number(),
-        stock_quantity: z.number().optional(),
-        stock_status: z.string().optional(),
-      })).describe("Array of products with stock updates"),
+      site,
+      products: z
+        .array(
+          z.object({
+            id: z.number().int().describe("Product or variation ID"),
+            stock_quantity: z.number().int().optional().describe("New stock quantity"),
+            stock_status: stockStatus.optional().describe("New stock status"),
+          })
+        )
+        .describe("Products with stock updates"),
     },
     async ({ site, products }) => {
       const wp = forSite(site);

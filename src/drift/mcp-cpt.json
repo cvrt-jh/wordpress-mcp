@@ -1,0 +1,40 @@
+{
+  "mcp_list_post_types": {
+    "method": "GET", "route": "/mcp/v1/cpt",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-cpt-endpoint.php list_post_types",
+    "server": []
+  },
+  "mcp_get_post_type": {
+    "method": "GET", "route": "/mcp/v1/cpt/{type}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-cpt-endpoint.php get_post_type (args: type = path)",
+    "server": [], "path": ["type"]
+  },
+  "mcp_list_cpt_posts": {
+    "method": "GET", "route": "/mcp/v1/cpt/{type}/posts",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-cpt-endpoint.php get_posts (args per_page,page,status,orderby,order)",
+    "server": ["per_page", "page", "status", "orderby", "order"],
+    "path": ["type"],
+    "fields": ["per_page", "page", "status", "orderby", "order"]
+  },
+  "mcp_create_cpt_post": {
+    "method": "POST", "route": "/mcp/v1/cpt/{type}/posts",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-cpt-endpoint.php create_post (args title,content,status,meta)",
+    "server": ["title", "content", "status", "meta"],
+    "path": ["type"],
+    "fields": ["title", "content", "status", "meta"]
+  },
+  "mcp_update_cpt_post": {
+    "method": "PUT", "route": "/mcp/v1/cpt/{type}/posts/{id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-cpt-endpoint.php update_post (args title,content,status,meta; has_param per field)",
+    "server": ["title", "content", "status", "meta"],
+    "path": ["type", "id"],
+    "fields": ["title", "content", "status", "meta"]
+  },
+  "mcp_delete_cpt_post": {
+    "method": "DELETE", "route": "/mcp/v1/cpt/{type}/posts/{id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-cpt-endpoint.php delete_post (args force)",
+    "server": ["force"],
+    "path": ["type", "id"],
+    "fields": ["force"]
+  }
+}

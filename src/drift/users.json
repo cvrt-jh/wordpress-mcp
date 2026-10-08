@@ -1,0 +1,162 @@
+{
+  "wp_list_users": {
+    "method": "GET",
+    "route": "/wp/v2/users",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php get_items (args get_collection_params)",
+    "server": [
+      "context",
+      "page",
+      "per_page",
+      "search",
+      "exclude",
+      "include",
+      "offset",
+      "order",
+      "orderby",
+      "slug",
+      "roles",
+      "capabilities",
+      "who",
+      "has_published_posts",
+      "search_columns"
+    ],
+    "fields": [
+      "page",
+      "per_page",
+      "search",
+      "exclude",
+      "include",
+      "offset",
+      "order",
+      "orderby",
+      "slug",
+      "roles",
+      "capabilities",
+      "who",
+      "has_published_posts",
+      "search_columns"
+    ],
+    "constants": [
+      "context"
+    ],
+    "response": []
+  },
+  "wp_me": {
+    "method": "GET",
+    "route": "/wp/v2/users/me",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php get_current_item (args context)",
+    "server": [
+      "context"
+    ],
+    "constants": [
+      "context"
+    ]
+  },
+  "wp_get_user": {
+    "method": "GET",
+    "route": "/wp/v2/users/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php get_item (args context)",
+    "server": [
+      "context"
+    ],
+    "path": [
+      "id"
+    ],
+    "constants": [
+      "context"
+    ]
+  },
+  "wp_create_user": {
+    "method": "POST",
+    "route": "/wp/v2/users",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php create_item (args get_endpoint_args_for_item_schema CREATABLE)",
+    "server": [
+      "username",
+      "name",
+      "first_name",
+      "last_name",
+      "email",
+      "url",
+      "description",
+      "locale",
+      "nickname",
+      "slug",
+      "roles",
+      "password",
+      "meta"
+    ],
+    "fields": [
+      "username",
+      "name",
+      "first_name",
+      "last_name",
+      "email",
+      "url",
+      "description",
+      "locale",
+      "nickname",
+      "slug",
+      "roles",
+      "password",
+      "meta"
+    ]
+  },
+  "wp_update_user": {
+    "method": "PUT",
+    "route": "/wp/v2/users/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php update_item (args EDITABLE; a changed username is rejected: 'Username isn't editable.')",
+    "server": [
+      "username",
+      "name",
+      "first_name",
+      "last_name",
+      "email",
+      "url",
+      "description",
+      "locale",
+      "nickname",
+      "slug",
+      "roles",
+      "password",
+      "meta"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "name",
+      "first_name",
+      "last_name",
+      "email",
+      "url",
+      "description",
+      "locale",
+      "nickname",
+      "slug",
+      "roles",
+      "password",
+      "meta"
+    ],
+    "omitted": {
+      "username": "not editable: update_item rejects a username different from the stored one (rest_user_invalid_argument)"
+    }
+  },
+  "wp_delete_user": {
+    "method": "DELETE",
+    "route": "/wp/v2/users/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php delete_item (args force, reassign; force must be true)",
+    "server": [
+      "force",
+      "reassign"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "reassign"
+    ],
+    "constants": [
+      "force"
+    ]
+  }
+}

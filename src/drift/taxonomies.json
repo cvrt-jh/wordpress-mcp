@@ -1,0 +1,180 @@
+{
+  "wp_list_categories": {
+    "method": "GET",
+    "route": "/wp/v2/categories",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php get_items (hierarchical: parent, no offset)",
+    "server": [
+      "context",
+      "page",
+      "per_page",
+      "search",
+      "exclude",
+      "include",
+      "order",
+      "orderby",
+      "hide_empty",
+      "parent",
+      "post",
+      "slug"
+    ],
+    "fields": [
+      "page",
+      "per_page",
+      "search",
+      "exclude",
+      "include",
+      "order",
+      "orderby",
+      "hide_empty",
+      "parent",
+      "post",
+      "slug"
+    ],
+    "omitted": {
+      "context": "context: tool uses the default view context; the slimmed response (src/slim.ts) only reads view fields"
+    },
+    "response": []
+  },
+  "wp_create_category": {
+    "method": "POST",
+    "route": "/wp/v2/categories",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php create_item (schema: name, slug, description, parent, meta)",
+    "server": [
+      "name",
+      "slug",
+      "description",
+      "parent",
+      "meta"
+    ],
+    "fields": [
+      "name",
+      "slug",
+      "description",
+      "parent",
+      "meta"
+    ]
+  },
+  "wp_update_category": {
+    "method": "PUT",
+    "route": "/wp/v2/categories/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php update_item",
+    "server": [
+      "name",
+      "slug",
+      "description",
+      "parent",
+      "meta"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "name",
+      "slug",
+      "description",
+      "parent",
+      "meta"
+    ]
+  },
+  "wp_delete_category": {
+    "method": "DELETE",
+    "route": "/wp/v2/categories/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php delete_item (args force; terms cannot be trashed, 501 without it)",
+    "server": [
+      "force"
+    ],
+    "path": [
+      "id"
+    ],
+    "constants": [
+      "force"
+    ]
+  },
+  "wp_list_tags": {
+    "method": "GET",
+    "route": "/wp/v2/tags",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php get_items (non-hierarchical: offset, no parent)",
+    "server": [
+      "context",
+      "page",
+      "per_page",
+      "search",
+      "exclude",
+      "include",
+      "offset",
+      "order",
+      "orderby",
+      "hide_empty",
+      "post",
+      "slug"
+    ],
+    "fields": [
+      "page",
+      "per_page",
+      "search",
+      "exclude",
+      "include",
+      "offset",
+      "order",
+      "orderby",
+      "hide_empty",
+      "post",
+      "slug"
+    ],
+    "omitted": {
+      "context": "context: tool uses the default view context; the slimmed response (src/slim.ts) only reads view fields"
+    },
+    "response": []
+  },
+  "wp_create_tag": {
+    "method": "POST",
+    "route": "/wp/v2/tags",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php create_item (schema: name, slug, description, meta)",
+    "server": [
+      "name",
+      "slug",
+      "description",
+      "meta"
+    ],
+    "fields": [
+      "name",
+      "slug",
+      "description",
+      "meta"
+    ]
+  },
+  "wp_update_tag": {
+    "method": "PUT",
+    "route": "/wp/v2/tags/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php update_item",
+    "server": [
+      "name",
+      "slug",
+      "description",
+      "meta"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "name",
+      "slug",
+      "description",
+      "meta"
+    ]
+  },
+  "wp_delete_tag": {
+    "method": "DELETE",
+    "route": "/wp/v2/tags/{id}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php delete_item (args force; terms cannot be trashed)",
+    "server": [
+      "force"
+    ],
+    "path": [
+      "id"
+    ],
+    "constants": [
+      "force"
+    ]
+  }
+}

@@ -3,11 +3,12 @@ import { z } from "zod";
 import { forSite } from "../client.js";
 import { jsonResult } from "../types.js";
 import { slimPlugin } from "../slim.js";
+import { toQuery } from "./posts.js";
 
 /**
  * Encode plugin slug for WP REST API URL path.
  * The WP REST API route regex `[^.\/]+(?:\/[^.\/]+)?` rejects dots,
- * so the .php extension must be stripped (e.g., "akismet/akismet.php" → "akismet/akismet").
+ * so the .php extension must be stripped (e.g., "akismet/akismet.php" -> "akismet/akismet").
  * Each segment is then URI-encoded separately, preserving the slash.
  */
 function encodePluginSlug(plugin: string): string {
@@ -21,11 +22,15 @@ export function register(server: McpServer) {
     "List all installed plugins",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      status: z.enum(["active", "inactive"]).optional().describe("Filter by status"),
+      status: z
+        .array(z.enum(["active", "inactive", "network-active"]))
+        .optional()
+        .describe("Limit to these statuses (network-active only on multisite)"),
+      search: z.string().optional().describe("Search plugin name, description and author"),
     },
     async ({ site, ...params }) => {
       const wp = forSite(site);
-      const plugins = await wp.get<unknown[]>("/wp/v2/plugins", params as Record<string, string | number>);
+      const plugins = await wp.get<unknown[]>("/wp/v2/plugins", toQuery(params));
       return jsonResult(plugins.map(slimPlugin));
     }
   );

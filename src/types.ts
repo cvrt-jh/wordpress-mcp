@@ -13,3 +13,11 @@ export function jsonResult(data: unknown): { content: { type: "text"; text: stri
     content: [{ type: "text", text: JSON.stringify(data) }],
   };
 }
+
+/**
+ * The given object without its undefined values, so a partial update sends
+ * only the fields the caller set (endpoints merge them into the stored data).
+ */
+export function defined<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>;
+}

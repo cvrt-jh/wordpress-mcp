@@ -1,0 +1,27 @@
+{
+  "mcp_get_tables": {
+    "method": "GET", "route": "/mcp/v1/db/tables",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-database-endpoint.php get_tables (no args)",
+    "server": []
+  },
+  "mcp_search_replace": {
+    "method": "POST", "route": "/mcp/v1/db/search-replace",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-database-endpoint.php search_replace (args search, replace, tables, dry_run)",
+    "server": ["search", "replace", "tables", "dry_run"], "fields": ["search", "replace", "tables", "dry_run"]
+  },
+  "mcp_optimize_tables": {
+    "method": "POST", "route": "/mcp/v1/db/optimize",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-database-endpoint.php optimize_tables (no args)",
+    "server": []
+  },
+  "mcp_clean_revisions": {
+    "method": "POST", "route": "/mcp/v1/db/clean-revisions",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-database-endpoint.php clean_revisions (args keep)",
+    "server": ["keep"], "fields": ["keep"]
+  },
+  "mcp_clean_comments": {
+    "method": "POST", "route": "/mcp/v1/db/clean-comments",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-database-endpoint.php clean_comments (no args)",
+    "server": []
+  }
+}

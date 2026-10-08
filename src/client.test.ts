@@ -40,4 +40,28 @@ describe("forSite", () => {
     const wp = forSite("a");
     await expect(wp.get("/x")).rejects.toThrow(/WordPress API error 500: boom/);
   });
+
+  it("postRaw sends the body as-is with the given content type", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+    await forSite("a").postRaw("/mcp/seo/v1/import/csv", "a,b\n1,2\n", "text/csv; charset=utf-8");
+
+    const [, init] = fetchSpy.mock.calls[0];
+    expect(init?.method).toBe("POST");
+    expect(init?.body).toBe("a,b\n1,2\n");
+    const headers = init?.headers as Record<string, string>;
+    expect(headers["Content-Type"]).toBe("text/csv; charset=utf-8");
+    expect(headers.Authorization).toMatch(/^Basic /);
+  });
+
+  it("delete sends a JSON body only when one is given", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response("{}", { status: 200 }));
+    const wp = forSite("a");
+    await wp.delete("/x", { force: "true" }, { id: 3 });
+    await wp.delete("/y");
+
+    const [url1, init1] = fetchSpy.mock.calls[0];
+    expect(String(url1)).toBe("https://a.example/wp-json/x?force=true");
+    expect(init1?.body).toBe(JSON.stringify({ id: 3 }));
+    expect(fetchSpy.mock.calls[1][1]?.body).toBeUndefined();
+  });
 });

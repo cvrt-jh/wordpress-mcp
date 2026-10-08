@@ -1,0 +1,27 @@
+{
+  "mcp_search_plugins": {
+    "method": "GET", "route": "/mcp/v1/plugins/search",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-plugins-endpoint.php search_plugins (args search, per_page)",
+    "server": ["search", "per_page"], "fields": ["search", "per_page"]
+  },
+  "mcp_install_plugin": {
+    "method": "POST", "route": "/mcp/v1/plugins/install",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-plugins-endpoint.php install_plugin (args slug, activate)",
+    "server": ["slug", "activate"], "fields": ["slug", "activate"]
+  },
+  "mcp_update_plugin": {
+    "method": "POST", "route": "/mcp/v1/plugins/update",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-plugins-endpoint.php update_plugin (args plugin)",
+    "server": ["plugin"], "fields": ["plugin"]
+  },
+  "mcp_update_all_plugins": {
+    "method": "POST", "route": "/mcp/v1/plugins/update-all",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-plugins-endpoint.php update_all_plugins (no args)",
+    "server": []
+  },
+  "mcp_install_plugin_zip": {
+    "method": "POST", "route": "/mcp/v1/plugins/install-zip",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-plugins-endpoint.php install_plugin_zip (args url, activate, overwrite, token)",
+    "server": ["url", "activate", "overwrite", "token"], "fields": ["url", "activate", "overwrite", "token"]
+  }
+}

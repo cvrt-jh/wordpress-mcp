@@ -1,0 +1,46 @@
+{
+  "wp_list_themes": {
+    "method": "GET",
+    "route": "/wp/v2/themes",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-themes-controller.php get_items (args status)",
+    "server": [
+      "status"
+    ],
+    "fields": [
+      "status"
+    ],
+    "response": []
+  },
+  "wp_get_active_theme": {
+    "method": "GET",
+    "route": "/wp/v2/themes",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-themes-controller.php get_items (args status; tool fixes status=active)",
+    "server": [
+      "status"
+    ],
+    "constants": [
+      "status"
+    ],
+    "response": []
+  },
+  "wp_get_theme": {
+    "method": "GET",
+    "route": "/wp/v2/themes/{stylesheet}",
+    "source": "WordPress 6.9.1 core wp-includes/rest-api/endpoints/class-wp-rest-themes-controller.php get_item (route arg stylesheet only)",
+    "server": [],
+    "path": [
+      "stylesheet"
+    ]
+  },
+  "wp_activate_theme": {
+    "method": "POST",
+    "route": "/mcp/v1/themes/activate",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-themes-endpoint.php activate_theme (args stylesheet)",
+    "server": [
+      "stylesheet"
+    ],
+    "fields": [
+      "stylesheet"
+    ]
+  }
+}

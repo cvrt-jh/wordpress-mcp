@@ -3,6 +3,7 @@ import { z } from "zod";
 import { forSite } from "../client.js";
 import { jsonResult } from "../types.js";
 import { slimTheme } from "../slim.js";
+import { toQuery } from "./posts.js";
 
 export function register(server: McpServer) {
   // List themes
@@ -11,11 +12,11 @@ export function register(server: McpServer) {
     "List all installed themes",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      status: z.enum(["active", "inactive"]).optional().describe("Filter by status"),
+      status: z.array(z.enum(["active", "inactive"])).optional().describe("Limit to these statuses"),
     },
     async ({ site, ...params }) => {
       const wp = forSite(site);
-      const themes = await wp.get<unknown[]>("/wp/v2/themes", params as Record<string, string | number>);
+      const themes = await wp.get<unknown[]>("/wp/v2/themes", toQuery(params));
       return jsonResult(themes.map(slimTheme));
     }
   );

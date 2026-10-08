@@ -1,0 +1,412 @@
+{
+  "legal_status": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/status",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_status",
+    "server": []
+  },
+  "legal_list_documents": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/documents",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php list_documents",
+    "server": []
+  },
+  "legal_get_document": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/documents/{doc}",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_document",
+    "server": [],
+    "path": [
+      "doc"
+    ]
+  },
+  "legal_put_document": {
+    "method": "PUT",
+    "route": "/mcp/legal/v1/documents/{doc}",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php put_document -> class-documents.php save (reads title, sections[{slug,heading,body,level}])",
+    "server": [
+      "title",
+      "sections"
+    ],
+    "path": [
+      "doc"
+    ],
+    "fields": [
+      "title",
+      "sections"
+    ]
+  },
+  "legal_render_document": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/documents/{doc}/render",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php render_document",
+    "server": [],
+    "path": [
+      "doc"
+    ]
+  },
+  "legal_get_page": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/documents/{doc}/page",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_page",
+    "server": [],
+    "path": [
+      "doc"
+    ]
+  },
+  "legal_link_page": {
+    "method": "PUT",
+    "route": "/mcp/legal/v1/documents/{doc}/page",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php put_page (args page_id, integer, minimum 0, required)",
+    "server": [
+      "page_id"
+    ],
+    "path": [
+      "doc"
+    ],
+    "fields": [
+      "page_id"
+    ]
+  },
+  "legal_add_section": {
+    "method": "POST",
+    "route": "/mcp/legal/v1/documents/{doc}/sections",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php post_section -> class-documents.php add_section (reads slug, heading, body, level)",
+    "server": [
+      "slug",
+      "heading",
+      "body",
+      "level"
+    ],
+    "path": [
+      "doc"
+    ],
+    "fields": [
+      "slug",
+      "heading",
+      "body",
+      "level"
+    ]
+  },
+  "legal_update_section": {
+    "method": "PUT",
+    "route": "/mcp/legal/v1/documents/{doc}/sections/{slug}",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php put_section -> class-documents.php update_section (reads heading, body, level; slug never rewritten)",
+    "server": [
+      "heading",
+      "body",
+      "level"
+    ],
+    "path": [
+      "doc",
+      "slug"
+    ],
+    "fields": [
+      "heading",
+      "body",
+      "level"
+    ]
+  },
+  "legal_delete_section": {
+    "method": "DELETE",
+    "route": "/mcp/legal/v1/documents/{doc}/sections/{slug}",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php delete_section",
+    "server": [],
+    "path": [
+      "doc",
+      "slug"
+    ]
+  },
+  "legal_get_consent": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/consent",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_consent",
+    "server": []
+  },
+  "legal_put_consent": {
+    "method": "PUT",
+    "route": "/mcp/legal/v1/consent",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php put_consent -> class-consent.php save_config (merges into get_config keys; unknown keys ignored)",
+    "server": [
+      "enabled",
+      "gtm_id",
+      "loader_url",
+      "ga4_id",
+      "ahrefs_key",
+      "ads_id",
+      "gtm_services",
+      "privacy_page",
+      "imprint_page",
+      "log_enabled",
+      "backdrop"
+    ],
+    "fields": [
+      "enabled",
+      "gtm_id",
+      "loader_url",
+      "ga4_id",
+      "ahrefs_key",
+      "ads_id",
+      "gtm_services",
+      "privacy_page",
+      "imprint_page",
+      "log_enabled",
+      "backdrop"
+    ]
+  },
+  "legal_get_theme": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/consent/theme",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_theme",
+    "server": []
+  },
+  "legal_put_theme": {
+    "method": "PUT",
+    "route": "/mcp/legal/v1/consent/theme",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php put_theme (reads preset, vars)",
+    "server": [
+      "preset",
+      "vars"
+    ],
+    "fields": [
+      "preset",
+      "vars"
+    ]
+  },
+  "legal_get_settings": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/settings",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_settings",
+    "server": []
+  },
+  "legal_update_settings": {
+    "method": "POST",
+    "route": "/mcp/legal/v1/settings",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php post_settings (reads github_token, required_override)",
+    "server": [
+      "github_token",
+      "required_override"
+    ],
+    "fields": [
+      "github_token",
+      "required_override"
+    ]
+  },
+  "legal_consent_log_get": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/consent/log",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_consent_log (reads consent_id)",
+    "server": [
+      "consent_id"
+    ],
+    "fields": [
+      "consent_id"
+    ]
+  },
+  "legal_consent_log_stats": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/consent/log/stats",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_consent_log_stats -> day_range (reads from, to)",
+    "server": [
+      "from",
+      "to"
+    ],
+    "fields": [
+      "from",
+      "to"
+    ],
+    "sample": {
+      "from": "2026-01-01",
+      "to": "2026-02-01"
+    }
+  },
+  "legal_consent_log_export": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/consent/log/export",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_consent_log_export -> day_range (reads from, to)",
+    "server": [
+      "from",
+      "to"
+    ],
+    "fields": [
+      "from",
+      "to"
+    ],
+    "sample": {
+      "from": "2026-01-01",
+      "to": "2026-02-01"
+    }
+  },
+  "legal_get_facts": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/facts",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_facts",
+    "server": []
+  },
+  "legal_put_facts": {
+    "method": "PUT",
+    "route": "/mcp/legal/v1/facts",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php put_facts -> class-generator.php save_facts (body is {field key: value}; keys are the imported libraries' fields)",
+    "server": [],
+    "spread": [
+      "facts"
+    ]
+  },
+  "legal_get_generator": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/generator/{doc}",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_generator",
+    "server": [],
+    "path": [
+      "doc"
+    ]
+  },
+  "legal_put_generator": {
+    "method": "PUT",
+    "route": "/mcp/legal/v1/generator/{doc}",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php put_generator -> class-generator.php save_selection (reads enabled, options, keep)",
+    "server": [
+      "enabled",
+      "options",
+      "keep"
+    ],
+    "path": [
+      "doc"
+    ],
+    "fields": [
+      "enabled",
+      "options",
+      "keep"
+    ]
+  },
+  "legal_get_generator_library": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/generator/{doc}/library",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_generator_library",
+    "server": [],
+    "path": [
+      "doc"
+    ]
+  },
+  "legal_put_generator_library": {
+    "method": "PUT",
+    "route": "/mcp/legal/v1/generator/{doc}/library",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php put_generator_library -> class-generator.php save_library (body is the library: version, number_chapters, fields, sections)",
+    "server": [
+      "version",
+      "number_chapters",
+      "fields",
+      "sections"
+    ],
+    "path": [
+      "doc"
+    ],
+    "spread": [
+      "library"
+    ],
+    "local": {
+      "library_file": "local .json path read client side; its object becomes the body"
+    },
+    "sample": {
+      "library_file": null
+    }
+  },
+  "legal_restore_generator": {
+    "method": "POST",
+    "route": "/mcp/legal/v1/generator/{doc}/restore",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php post_generator_restore",
+    "server": [],
+    "path": [
+      "doc"
+    ]
+  },
+  "legal_get_social": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/social",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_social",
+    "server": []
+  },
+  "legal_put_social": {
+    "method": "PUT",
+    "route": "/mcp/legal/v1/social",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php put_social -> class-social.php save_selection (reads networks{key:{enabled,urls}}; missing networks switched off)",
+    "server": [
+      "networks"
+    ],
+    "fields": [
+      "networks"
+    ]
+  },
+  "legal_get_social_modules": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/social/modules",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_social_modules",
+    "server": []
+  },
+  "legal_put_social_modules": {
+    "method": "PUT",
+    "route": "/mcp/legal/v1/social/modules",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php put_social_modules -> class-social.php save_modules (body: heading, general, intro, networks)",
+    "server": [
+      "heading",
+      "general",
+      "intro",
+      "networks"
+    ],
+    "spread": [
+      "modules"
+    ],
+    "local": {
+      "modules_file": "local .json path read client side; its object becomes the body"
+    },
+    "sample": {
+      "modules_file": null
+    }
+  },
+  "legal_get_accessibility": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/accessibility",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_accessibility",
+    "server": []
+  },
+  "legal_put_accessibility": {
+    "method": "PUT",
+    "route": "/mcp/legal/v1/accessibility",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php put_accessibility -> class-accessibility.php save_config (merges get_config keys; tools/repairs keys from tools() / class-repair.php rules())",
+    "server": [
+      "enabled",
+      "position",
+      "color",
+      "tools",
+      "repairs",
+      "statement_page",
+      "statement_url",
+      "sitemap_url"
+    ],
+    "fields": [
+      "enabled",
+      "position",
+      "color",
+      "tools",
+      "repairs",
+      "statement_page",
+      "statement_url",
+      "sitemap_url"
+    ],
+    "sample": {
+      "color": "#1d4ed8"
+    }
+  },
+  "legal_get_accessibility_report": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/accessibility/report",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php get_repair_report",
+    "server": []
+  },
+  "legal_reset_accessibility_report": {
+    "method": "DELETE",
+    "route": "/mcp/legal/v1/accessibility/report",
+    "source": "cvrt-legal 0.10.3 includes/class-rest-api.php delete_repair_report",
+    "server": []
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "mcp_list_sidebars": {
+    "method": "GET", "route": "/mcp/v1/widgets/sidebars",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-widgets-endpoint.php list_sidebars (no args)",
+    "server": []
+  },
+  "mcp_get_sidebar_widgets": {
+    "method": "GET", "route": "/mcp/v1/widgets/sidebars/{sidebar_id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-widgets-endpoint.php get_sidebar_widgets (path sidebar_id only)",
+    "server": [], "path": ["sidebar_id"]
+  },
+  "mcp_list_widget_types": {
+    "method": "GET", "route": "/mcp/v1/widgets/types",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-widgets-endpoint.php list_widget_types (no args)",
+    "server": []
+  },
+  "mcp_get_widget": {
+    "method": "GET", "route": "/mcp/v1/widgets/{widget_id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-widgets-endpoint.php get_widget (path widget_id only)",
+    "server": [], "path": ["widget_id"]
+  },
+  "mcp_add_widget": {
+    "method": "POST", "route": "/mcp/v1/widgets",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-widgets-endpoint.php add_widget (args sidebar_id, widget_type, settings, position)",
+    "server": ["sidebar_id", "widget_type", "settings", "position"],
+    "fields": ["sidebar_id", "widget_type", "settings", "position"]
+  },
+  "mcp_update_widget": {
+    "method": "PUT", "route": "/mcp/v1/widgets/{widget_id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-widgets-endpoint.php update_widget (no args registered; callback reads settings and array_merges it)",
+    "server": ["settings"], "path": ["widget_id"], "fields": ["settings"]
+  },
+  "mcp_delete_widget": {
+    "method": "DELETE", "route": "/mcp/v1/widgets/{widget_id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-widgets-endpoint.php delete_widget (path widget_id only)",
+    "server": [], "path": ["widget_id"]
+  },
+  "mcp_reorder_widgets": {
+    "method": "POST", "route": "/mcp/v1/widgets/sidebars/{sidebar_id}/reorder",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-widgets-endpoint.php reorder_widgets (args widget_ids; sidebar_id is the path)",
+    "server": ["widget_ids"], "path": ["sidebar_id"], "fields": ["widget_ids"]
+  },
+  "mcp_move_widget": {
+    "method": "POST", "route": "/mcp/v1/widgets/{widget_id}/move",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-widgets-endpoint.php move_widget (args sidebar_id, position; widget_id is the path)",
+    "server": ["sidebar_id", "position"], "path": ["widget_id"], "fields": ["sidebar_id", "position"]
+  }
+}

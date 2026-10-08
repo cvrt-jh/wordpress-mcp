@@ -1,0 +1,47 @@
+{
+  "mcp_list_media": {
+    "method": "GET", "route": "/mcp/v1/media",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-media-endpoint.php list_media (args per_page,page,mime_type,search,orderby,order)",
+    "server": ["per_page", "page", "mime_type", "search", "orderby", "order"],
+    "fields": ["per_page", "page", "mime_type", "search", "orderby", "order"]
+  },
+  "mcp_get_media": {
+    "method": "GET", "route": "/mcp/v1/media/{id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-media-endpoint.php get_media",
+    "server": [], "path": ["id"]
+  },
+  "mcp_sideload_media": {
+    "method": "POST", "route": "/mcp/v1/media/sideload",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-media-endpoint.php sideload_media (args url,filename,title,alt,caption; update_attachment_data also reads description from get_params)",
+    "server": ["url", "filename", "title", "alt", "caption", "description"],
+    "fields": ["url", "filename", "title", "alt", "caption", "description"]
+  },
+  "mcp_update_media": {
+    "method": "PUT", "route": "/mcp/v1/media/{id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-media-endpoint.php update_media (no args; has_param title,caption,description,alt)",
+    "server": ["title", "alt", "caption", "description"],
+    "path": ["id"],
+    "fields": ["title", "alt", "caption", "description"]
+  },
+  "mcp_delete_media": {
+    "method": "DELETE", "route": "/mcp/v1/media/{id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-media-endpoint.php delete_media (args force, default true)",
+    "server": ["force"], "path": ["id"], "fields": ["force"]
+  },
+  "mcp_bulk_delete_media": {
+    "method": "POST", "route": "/mcp/v1/media/bulk-delete",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-media-endpoint.php bulk_delete_media (args ids,force)",
+    "server": ["ids", "force"],
+    "fields": ["ids", "force"]
+  },
+  "mcp_regenerate_thumbnails": {
+    "method": "POST", "route": "/mcp/v1/media/{id}/regenerate",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-media-endpoint.php regenerate_thumbnails",
+    "server": [], "path": ["id"]
+  },
+  "mcp_get_media_stats": {
+    "method": "GET", "route": "/mcp/v1/media/stats",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-media-endpoint.php get_stats",
+    "server": []
+  }
+}

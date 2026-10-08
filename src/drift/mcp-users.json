@@ -1,0 +1,51 @@
+{
+  "mcp_list_users": {
+    "method": "GET", "route": "/mcp/v1/users",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-users-endpoint.php list_users (args role,per_page,page,search,orderby,order)",
+    "server": ["role", "per_page", "page", "search", "orderby", "order"],
+    "fields": ["role", "per_page", "page", "search", "orderby", "order"]
+  },
+  "mcp_get_user": {
+    "method": "GET", "route": "/mcp/v1/users/{id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-users-endpoint.php get_user",
+    "server": [], "path": ["id"]
+  },
+  "mcp_create_user": {
+    "method": "POST", "route": "/mcp/v1/users",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-users-endpoint.php create_user (args username,email,password,first_name,last_name,role,send_notification)",
+    "server": ["username", "email", "password", "first_name", "last_name", "role", "send_notification"],
+    "fields": ["username", "email", "password", "first_name", "last_name", "role", "send_notification"]
+  },
+  "mcp_update_user": {
+    "method": "PUT", "route": "/mcp/v1/users/{id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-users-endpoint.php update_user (no args; has_param email,password,first_name,last_name,display_name,description,url)",
+    "server": ["email", "password", "first_name", "last_name", "display_name", "description", "url"],
+    "path": ["id"],
+    "fields": ["email", "password", "first_name", "last_name", "display_name", "description", "url"]
+  },
+  "mcp_delete_user": {
+    "method": "DELETE", "route": "/mcp/v1/users/{id}",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-users-endpoint.php delete_user (args reassign)",
+    "server": ["reassign"], "path": ["id"], "fields": ["reassign"]
+  },
+  "mcp_list_roles": {
+    "method": "GET", "route": "/mcp/v1/users/roles",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-users-endpoint.php list_roles",
+    "server": []
+  },
+  "mcp_change_user_role": {
+    "method": "PUT", "route": "/mcp/v1/users/{id}/role",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-users-endpoint.php update_role (args role)",
+    "server": ["role"], "path": ["id"], "fields": ["role"]
+  },
+  "mcp_get_user_meta": {
+    "method": "GET", "route": "/mcp/v1/users/{id}/meta",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-users-endpoint.php get_user_meta",
+    "server": [], "path": ["id"]
+  },
+  "mcp_update_user_meta": {
+    "method": "POST", "route": "/mcp/v1/users/{id}/meta",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-users-endpoint.php update_user_meta (args meta)",
+    "server": ["meta"], "path": ["id"], "fields": ["meta"]
+  }
+}

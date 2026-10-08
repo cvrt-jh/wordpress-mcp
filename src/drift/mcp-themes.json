@@ -1,0 +1,32 @@
+{
+  "mcp_search_themes": {
+    "method": "GET", "route": "/mcp/v1/themes/search",
+    "source": "cvrt-mcp-endpoints 1.14.2 includes/endpoints/class-themes-endpoint.php search_themes (args search, per_page)",
+    "server": ["search", "per_page"], "fields": ["search", "per_page"]
+  },
+  "mcp_install_theme": {
+    "method": "POST", "route": "/mcp/v1/themes/install",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-themes-endpoint.php install_theme (args slug, activate)",
+    "server": ["slug", "activate"], "fields": ["slug", "activate"]
+  },
+  "mcp_update_theme": {
+    "method": "POST", "route": "/mcp/v1/themes/update",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-themes-endpoint.php update_theme (args stylesheet)",
+    "server": ["stylesheet"], "fields": ["stylesheet"]
+  },
+  "mcp_update_all_themes": {
+    "method": "POST", "route": "/mcp/v1/themes/update-all",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-themes-endpoint.php update_all_themes (no args)",
+    "server": []
+  },
+  "mcp_delete_theme": {
+    "method": "DELETE", "route": "/mcp/v1/themes/delete",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-themes-endpoint.php delete_theme (args stylesheet, sent as query)",
+    "server": ["stylesheet"], "fields": ["stylesheet"]
+  },
+  "mcp_install_theme_zip": {
+    "method": "POST", "route": "/mcp/v1/themes/install-zip",
+    "source": "cvrt-mcp-endpoints 1.14.2 class-themes-endpoint.php install_theme_zip (args url, activate, overwrite; NO token, unlike plugins/install-zip)",
+    "server": ["url", "activate", "overwrite"], "fields": ["url", "activate", "overwrite"]
+  }
+}

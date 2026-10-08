@@ -1,8 +1,28 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { forSite } from "../client.js";
-import { jsonResult } from "../types.js";
+import { defined, jsonResult } from "../types.js";
 import { slimCategory, slimTag } from "../slim.js";
+import { toQuery } from "./posts.js";
+
+/** Collection filters shared by wp/v2 categories and tags (WP_REST_Terms_Controller::get_collection_params). */
+const termCollectionParams = {
+  per_page: z.number().int().optional().default(100).describe("Terms per page (max 100)"),
+  page: z.number().int().optional().describe("Page number"),
+  search: z.string().optional().describe("Search term"),
+  include: z.array(z.number().int()).optional().describe("Limit to these term IDs"),
+  exclude: z.array(z.number().int()).optional().describe("Exclude these term IDs"),
+  slug: z.array(z.string()).optional().describe("Limit to these slugs"),
+  post: z.number().int().optional().describe("Limit to terms assigned to this post ID"),
+  hide_empty: z.boolean().optional().default(false).describe("Hide terms with no posts"),
+  orderby: z
+    .enum(["id", "include", "name", "slug", "include_slugs", "term_group", "description", "count"])
+    .optional()
+    .describe("Sort field (default name)"),
+  order: z.enum(["asc", "desc"]).optional().describe("Sort direction (default asc)"),
+};
+
+const meta = z.record(z.string(), z.unknown()).optional().describe("Registered term meta fields (show_in_rest) as key/value");
 
 export function register(server: McpServer) {
   // === CATEGORIES ===
@@ -10,19 +30,15 @@ export function register(server: McpServer) {
   // List categories
   server.tool(
     "wp_list_categories",
-    "List all categories",
+    "List categories",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      per_page: z.number().optional().default(100).describe("Categories per page"),
-      parent: z.number().optional().describe("Parent category ID (0 for top-level)"),
-      hide_empty: z.boolean().optional().default(false).describe("Hide categories with no posts"),
+      ...termCollectionParams,
+      parent: z.number().int().optional().describe("Limit to children of this category ID (0 = top level)"),
     },
-    async ({ site, per_page, parent, hide_empty }) => {
+    async ({ site, ...params }) => {
       const wp = forSite(site);
-      const params: Record<string, string | number> = { per_page };
-      if (parent !== undefined) params.parent = parent;
-      if (hide_empty) params.hide_empty = 1;
-      const cats = await wp.get<unknown[]>("/wp/v2/categories", params);
+      const cats = await wp.get<unknown[]>("/wp/v2/categories", toQuery(params));
       return jsonResult(cats.map(slimCategory));
     }
   );
@@ -35,12 +51,13 @@ export function register(server: McpServer) {
       site: z.string().describe("Site id (see list_sites)"),
       name: z.string().describe("Category name"),
       slug: z.string().optional().describe("URL slug"),
-      parent: z.number().optional().default(0).describe("Parent category ID"),
+      parent: z.number().int().optional().describe("Parent category ID (default 0 = top level)"),
       description: z.string().optional().describe("Description"),
+      meta,
     },
     async ({ site, ...params }) => {
       const wp = forSite(site);
-      const cat = await wp.post<Record<string, unknown>>("/wp/v2/categories", params);
+      const cat = await wp.post<Record<string, unknown>>("/wp/v2/categories", defined(params));
       return jsonResult(slimCategory(cat));
     }
   );
@@ -48,18 +65,19 @@ export function register(server: McpServer) {
   // Update category
   server.tool(
     "wp_update_category",
-    "Update a category",
+    "Update a category (only the given fields change)",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Category ID"),
+      id: z.number().int().describe("Category ID"),
       name: z.string().optional().describe("Category name"),
       slug: z.string().optional().describe("URL slug"),
-      parent: z.number().optional().describe("Parent category ID"),
+      parent: z.number().int().optional().describe("Parent category ID (0 = top level)"),
       description: z.string().optional().describe("Description"),
+      meta,
     },
     async ({ site, id, ...params }) => {
       const wp = forSite(site);
-      const cat = await wp.put<Record<string, unknown>>(`/wp/v2/categories/${id}`, params);
+      const cat = await wp.put<Record<string, unknown>>(`/wp/v2/categories/${id}`, defined(params));
       return jsonResult(slimCategory(cat));
     }
   );
@@ -67,13 +85,14 @@ export function register(server: McpServer) {
   // Delete category
   server.tool(
     "wp_delete_category",
-    "Delete a category",
+    "Delete a category permanently (its posts fall back to the default category)",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Category ID"),
+      id: z.number().int().describe("Category ID"),
     },
     async ({ site, id }) => {
       const wp = forSite(site);
+      // Terms cannot be trashed: WP answers 501 without force=true.
       await wp.delete<Record<string, unknown>>(`/wp/v2/categories/${id}`, { force: 1 });
       return jsonResult({ deleted: true, id });
     }
@@ -84,19 +103,15 @@ export function register(server: McpServer) {
   // List tags
   server.tool(
     "wp_list_tags",
-    "List all tags",
+    "List tags",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      per_page: z.number().optional().default(100).describe("Tags per page"),
-      search: z.string().optional().describe("Search term"),
-      hide_empty: z.boolean().optional().default(false).describe("Hide tags with no posts"),
+      ...termCollectionParams,
+      offset: z.number().int().optional().describe("Skip this many tags (overrides page)"),
     },
-    async ({ site, per_page, search, hide_empty }) => {
+    async ({ site, ...params }) => {
       const wp = forSite(site);
-      const params: Record<string, string | number> = { per_page };
-      if (search) params.search = search;
-      if (hide_empty) params.hide_empty = 1;
-      const tags = await wp.get<unknown[]>("/wp/v2/tags", params);
+      const tags = await wp.get<unknown[]>("/wp/v2/tags", toQuery(params));
       return jsonResult(tags.map(slimTag));
     }
   );
@@ -110,10 +125,11 @@ export function register(server: McpServer) {
       name: z.string().describe("Tag name"),
       slug: z.string().optional().describe("URL slug"),
       description: z.string().optional().describe("Description"),
+      meta,
     },
     async ({ site, ...params }) => {
       const wp = forSite(site);
-      const tag = await wp.post<Record<string, unknown>>("/wp/v2/tags", params);
+      const tag = await wp.post<Record<string, unknown>>("/wp/v2/tags", defined(params));
       return jsonResult(slimTag(tag));
     }
   );
@@ -121,17 +137,18 @@ export function register(server: McpServer) {
   // Update tag
   server.tool(
     "wp_update_tag",
-    "Update a tag",
+    "Update a tag (only the given fields change)",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Tag ID"),
+      id: z.number().int().describe("Tag ID"),
       name: z.string().optional().describe("Tag name"),
       slug: z.string().optional().describe("URL slug"),
       description: z.string().optional().describe("Description"),
+      meta,
     },
     async ({ site, id, ...params }) => {
       const wp = forSite(site);
-      const tag = await wp.put<Record<string, unknown>>(`/wp/v2/tags/${id}`, params);
+      const tag = await wp.put<Record<string, unknown>>(`/wp/v2/tags/${id}`, defined(params));
       return jsonResult(slimTag(tag));
     }
   );
@@ -139,13 +156,14 @@ export function register(server: McpServer) {
   // Delete tag
   server.tool(
     "wp_delete_tag",
-    "Delete a tag",
+    "Delete a tag permanently",
     {
       site: z.string().describe("Site id (see list_sites)"),
-      id: z.number().describe("Tag ID"),
+      id: z.number().int().describe("Tag ID"),
     },
     async ({ site, id }) => {
       const wp = forSite(site);
+      // Terms cannot be trashed: WP answers 501 without force=true.
       await wp.delete<Record<string, unknown>>(`/wp/v2/tags/${id}`, { force: 1 });
       return jsonResult({ deleted: true, id });
     }
