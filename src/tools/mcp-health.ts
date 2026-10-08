@@ -185,7 +185,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "mcp_scan_uploads",
-    "Scan the uploads directory for executable files (.php, .phtml, .phar, .pht, .phps, .shtml, .cgi, also double extensions like x.php.jpg). Read-only; symlinks are not followed. Each finding has path, size, modified, sha256 and benign (a code-free 'Silence is golden' index.php). Caps: 500 findings, 200000 files (truncated says so). cvrt-mcp-endpoints 1.16.0+.",
+    "Scan the uploads directory for executable files (.php, .phtml, .phar, .pht, .phps, .shtml, .cgi, also double extensions like x.php.jpg). Read-only; symlinks are not followed. Each finding has path, size, modified, sha256, benign and reason (a code-free 'Silence is golden' index.php, or a known plugin file such as a Borlabs Cookie compatibility patch, checked by active plugin + path + the file's own guard; cvrt-mcp-endpoints 1.16.1+). Caps: 500 findings, 200000 files (truncated says so). cvrt-mcp-endpoints 1.16.0+.",
     {
       site: z.string().describe("Site id (see list_sites)"),
     },
