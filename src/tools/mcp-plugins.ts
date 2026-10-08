@@ -68,12 +68,13 @@ export function register(server: McpServer) {
   // Update single plugin
   server.tool(
     "mcp_update_plugin",
-    "Update a single plugin to the latest version. A plugin that was active before is reactivated after the file swap (reactivated / reactivate_error report it). cvrt-mcp-endpoints itself is refused (409): update it via mcp_install_plugin_zip or wp-admin.",
+    "Update a single plugin to the latest version. refresh:true first runs a fresh update check for it (wp.org and Plugin Update Checker / GitHub releases), so a just-released update is seen without waiting 12 h. A plugin that was active before is reactivated after the file swap (reactivated / reactivate_error report it). updated:false means already up to date; a failed download or unpack is an error (502, cvrt-mcp-endpoints 1.16.0+). cvrt-mcp-endpoints itself is refused (409): update it via mcp_install_plugin_zip or wp-admin.",
     {
       site: z.string().describe("Site id (see list_sites)"),
       plugin: z.string().describe("Plugin file path (e.g., akismet/akismet.php)"),
+      refresh: z.boolean().optional().describe("Run a fresh update check for this plugin first (cvrt-mcp-endpoints 1.16.0+)"),
     },
-    async ({ site, plugin }) => {
+    async ({ site, plugin, refresh }) => {
       const wp = forSite(site);
       const result = await wp.post<{
         updated: boolean;
@@ -82,8 +83,26 @@ export function register(server: McpServer) {
         active: boolean;
         reactivated: boolean;
         reactivate_error?: string;
-      }>("/mcp/v1/plugins/update", { plugin });
+      }>("/mcp/v1/plugins/update", defined({ plugin, refresh }));
       return jsonResult(result);
+    }
+  );
+
+  server.tool(
+    "mcp_check_plugin_updates",
+    "Check for plugin updates now: runs every Plugin Update Checker instance (GitHub-released plugins such as the cvrt-* and wp-woo-pdf-builder; their own check otherwise runs every 12 h) and a fresh wp.org check. plugin limits the PUC run to one plugin. Returns puc_checked (slugs) and updates [{plugin, name, current, new_version, source: puc|wporg}]. Audit-logged. cvrt-mcp-endpoints 1.16.0+.",
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+      plugin: z.string().optional().describe("Plugin file path to limit the PUC check to (e.g., wp-woo-pdf-builder/wp-woo-pdf-builder.php)"),
+    },
+    async ({ site, plugin }) => {
+      const wp = forSite(site);
+      return jsonResult(
+        await wp.post<{
+          puc_checked: string[];
+          updates: { plugin: string; name: string; current: string; new_version: string; source: "puc" | "wporg" }[];
+        }>("/mcp/v1/plugins/check-updates", defined({ plugin }))
+      );
     }
   );
 

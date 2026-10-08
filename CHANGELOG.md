@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.0] - 2026-10-08
+
+Needs cvrt-mcp-endpoints 1.16.0 for the new tools.
+
+### Added
+- `mcp_check_plugin_updates`: run Plugin Update Checker (GitHub-released plugins) and wp.org checks now; lists updates with source.
+- `mcp_update_plugin` takes `refresh` to check first, so a just-released GitHub update installs without SSH.
+- `mcp_get_action_scheduler` / `mcp_run_action_scheduler`: queue status (failures secret-masked) and on-demand run of due actions.
+- `mcp_scan_uploads`: executable files under uploads with sha256 and a benign flag.
+- `mcp_get_audit_log`: the site's audit trail of state-changing MCP calls.
+
+### Changed
+- `mcp_run_cron` describes the 1.16.0 behaviour (reschedule/unschedule like `wp cron event run`, `next_run_timestamp`).
+- `mcp_flush_cache` says it does not purge a page cache in front of WordPress.
+
 ## [3.6.0] - 2026-10-08
 
 ### Security

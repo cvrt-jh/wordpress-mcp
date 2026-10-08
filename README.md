@@ -134,7 +134,7 @@ All responses are automatically trimmed. Example:
 | HTML tags | excerpts | Clean text output |
 | Pretty-print JSON | all | Compact single-line output |
 
-## Tools (276)
+## Tools (281)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself.
 
@@ -220,7 +220,8 @@ These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-end
 ### Plugin Management (4)
 - `mcp_search_plugins` - Search WordPress.org plugins
 - `mcp_install_plugin` - Install plugin from WordPress.org
-- `mcp_update_plugin` - Update single plugin
+- `mcp_update_plugin` - Update single plugin (`refresh` checks first, incl. GitHub/PUC plugins)
+- `mcp_check_plugin_updates` - Run Plugin Update Checker and wp.org checks now, list updates
 - `mcp_update_all_plugins` - Update all plugins
 
 ### Theme Management (5)
@@ -236,7 +237,7 @@ These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-end
 - `mcp_check_updates` - Check for all updates
 - `mcp_update_core` - Update WordPress core
 - `mcp_flush_rewrite` - Flush rewrite rules
-- `mcp_flush_cache` - Clear all caches
+- `mcp_flush_cache` - Flush object cache and transients (not a page cache in front of WordPress)
 
 ### Database Management (5)
 - `mcp_get_tables` - List tables with sizes
@@ -278,7 +279,11 @@ These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-end
 - `mcp_get_php_info` - PHP configuration
 - `mcp_get_plugins_health` - Plugin health/updates
 - `mcp_get_cron_status` - Cron jobs status
-- `mcp_run_cron` - Run cron hook manually
+- `mcp_run_cron` - Run a cron event now (rescheduled/unscheduled like `wp cron event run`)
+- `mcp_get_action_scheduler` - Action Scheduler counts, past-due and recent failures
+- `mcp_run_action_scheduler` - Run due Action Scheduler actions now (1-50, optional hook/group)
+- `mcp_scan_uploads` - Executable files under uploads (sha256, benign flag)
+- `mcp_get_audit_log` - Audit trail of state-changing MCP calls
 
 ---
 

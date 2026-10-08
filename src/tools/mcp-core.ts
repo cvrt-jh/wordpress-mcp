@@ -105,7 +105,7 @@ export function register(server: McpServer) {
   // Flush cache
   server.tool(
     "mcp_flush_cache",
-    "Flush the object cache and delete all transients and site transients",
+    "Flush the WordPress object cache and delete all transients and site transients. Does NOT purge a page cache in front of WordPress (Bearfort forts: the nginx page cache is purged by bearfort-cache.php on content changes; a manual purge goes through the Bearfort API, not this tool).",
     {
       site: z.string().describe("Site id (see list_sites)"),
     },

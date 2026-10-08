@@ -5,7 +5,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { forSite } from "../client.js";
-import { jsonResult } from "../types.js";
+import { defined, jsonResult } from "../types.js";
 
 export function register(server: McpServer) {
   // Get health status
@@ -136,18 +136,75 @@ export function register(server: McpServer) {
   // Run cron job
   server.tool(
     "mcp_run_cron",
-    "Run a scheduled cron hook now with the args of its first scheduled event (404 if the hook is not scheduled). The event stays scheduled.",
+    "Run the earliest scheduled event of a cron hook now, like `wp cron event run`: a recurring event moves to its next slot, a single event is unscheduled, then the hook fires (404 if not scheduled). Returns next_run_timestamp (null for a single event). Audit-logged. cvrt-mcp-endpoints 1.16.0+; older versions leave the event due.",
     {
       site: z.string().describe("Site id (see list_sites)"),
       hook: z.string().describe("Cron hook name to run"),
     },
     async ({ site, hook }) => {
       const wp = forSite(site);
-      const result = await wp.post<{ hook: string; executed: boolean }>(
+      const result = await wp.post<{ hook: string; executed: boolean; schedule?: string; next_run_timestamp?: number | null }>(
         "/mcp/v1/health/cron/run",
         { hook }
       );
       return jsonResult(result);
+    }
+  );
+
+  server.tool(
+    "mcp_get_action_scheduler",
+    "Action Scheduler queue (WooCommerce emails, webhooks, PDF jobs): counts per status, past_due pending actions and the 10 most recent failures with their last log message (secret-masked). available:false when Action Scheduler is not loaded. cvrt-mcp-endpoints 1.16.0+.",
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.get<Record<string, unknown>>("/mcp/v1/health/action-scheduler"));
+    }
+  );
+
+  server.tool(
+    "mcp_run_action_scheduler",
+    "Run due (past-due pending) Action Scheduler actions now through Action Scheduler's own runner, oldest first. Optional hook/group filters. Returns processed, failed, remaining. 501 when Action Scheduler is not active. Audit-logged. cvrt-mcp-endpoints 1.16.0+.",
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+      batch_size: z.number().int().min(1).max(50).optional().describe("How many due actions to run (1-50, default 25)"),
+      hook: z.string().optional().describe("Only actions of this hook"),
+      group: z.string().optional().describe("Only actions of this group"),
+    },
+    async ({ site, ...filters }) => {
+      const wp = forSite(site);
+      return jsonResult(
+        await wp.post<{ processed: number; failed: number; remaining: number }>(
+          "/mcp/v1/health/action-scheduler/run",
+          defined(filters)
+        )
+      );
+    }
+  );
+
+  server.tool(
+    "mcp_scan_uploads",
+    "Scan the uploads directory for executable files (.php, .phtml, .phar, .pht, .phps, .shtml, .cgi, also double extensions like x.php.jpg). Read-only; symlinks are not followed. Each finding has path, size, modified, sha256 and benign (a code-free 'Silence is golden' index.php). Caps: 500 findings, 200000 files (truncated says so). cvrt-mcp-endpoints 1.16.0+.",
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+    },
+    async ({ site }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.get<Record<string, unknown>>("/mcp/v1/health/uploads-scan"));
+    }
+  );
+
+  server.tool(
+    "mcp_get_audit_log",
+    "Audit trail of state-changing MCP calls on this site (cron runs, Action Scheduler runs, update checks), newest first: time, action, user, context (secret-masked). The site keeps the newest 200. cvrt-mcp-endpoints 1.16.0+.",
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+      limit: z.number().int().min(1).max(200).optional().describe("How many entries (default 50)"),
+    },
+    async ({ site, limit }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.get<Record<string, unknown>>("/mcp/v1/health/audit", defined({ limit })));
     }
   );
 }

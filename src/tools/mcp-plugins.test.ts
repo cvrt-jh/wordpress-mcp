@@ -77,4 +77,24 @@ describe("mcp_search_plugins", () => {
     expect(schema.safeParse({ site: "a", search: "seo", per_page: 2.5 }).success).toBe(false);
     expect(schema.parse({ site: "a", search: "seo" }).per_page).toBe(10);
   });
+
+  it("mcp_update_plugin sends refresh only when set", async () => {
+    post.mockResolvedValue({ updated: true });
+    await tool("mcp_update_plugin").handler({ site: "a", plugin: "x/x.php" });
+    await tool("mcp_update_plugin").handler({ site: "a", plugin: "x/x.php", refresh: true });
+    expect(post.mock.calls).toEqual([
+      ["/mcp/v1/plugins/update", { plugin: "x/x.php" }],
+      ["/mcp/v1/plugins/update", { plugin: "x/x.php", refresh: true }],
+    ]);
+  });
+
+  it("mcp_check_plugin_updates posts the optional plugin", async () => {
+    post.mockResolvedValue({ puc_checked: [], updates: [] });
+    await tool("mcp_check_plugin_updates").handler({ site: "a" });
+    await tool("mcp_check_plugin_updates").handler({ site: "a", plugin: "x/x.php" });
+    expect(post.mock.calls).toEqual([
+      ["/mcp/v1/plugins/check-updates", {}],
+      ["/mcp/v1/plugins/check-updates", { plugin: "x/x.php" }],
+    ]);
+  });
 });
