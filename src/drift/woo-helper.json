@@ -1,0 +1,54 @@
+{
+  "woo_helper_status": {
+    "method": "GET",
+    "route": "/mcp/woo-helper/v1/status",
+    "source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php get_status (no args)",
+    "server": []
+  },
+  "woo_helper_get_settings": {
+    "method": "GET",
+    "route": "/mcp/woo-helper/v1/settings",
+    "source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php get_settings (no args)",
+    "server": []
+  },
+  "woo_helper_update_settings": {
+    "method": "PUT",
+    "route": "/mcp/woo-helper/v1/settings",
+    "source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php update_settings -> Settings::update (github_token, clear_github_token)",
+    "server": [
+      "github_token",
+      "clear_github_token"
+    ],
+    "fields": [
+      "github_token",
+      "clear_github_token"
+    ]
+  },
+  "woo_helper_get_stripe": {
+    "method": "GET",
+    "route": "/mcp/woo-helper/v1/stripe",
+    "source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php get_stripe (no args)",
+    "server": []
+  },
+  "woo_helper_update_stripe": {
+    "method": "PUT",
+    "route": "/mcp/woo-helper/v1/stripe",
+    "source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php update_stripe (express_checkout, locations, scripts_checkout_only)",
+    "server": [
+      "express_checkout",
+      "locations",
+      "scripts_checkout_only"
+    ],
+    "fields": [
+      "express_checkout",
+      "locations",
+      "scripts_checkout_only"
+    ]
+  },
+  "woo_helper_stripe_status": {
+    "method": "GET",
+    "route": "/mcp/woo-helper/v1/stripe/status",
+    "source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php get_stripe_status (no args)",
+    "server": []
+  }
+}

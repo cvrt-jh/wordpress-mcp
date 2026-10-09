@@ -48,6 +48,12 @@ import { register as registerSeo } from "./tools/seo.js";
 // Fort tools (Bearfort API: backups, jobs, logs) - need BEARFORT_API_KEY
 import { register as registerFort } from "./tools/fort.js";
 
+// cvrt-woo-helper (mcp/woo-helper/v1): Stripe express checkout + Stripe.js loading
+import { register as registerWooHelper } from "./tools/woo-helper.js";
+
+// Stripe proxy + gateway status (mcp/v1/stripe, mcp/v1/payments) - cvrt-mcp-endpoints 1.17.0
+import { register as registerStripe } from "./tools/stripe.js";
+
 export function registerAll(server: McpServer): void {
   // Multi-site: list_sites has no `site` param; every other tool requires one.
   registerSites(server);
@@ -90,4 +96,6 @@ export function registerAll(server: McpServer): void {
   registerFields(server);
   registerSeo(server);
   registerFort(server);
+  registerWooHelper(server);
+  registerStripe(server);
 }

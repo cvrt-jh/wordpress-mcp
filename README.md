@@ -134,7 +134,7 @@ All responses are automatically trimmed. Example:
 | HTML tags | excerpts | Clean text output |
 | Pretty-print JSON | all | Compact single-line output |
 
-## Tools (286)
+## Tools (301)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself.
 
@@ -526,6 +526,15 @@ backups (`fort_backup_create`, `fort_backup_list`, `fort_job_get`), page-cache p
 `lines`, `grep`, `since`). Set `BEARFORT_API_KEY` (admin key) and optionally
 `BEARFORT_API_URL`; without the key these tools refuse to run. The fort is resolved from the
 site URL. Restore is not exposed.
+
+## Stripe and Payments
+
+`stripe_*` tools (cvrt-mcp-endpoints 1.17.0+) read the Stripe account behind the WooCommerce
+Stripe Gateway through the site itself: the key never leaves WordPress and results are
+whitelisted. Writes (`stripe_recreate_webhook`, `stripe_set_payment_method`) need
+`confirm: true` and are audit-logged on the site. `woo_gateway_status` shows which gateways a
+customer from a given country gets. Express checkout and where Stripe.js loads belong to
+cvrt-woo-helper (`woo_helper_*`).
 
 ## Secret Masking
 

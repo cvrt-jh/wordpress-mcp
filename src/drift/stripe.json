@@ -1,0 +1,91 @@
+{
+  "stripe_get_settings": {
+    "method": "GET",
+    "route": "/mcp/v1/stripe/settings",
+    "source": "cvrt-mcp-endpoints 1.17.0 includes/endpoints/class-stripe-endpoint.php get_settings",
+    "server": []
+  },
+  "stripe_get_account": {
+    "method": "GET",
+    "route": "/mcp/v1/stripe/account",
+    "source": "cvrt-mcp-endpoints 1.17.0 includes/endpoints/class-stripe-endpoint.php get_account",
+    "server": []
+  },
+  "stripe_list_webhooks": {
+    "method": "GET",
+    "route": "/mcp/v1/stripe/webhooks",
+    "source": "cvrt-mcp-endpoints 1.17.0 includes/endpoints/class-stripe-endpoint.php get_webhooks",
+    "server": []
+  },
+  "stripe_recreate_webhook": {
+    "method": "POST",
+    "route": "/mcp/v1/stripe/webhooks/recreate",
+    "source": "cvrt-mcp-endpoints 1.17.0 includes/endpoints/class-stripe-endpoint.php recreate_webhook (args confirm)",
+    "server": [
+      "confirm"
+    ],
+    "fields": [
+      "confirm"
+    ]
+  },
+  "stripe_list_payment_method_configs": {
+    "method": "GET",
+    "route": "/mcp/v1/stripe/payment-method-configurations",
+    "source": "cvrt-mcp-endpoints 1.17.0 includes/endpoints/class-stripe-endpoint.php get_payment_method_configurations",
+    "server": []
+  },
+  "stripe_set_payment_method": {
+    "method": "POST",
+    "route": "/mcp/v1/stripe/payment-method-configurations/{id}",
+    "source": "cvrt-mcp-endpoints 1.17.0 includes/endpoints/class-stripe-endpoint.php set_payment_method (path id; args method, enabled, confirm)",
+    "server": [
+      "method",
+      "enabled",
+      "confirm"
+    ],
+    "path": [
+      "config_id"
+    ],
+    "fields": [
+      "method",
+      "enabled",
+      "confirm"
+    ],
+    "sample": {
+      "config_id": "pmc_1"
+    }
+  },
+  "stripe_list_charges": {
+    "method": "GET",
+    "route": "/mcp/v1/stripe/charges",
+    "source": "cvrt-mcp-endpoints 1.17.0 includes/endpoints/class-stripe-endpoint.php get_charges (args limit)",
+    "server": [
+      "limit"
+    ],
+    "fields": [
+      "limit"
+    ]
+  },
+  "stripe_list_refunds": {
+    "method": "GET",
+    "route": "/mcp/v1/stripe/refunds",
+    "source": "cvrt-mcp-endpoints 1.17.0 includes/endpoints/class-stripe-endpoint.php get_refunds (args limit)",
+    "server": [
+      "limit"
+    ],
+    "fields": [
+      "limit"
+    ]
+  },
+  "woo_gateway_status": {
+    "method": "GET",
+    "route": "/mcp/v1/payments/gateways",
+    "source": "cvrt-mcp-endpoints 1.17.0 includes/endpoints/class-payments-endpoint.php get_gateways (args country)",
+    "server": [
+      "country"
+    ],
+    "fields": [
+      "country"
+    ]
+  }
+}

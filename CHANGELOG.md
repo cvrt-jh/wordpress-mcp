@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.0] - 2026-10-09
+
+### Added
+- `stripe_*` (cvrt-mcp-endpoints 1.17.0+): `stripe_get_settings` (masked), `stripe_get_account`,
+  `stripe_list_webhooks`, `stripe_list_payment_method_configs`, `stripe_list_charges`,
+  `stripe_list_refunds`, and the writes `stripe_recreate_webhook` and
+  `stripe_set_payment_method`, which need `confirm: true`. The Stripe key never leaves the
+  site; results are whitelisted (no customer data, no card details).
+- `woo_gateway_status`: WooCommerce gateways enabled/available for a country, plus
+  cvrt-woo-helper's Stripe status.
+- `woo_helper_*` for cvrt-woo-helper 0.1.0 (`mcp/woo-helper/v1`): status, settings, Stripe
+  express checkout and where Stripe.js loads (`woo_helper_update_stripe`), gateway status.
+
 ## [3.8.0] - 2026-10-09
 
 ### Added
