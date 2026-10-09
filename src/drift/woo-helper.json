@@ -50,5 +50,55 @@
     "route": "/mcp/woo-helper/v1/stripe/status",
     "source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php get_stripe_status (no args)",
     "server": []
+  },
+  "woo_helper_get_emails": {
+    "method": "GET",
+    "route": "/mcp/woo-helper/v1/emails",
+    "source": "cvrt-woo-helper 0.2.0 includes/class-rest-api.php get_emails (no args)",
+    "server": []
+  },
+  "woo_helper_update_emails": {
+    "method": "PUT",
+    "route": "/mcp/woo-helper/v1/emails",
+    "source": "cvrt-woo-helper 0.2.0 includes/class-rest-api.php update_emails -> email_input (logo_id, logo_width, link_color, footer_text, product_images, certificate_link_once + Emails::COLORS)",
+    "server": [
+      "logo_id",
+      "logo_width",
+      "base_color",
+      "background_color",
+      "body_background_color",
+      "text_color",
+      "footer_text_color",
+      "link_color",
+      "footer_text",
+      "product_images",
+      "certificate_link_once"
+    ],
+    "fields": [
+      "logo_id",
+      "logo_width",
+      "base_color",
+      "background_color",
+      "body_background_color",
+      "text_color",
+      "footer_text_color",
+      "link_color",
+      "footer_text",
+      "product_images",
+      "certificate_link_once"
+    ]
+  },
+  "woo_helper_send_test_email": {
+    "method": "POST",
+    "route": "/mcp/woo-helper/v1/emails/test",
+    "source": "cvrt-woo-helper 0.2.0 includes/class-rest-api.php test_email (args to, settings)",
+    "server": [
+      "to",
+      "settings"
+    ],
+    "fields": [
+      "to",
+      "settings"
+    ]
   }
 }

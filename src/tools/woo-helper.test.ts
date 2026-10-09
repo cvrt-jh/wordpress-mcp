@@ -3,7 +3,8 @@ import { z } from "zod";
 
 const get = vi.fn();
 const put = vi.fn();
-vi.mock("../client.js", () => ({ forSite: () => ({ get, put }) }));
+const post = vi.fn();
+vi.mock("../client.js", () => ({ forSite: () => ({ get, put, post }) }));
 import { register } from "./woo-helper.js";
 
 type Handler = (args: Record<string, unknown>) => Promise<{ content: { text: string }[] }>;
@@ -17,6 +18,7 @@ function tool(name: string): { schema: z.ZodRawShape; handler: Handler } {
 beforeEach(() => {
   get.mockReset();
   put.mockReset();
+  post.mockReset();
 });
 
 describe("woo-helper tools", () => {
@@ -43,5 +45,24 @@ describe("woo-helper tools", () => {
     get.mockResolvedValue({ mode: "live", webhook: { secret: "whsec_" + "a".repeat(30) } });
     const out = await tool("woo_helper_stripe_status").handler({ site: "a" });
     expect(out.content[0].text).not.toContain("whsec_");
+  });
+
+  it("woo_helper_update_emails sends only the keys given and validates them", async () => {
+    put.mockResolvedValue({});
+    await tool("woo_helper_update_emails").handler({ site: "a", base_color: "#336699", link_color: "" });
+    expect(put).toHaveBeenCalledWith("/mcp/woo-helper/v1/emails", { base_color: "#336699", link_color: "" });
+    const schema = z.object(tool("woo_helper_update_emails").schema);
+    expect(schema.safeParse({ site: "a", base_color: "blue" }).success).toBe(false);
+    expect(schema.safeParse({ site: "a", logo_width: 300 }).success).toBe(false);
+    expect(schema.safeParse({ site: "a", product_images: "large" }).success).toBe(false);
+  });
+
+  it("woo_helper_send_test_email needs a valid address and passes unsaved settings", async () => {
+    post.mockResolvedValue({ sent: true });
+    const schema = z.object(tool("woo_helper_send_test_email").schema);
+    expect(schema.safeParse({ site: "a", to: "not-an-email" }).success).toBe(false);
+    expect(schema.safeParse({ site: "a", to: "a@example.org", settings: { unknown: 1 } }).success).toBe(false);
+    await tool("woo_helper_send_test_email").handler({ site: "a", to: "a@example.org", settings: { text_color: "#000" } });
+    expect(post).toHaveBeenCalledWith("/mcp/woo-helper/v1/emails/test", { to: "a@example.org", settings: { text_color: "#000" } });
   });
 });
