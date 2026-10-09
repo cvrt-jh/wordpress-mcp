@@ -1,0 +1,50 @@
+{
+  "fort_backup_create": {
+    "method": "POST",
+    "route": "/v1/sites/{hex}/backup",
+    "source": "bearfort saas/crates/api/src/routes/sites.rs trigger_backup (no body)",
+    "server": []
+  },
+  "fort_backup_list": {
+    "method": "GET",
+    "route": "/v1/sites/{hex}/backups",
+    "source": "bearfort saas/crates/api/src/routes/sites.rs list_backups (no args)",
+    "server": []
+  },
+  "fort_job_get": {
+    "method": "GET",
+    "route": "/v1/sites/{hex}/jobs/{job_id}",
+    "source": "bearfort saas/crates/api/src/routes/sites.rs get_job / get_job_log (no args)",
+    "server": [],
+    "path": [
+      "job_id"
+    ],
+    "local": {
+      "with_log": "adds a second GET of /jobs/{job_id}/log"
+    }
+  },
+  "fort_logs_read": {
+    "method": "GET",
+    "route": "/v1/sites/{hex}/logs/{type}",
+    "source": "bearfort saas/crates/api/src/routes/sites.rs get_logs + validate.rs log_query (query lines, grep, since; fix/fort-logs-and-cache-purge)",
+    "server": [
+      "lines",
+      "grep",
+      "since"
+    ],
+    "path": [
+      "type"
+    ],
+    "fields": [
+      "lines",
+      "grep",
+      "since"
+    ]
+  },
+  "fort_cache_purge": {
+    "method": "POST",
+    "route": "/v1/sites/{hex}/cache/clear",
+    "source": "bearfort saas/crates/api/src/routes/sites.rs clear_cache (no body) -> worker wp-panel.py _clear_cache (fleet 2026-10-08.3+)",
+    "server": []
+  }
+}

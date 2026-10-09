@@ -134,7 +134,7 @@ All responses are automatically trimmed. Example:
 | HTML tags | excerpts | Clean text output |
 | Pretty-print JSON | all | Compact single-line output |
 
-## Tools (281)
+## Tools (286)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself.
 
@@ -517,6 +517,15 @@ src/
     mcp-acf.ts      # 31 tools - ACF integration
     mcp-woo.ts      # 42 tools - WooCommerce
 ```
+
+## Fort Tools (Bearfort)
+
+For sites hosted on Bearfort, `fort_*` tools reach the worker through the Bearfort API:
+backups (`fort_backup_create`, `fort_backup_list`, `fort_job_get`), page-cache purge
+(`fort_cache_purge`) and server logs (`fort_logs_read`: access, error, php, wp-cron, with
+`lines`, `grep`, `since`). Set `BEARFORT_API_KEY` (admin key) and optionally
+`BEARFORT_API_URL`; without the key these tools refuse to run. The fort is resolved from the
+site URL. Restore is not exposed.
 
 ## Secret Masking
 

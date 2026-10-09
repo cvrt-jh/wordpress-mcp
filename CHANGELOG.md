@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.0] - 2026-10-09
+
+### Added
+- Fort tools through the Bearfort API (no SSH), for sites hosted on Bearfort. They need
+  `BEARFORT_API_KEY` (admin key; optional `BEARFORT_API_URL`) and fail closed without it.
+  A site's fort is found from its URL (`<hex>.bearfort.io`, or the fort's domain).
+  - `fort_backup_create`, `fort_backup_list`, `fort_job_get` (restore deliberately not exposed)
+  - `fort_cache_purge`: nginx page cache + the fort's object-cache keys + OPcache
+  - `fort_logs_read`: access, error, php, wp-cron with `lines`, `grep`, `since` applied on
+    the worker; secret URL parameters and credential shapes masked
+- Needs Bearfort fleet 2026-10-09.1+ (worker log paths, cache purge and Content-Length fixes).
+
 ## [3.7.1] - 2026-10-08
 
 ### Changed

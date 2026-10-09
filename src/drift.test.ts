@@ -50,6 +50,25 @@ vi.mock("./client.js", () => ({
   }),
 }));
 
+// Fort tools talk to the Bearfort API; record those calls the same way, with
+// the /v1/sites/{hex} prefix the real client adds.
+vi.mock("./bearfort.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./bearfort.js")>();
+  const fortPath = (p: string) => `/v1/sites/abcdef0123${p}`;
+  return {
+    ...actual,
+    forFort: async () => ({
+      hex: "abcdef0123",
+      get: (p: string, q?: Record<string, unknown>) => record("GET")(fortPath(p), q),
+      getText: async (p: string, q?: Record<string, unknown>) => {
+        await record("GET")(fortPath(p), q);
+        return "";
+      },
+      post: (p: string, b?: Record<string, unknown>) => record("POST")(fortPath(p), b),
+    }),
+  };
+});
+
 import { registerAll } from "./register.js";
 
 export interface DriftEntry {

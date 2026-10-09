@@ -45,6 +45,9 @@ import { register as registerLegal } from "./tools/legal.js";
 import { register as registerFields } from "./tools/fields.js";
 import { register as registerSeo } from "./tools/seo.js";
 
+// Fort tools (Bearfort API: backups, jobs, logs) - need BEARFORT_API_KEY
+import { register as registerFort } from "./tools/fort.js";
+
 export function registerAll(server: McpServer): void {
   // Multi-site: list_sites has no `site` param; every other tool requires one.
   registerSites(server);
@@ -86,4 +89,5 @@ export function registerAll(server: McpServer): void {
   registerLegal(server);
   registerFields(server);
   registerSeo(server);
+  registerFort(server);
 }

@@ -6,7 +6,7 @@ import { registerAll } from "./register.js";
 
 const server = new McpServer({
   name: "wordpress-mcp",
-  version: "3.7.1",
+  version: "3.8.0",
 });
 
 registerAll(server);
