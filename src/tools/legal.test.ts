@@ -538,4 +538,13 @@ describe("field audit against cvrt-legal 0.10.3", () => {
     await tool("legal_put_social_modules").handler({ site: "a", modules: mods, modules_file: null });
     expect(put).toHaveBeenLastCalledWith("/mcp/legal/v1/social/modules", mods);
   });
+
+  it("legal_put_shop_withdrawal sends only given keys and validates them", async () => {
+    put.mockResolvedValue({});
+    await tool("legal_put_shop_withdrawal").handler({ site: "a", core_feature: true, footer: false });
+    expect(put).toHaveBeenCalledWith("/mcp/legal/v1/shop/withdrawal", { core_feature: true, footer: false });
+    const schema = z.object(tool("legal_put_shop_withdrawal").schema);
+    expect(schema.safeParse({ site: "a", withdrawal_days: 10 }).success).toBe(false);
+    expect(schema.safeParse({ site: "a", emails: ["customer_invoice"] }).success).toBe(false);
+  });
 });

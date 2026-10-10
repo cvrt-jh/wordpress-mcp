@@ -134,7 +134,7 @@ All responses are automatically trimmed. Example:
 | HTML tags | excerpts | Clean text output |
 | Pretty-print JSON | all | Compact single-line output |
 
-## Tools (311)
+## Tools (314)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself.
 

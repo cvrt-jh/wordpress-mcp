@@ -408,5 +408,48 @@
     "route": "/mcp/legal/v1/accessibility/report",
     "source": "cvrt-legal 0.10.3 includes/class-rest-api.php delete_repair_report",
     "server": []
+  },
+  "legal_get_shop_withdrawal": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/shop/withdrawal",
+    "source": "cvrt-legal 0.12.1 includes/class-rest-api.php get_shop_withdrawal (no args)",
+    "server": []
+  },
+  "legal_put_shop_withdrawal": {
+    "method": "PUT",
+    "route": "/mcp/legal/v1/shop/withdrawal",
+    "source": "cvrt-legal 0.12.1 includes/class-rest-api.php put_shop_withdrawal -> Shop_Withdrawal::update (fields() + core_feature)",
+    "server": [
+      "enabled",
+      "link_label",
+      "confirm_label",
+      "single_email",
+      "item_picker",
+      "footer",
+      "account_menu",
+      "order_actions",
+      "emails",
+      "withdrawal_days",
+      "core_feature"
+    ],
+    "fields": [
+      "enabled",
+      "link_label",
+      "confirm_label",
+      "single_email",
+      "item_picker",
+      "footer",
+      "account_menu",
+      "order_actions",
+      "emails",
+      "withdrawal_days",
+      "core_feature"
+    ]
+  },
+  "legal_list_withdrawal_requests": {
+    "method": "GET",
+    "route": "/mcp/legal/v1/shop/withdrawal/requests",
+    "source": "cvrt-legal 0.12.1 includes/class-rest-api.php get_shop_withdrawal_requests (no args)",
+    "server": []
   }
 }

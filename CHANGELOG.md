@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.12.0] - 2026-10-10
+
+### Added
+- `legal_get_shop_withdrawal`, `legal_put_shop_withdrawal`, `legal_list_withdrawal_requests` for
+  cvrt-legal 0.12.1's shop withdrawal function (`mcp/legal/v1/shop/withdrawal`), which replaces
+  cvrt-woo-helper's withdrawal routes (removed in woo-helper 0.5.0).
+
 ## [3.11.0] - 2026-10-10
 
 ### Added

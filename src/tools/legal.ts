@@ -653,4 +653,43 @@ export function register(server: McpServer) {
       return jsonResult(await wp.delete<Record<string, unknown>>(`${NS}/accessibility/report`));
     }
   );
+
+  // --- Shop: withdrawal function (cvrt-legal 0.12.1+, WooCommerce 11.1+) ---
+  server.tool(
+    "legal_get_shop_withdrawal",
+    "Withdrawal function settings (Widerrufsbutton, \u00a7 356a BGB / \u00a7 13a FAGG) of cvrt-legal 0.12.1+ on a WooCommerce shop: whether WooCommerce's own withdrawal feature is on, the prescribed labels, single email, item picker, footer link, My Account menu, order actions, which emails carry the link, withdrawal period. 404 when WooCommerce is not active.",
+    { site },
+    async ({ site: id }) => jsonResult(await forSite(id).get<Record<string, unknown>>(`${NS}/shop/withdrawal`))
+  );
+
+  server.tool(
+    "legal_put_shop_withdrawal",
+    "Change the withdrawal function settings; only the keys given change, an invalid value is a 400 and nothing is written. core_feature switches WooCommerce's own withdrawal feature (409 below WooCommerce 11.1). The two labels are legally prescribed: change them only to the wording the law requires.",
+    {
+      site,
+      core_feature: z.boolean().optional().describe("WooCommerce's own withdrawal feature on/off"),
+      enabled: z.boolean().optional().describe("cvrt-legal completes WooCommerce's withdrawal function"),
+      link_label: z.string().min(1).optional().describe("Label of the function (prescribed wording)"),
+      confirm_label: z.string().min(1).optional().describe("Label of the confirmation button (prescribed wording)"),
+      single_email: z.boolean().optional().describe("Ask for the email address only once"),
+      item_picker: z.boolean().optional().describe("Item list for 'specific items only' (order's own customer)"),
+      footer: z.boolean().optional().describe("Highlighted link at the end of every page"),
+      account_menu: z.boolean().optional().describe("My Account menu item"),
+      order_actions: z.boolean().optional().describe("Withdrawal action on orders"),
+      emails: z
+        .array(z.enum(["customer_on_hold_order", "customer_processing_order", "customer_completed_order"]))
+        .optional()
+        .describe("Emails that carry the withdrawal link"),
+      withdrawal_days: z.number().int().min(14).max(365).optional().describe("Withdrawal period in days (14-365)"),
+    },
+    async ({ site: id, ...fields }) =>
+      jsonResult(await forSite(id).put<Record<string, unknown>>(`${NS}/shop/withdrawal`, defined(fields)))
+  );
+
+  server.tool(
+    "legal_list_withdrawal_requests",
+    "Withdrawal requests customers submitted through the shop's withdrawal function, newest first.",
+    { site },
+    async ({ site: id }) => jsonResult(await forSite(id).get<Record<string, unknown>>(`${NS}/shop/withdrawal/requests`))
+  );
 }
