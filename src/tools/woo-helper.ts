@@ -126,4 +126,110 @@ export function register(server: McpServer) {
         await forSite(id).post<Record<string, unknown>>(`${NS}/emails/test`, defined({ to, settings: settings ? defined(settings) : undefined }))
       )
   );
+
+  // --- Invoices (cvrt-woo-helper 0.4.0+: sevDesk, Lexware Office) ---
+  const provider = z.enum(["sevdesk", "lexware"]);
+  const listId = z.union([z.string(), z.number()]);
+
+  server.tool(
+    "woo_helper_get_invoices",
+    "Invoice settings of cvrt-woo-helper 0.4.0+ (sevDesk / Lexware Office): settings, API keys per provider as { set, constant } (never the key), the cached provider lists (contact persons, templates, layouts, ...), whether invoicing is active, and order counts per invoice status.",
+    { site },
+    async ({ site: id }) => jsonResult(await forSite(id).get<Record<string, unknown>>(`${NS}/invoices`))
+  );
+
+  server.tool(
+    "woo_helper_put_invoices",
+    "Change cvrt-woo-helper invoice settings; only the keys given change, an invalid value is a 400 and nothing is written. api_keys is WRITE-ONLY (a blank key keeps the stored one) and is never returned; clear_api_keys deletes keys. dry_run stays on until explicitly switched off: with it off, paid orders create REAL invoices in the live ledger.",
+    {
+      site,
+      enabled: z.boolean().optional().describe("Create invoices for paid orders"),
+      provider: z.enum(["none", "sevdesk", "lexware"]).optional(),
+      dry_run: z.boolean().optional().describe("true = build and show the request only, never write to the provider"),
+      trigger_statuses: z.array(z.enum(["processing", "completed"])).optional().describe("Also create when a paid order reaches these statuses"),
+      attach_emails: z
+        .array(z.enum(["customer_processing_order", "customer_completed_order", "customer_invoice"]))
+        .optional()
+        .describe("Emails that get the invoice PDF"),
+      own_email: z.enum(["off", "fallback", "always"]).optional().describe("Separate 'Your invoice' email"),
+      refunds: z.boolean().optional().describe("Credit notes / cancellation for refunds"),
+      einvoice: z.boolean().optional().describe("E-invoice (XRechnung/ZUGFeRD) where the provider supports it"),
+      price_mode: z.enum(["auto", "gross", "net"]).optional(),
+      reference: z
+        .string()
+        .refine((v) => v.includes("{order_number}") || v.includes("{order_id}"), "must contain {order_number} or {order_id}")
+        .optional()
+        .describe("Invoice reference; must contain {order_number} or {order_id}"),
+      title: z.string().optional(),
+      introduction: z.string().optional(),
+      remark: z.string().optional(),
+      vat_id_meta: z.string().optional().describe("Order meta key holding the customer's VAT id"),
+      create_contacts: z.boolean().optional().describe("Create provider contacts for customers"),
+      sevdesk_contact_person: listId.optional(),
+      sevdesk_template: listId.optional(),
+      sevdesk_letterpaper: listId.optional(),
+      sevdesk_payment_method: listId.optional(),
+      sevdesk_unity: listId.optional(),
+      lexware_print_layout: listId.optional(),
+      lexware_payment_condition: listId.optional(),
+      lexware_unit_name: z.string().optional(),
+      api_keys: z
+        .object({ sevdesk: z.string().optional(), lexware: z.string().optional() })
+        .strict()
+        .optional()
+        .describe("WRITE-ONLY API keys per provider; blank keeps the stored key"),
+      clear_api_keys: z.array(provider).optional().describe("Delete these providers' stored keys"),
+    },
+    async ({ site: id, api_keys, ...fields }) =>
+      jsonResult(
+        await forSite(id).put<Record<string, unknown>>(
+          `${NS}/invoices`,
+          defined({ ...fields, api_keys: api_keys ? defined(api_keys) : undefined })
+        )
+      )
+  );
+
+  server.tool(
+    "woo_helper_invoices_test_connection",
+    "Test the invoice provider connection (read-only GETs: company, tax type, small-business status).",
+    { site, provider: provider.optional().describe("Default: the configured provider") },
+    async ({ site: id, provider: p }) =>
+      jsonResult(await forSite(id).post<Record<string, unknown>>(`${NS}/invoices/test-connection`, defined({ provider: p })))
+  );
+
+  server.tool(
+    "woo_helper_invoices_refresh",
+    "Reload the provider's lists (contact persons, templates, letter papers, payment methods, units, print layouts, payment conditions) into the settings cache. Read-only at the provider.",
+    { site, provider: provider.optional().describe("Default: the configured provider") },
+    async ({ site: id, provider: p }) =>
+      jsonResult(await forSite(id).post<Record<string, unknown>>(`${NS}/invoices/refresh`, defined({ provider: p })))
+  );
+
+  server.tool(
+    "woo_helper_list_invoice_orders",
+    "Orders by invoice status: done, dry_run, queued, retry or failed.",
+    { site, status: z.enum(["done", "dry_run", "queued", "retry", "failed"]).optional() },
+    async ({ site: id, status }) =>
+      jsonResult(await forSite(id).get<Record<string, unknown>>(`${NS}/invoices/orders`, defined({ status })))
+  );
+
+  server.tool(
+    "woo_helper_get_invoice_order",
+    "Invoice state of one order: status, invoice number, error, attempts, has_pdf, the dry-run request preview, and credit notes.",
+    { site, order_id: z.number().int().positive().describe("WooCommerce order id") },
+    async ({ site: id, order_id }) =>
+      jsonResult(await forSite(id).get<Record<string, unknown>>(`${NS}/invoices/orders/${order_id}`))
+  );
+
+  server.tool(
+    "woo_helper_create_invoice",
+    "DESTRUCTIVE, IRREVERSIBLE: creates a REAL invoice for this order in the live sevDesk/Lexware ledger. An invoice there cannot be deleted, only cancelled with a cancellation invoice. Refused with 409 while dry-run is on. Check woo_helper_get_invoice_order (preview) first. Requires confirm:true.",
+    {
+      site,
+      order_id: z.number().int().positive().describe("WooCommerce order id"),
+      confirm: z.literal(true).describe("Must be true: creates a real, undeletable invoice"),
+    },
+    async ({ site: id, order_id, confirm: c }) =>
+      jsonResult(await forSite(id).post<Record<string, unknown>>(`${NS}/invoices/orders/${order_id}`, { confirm: c }))
+  );
 }

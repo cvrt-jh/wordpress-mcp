@@ -65,4 +65,27 @@ describe("woo-helper tools", () => {
     await tool("woo_helper_send_test_email").handler({ site: "a", to: "a@example.org", settings: { text_color: "#000" } });
     expect(post).toHaveBeenCalledWith("/mcp/woo-helper/v1/emails/test", { to: "a@example.org", settings: { text_color: "#000" } });
   });
+
+  it("woo_helper_create_invoice cannot run without confirm:true", () => {
+    const schema = z.object(tool("woo_helper_create_invoice").schema);
+    expect(schema.safeParse({ site: "a", order_id: 5 }).success).toBe(false);
+    expect(schema.safeParse({ site: "a", order_id: 5, confirm: false }).success).toBe(false);
+    expect(schema.safeParse({ site: "a", order_id: 5, confirm: true }).success).toBe(true);
+    expect(schema.safeParse({ site: "a", order_id: -1, confirm: true }).success).toBe(false);
+  });
+
+  it("woo_helper_put_invoices sends api keys only as given and never echoes them", async () => {
+    put.mockResolvedValue({ keys: { sevdesk: { set: true, constant: false } }, echo: "token sk_live_" + "Q".repeat(30) });
+    const out = await tool("woo_helper_put_invoices").handler({ site: "a", dry_run: true, api_keys: { sevdesk: "abc" } });
+    expect(put).toHaveBeenCalledWith("/mcp/woo-helper/v1/invoices", { dry_run: true, api_keys: { sevdesk: "abc" } });
+    expect(out.content[0].text).not.toContain("sk_live_");
+  });
+
+  it("woo_helper_put_invoices validates enums and the reference placeholder", () => {
+    const schema = z.object(tool("woo_helper_put_invoices").schema);
+    expect(schema.safeParse({ site: "a", reference: "RE-2026" }).success).toBe(false);
+    expect(schema.safeParse({ site: "a", reference: "RE-{order_number}" }).success).toBe(true);
+    expect(schema.safeParse({ site: "a", provider: "datev" }).success).toBe(false);
+    expect(schema.safeParse({ site: "a", api_keys: { stripe: "x" } }).success).toBe(false);
+  });
 });

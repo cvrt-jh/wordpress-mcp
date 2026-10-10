@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.11.0] - 2026-10-10
+
+### Added
+- Invoice tools for cvrt-woo-helper 0.4.0 (sevDesk, Lexware Office): `woo_helper_get_invoices`,
+  `woo_helper_put_invoices` (API keys write-only, never returned), `woo_helper_invoices_test_connection`,
+  `woo_helper_invoices_refresh`, `woo_helper_list_invoice_orders`, `woo_helper_get_invoice_order`,
+  and `woo_helper_create_invoice`, which creates a real, undeletable invoice and requires
+  `confirm: true` (the site also refuses it while dry-run is on).
+
 ## [3.10.0] - 2026-10-09
 
 ### Added
