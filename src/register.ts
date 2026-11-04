@@ -42,6 +42,7 @@ import { register as registerAcf } from "./tools/mcp-acf.js";
 import { register as registerWoo } from "./tools/mcp-woo.js";
 import { register as registerFulfillment } from "./tools/fulfillment.js";
 import { register as registerLegal } from "./tools/legal.js";
+import { register as registerCvrtMedia } from "./tools/cvrt-media.js";
 import { register as registerFields } from "./tools/fields.js";
 import { register as registerSeo } from "./tools/seo.js";
 
@@ -93,6 +94,7 @@ export function registerAll(server: McpServer): void {
   registerWoo(server);
   registerFulfillment(server);
   registerLegal(server);
+  registerCvrtMedia(server);
   registerFields(server);
   registerSeo(server);
   registerFort(server);

@@ -1,0 +1,248 @@
+{
+  "media_get_status": {
+    "method": "GET",
+    "route": "/mcp/media/v1/status",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php get_status",
+    "server": []
+  },
+  "media_get_settings": {
+    "method": "GET",
+    "route": "/mcp/media/v1/settings",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php get_settings",
+    "server": []
+  },
+  "media_update_settings": {
+    "method": "POST",
+    "route": "/mcp/media/v1/settings",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php update_settings -> class-settings.php update (defaults() keys + github_token, clear_github_token; unknown keys dropped)",
+    "server": [
+      "optimize_on_upload",
+      "output_format",
+      "level",
+      "quality_webp",
+      "quality_avif",
+      "quality_jpeg",
+      "webp_method",
+      "avif_speed",
+      "max_dimension",
+      "strip_metadata",
+      "keep_copyright",
+      "backup_retention_days",
+      "svg_enabled",
+      "svg_roles",
+      "remove_data_on_uninstall",
+      "github_token",
+      "clear_github_token"
+    ],
+    "fields": [
+      "optimize_on_upload",
+      "output_format",
+      "level",
+      "quality_webp",
+      "quality_avif",
+      "quality_jpeg",
+      "webp_method",
+      "avif_speed",
+      "max_dimension",
+      "strip_metadata",
+      "keep_copyright",
+      "backup_retention_days",
+      "svg_enabled",
+      "svg_roles",
+      "remove_data_on_uninstall",
+      "github_token",
+      "clear_github_token"
+    ]
+  },
+  "media_get_stats": {
+    "method": "GET",
+    "route": "/mcp/media/v1/stats",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php get_stats",
+    "server": []
+  },
+  "media_list_attachments": {
+    "method": "GET",
+    "route": "/mcp/media/v1/attachments",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php list_attachments (args page, per_page, status)",
+    "server": [
+      "page",
+      "per_page",
+      "status"
+    ],
+    "fields": [
+      "page",
+      "per_page",
+      "status"
+    ],
+    "response": []
+  },
+  "media_get_attachment": {
+    "method": "GET",
+    "route": "/mcp/media/v1/attachments/{id}",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php get_attachment",
+    "server": [],
+    "path": [
+      "id"
+    ]
+  },
+  "media_optimize_attachment": {
+    "method": "POST",
+    "route": "/mcp/media/v1/attachments/{id}/optimize",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php optimize",
+    "server": [],
+    "path": [
+      "id"
+    ]
+  },
+  "media_restore_attachment": {
+    "method": "POST",
+    "route": "/mcp/media/v1/attachments/{id}/restore",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php restore (arg force)",
+    "server": [
+      "force"
+    ],
+    "path": [
+      "id"
+    ],
+    "fields": [
+      "force"
+    ]
+  },
+  "media_reoptimize_attachment": {
+    "method": "POST",
+    "route": "/mcp/media/v1/attachments/{id}/reoptimize",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php reoptimize",
+    "server": [],
+    "path": [
+      "id"
+    ]
+  },
+  "media_undo_replace": {
+    "method": "POST",
+    "route": "/mcp/media/v1/attachments/{id}/replace/undo",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php undo_replace",
+    "server": [],
+    "path": [
+      "id"
+    ]
+  },
+  "media_get_bulk": {
+    "method": "GET",
+    "route": "/mcp/media/v1/bulk",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php get_bulk",
+    "server": []
+  },
+  "media_bulk_action": {
+    "method": "POST",
+    "route": "/mcp/media/v1/bulk/{action}",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php bulk_action (args type, include_restored; start only)",
+    "server": [
+      "type",
+      "include_restored"
+    ],
+    "path": [
+      "action"
+    ],
+    "fields": [
+      "type",
+      "include_restored"
+    ]
+  },
+  "media_bulk_step": {
+    "method": "POST",
+    "route": "/mcp/media/v1/bulk/step",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php bulk_step",
+    "server": []
+  },
+  "media_bulk_restore": {
+    "method": "POST",
+    "route": "/mcp/media/v1/bulk/restore",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php bulk_restore (arg confirm)",
+    "server": [
+      "confirm"
+    ],
+    "fields": [
+      "confirm"
+    ]
+  },
+  "media_get_backups": {
+    "method": "GET",
+    "route": "/mcp/media/v1/backups",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php get_backups",
+    "server": []
+  },
+  "media_cleanup_backups": {
+    "method": "POST",
+    "route": "/mcp/media/v1/backups/cleanup",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php cleanup_backups (exactly one scope of older_than_days, ids, all; the tool refuses zero or several, so the sample sends one scope)",
+    "server": [
+      "older_than_days",
+      "ids",
+      "all"
+    ],
+    "fields": [
+      "older_than_days",
+      "ids",
+      "all"
+    ],
+    "sample": {
+      "ids": null,
+      "all": null
+    },
+    "sends": [
+      "older_than_days"
+    ]
+  },
+  "media_eio_dry_run": {
+    "method": "GET",
+    "route": "/mcp/media/v1/migration/eio",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php eio_dry_run",
+    "server": []
+  },
+  "media_eio_run": {
+    "method": "POST",
+    "route": "/mcp/media/v1/migration/eio/run",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php eio_run (args confirm, limit)",
+    "server": [
+      "confirm",
+      "limit"
+    ],
+    "fields": [
+      "confirm",
+      "limit"
+    ]
+  },
+  "media_eio_cleanup": {
+    "method": "POST",
+    "route": "/mcp/media/v1/migration/eio/cleanup",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php eio_cleanup (arg confirm)",
+    "server": [
+      "confirm"
+    ],
+    "fields": [
+      "confirm"
+    ]
+  },
+  "media_svg_backfill": {
+    "method": "POST",
+    "route": "/mcp/media/v1/svg/backfill",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php svg_backfill (arg limit)",
+    "server": [
+      "limit"
+    ],
+    "fields": [
+      "limit"
+    ]
+  },
+  "media_scan_urls": {
+    "method": "GET",
+    "route": "/mcp/media/v1/scan",
+    "source": "cvrt-media 0.1.0 includes/class-rest-api.php scan (arg limit)",
+    "server": [
+      "limit"
+    ],
+    "fields": [
+      "limit"
+    ]
+  }
+}
