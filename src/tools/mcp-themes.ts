@@ -137,7 +137,7 @@ export function register(server: McpServer) {
   // Install theme from ZIP URL
   server.tool(
     "mcp_install_theme_zip",
-    "Install a theme from a ZIP, either a public URL (url, must end in .zip) or a local file (file_path, absolute path to a .zip, max 64 MB). Give exactly one of them. file_path uploads the file from this machine, so it works for private or locally built themes and, with overwrite, can replace the ACTIVE theme; it needs cvrt-mcp-endpoints >= 1.20.0 on the site. url keeps working on older versions, but has no GitHub token support: private release assets cannot be installed that way.",
+    "Install a theme from a ZIP, either a public URL (url, must end in .zip) or a local file (file_path, absolute path to a .zip, max 64 MB). Give exactly one of them. file_path uploads the file from this machine, so it works for private or locally built themes; it needs cvrt-mcp-endpoints >= 1.20.0 on the site. Replacing the ACTIVE theme additionally needs replace_active: true (replaces the live theme; a theme with broken PHP takes the site down). url keeps working on older versions, but has no GitHub token support: private release assets cannot be installed that way.",
     {
       site: z.string().describe("Site id (see list_sites)"),
       url: z.string().optional().describe("URL to the theme ZIP file (must end in .zip). Not together with file_path."),
@@ -151,10 +151,17 @@ export function register(server: McpServer) {
         .optional()
         .default(true)
         .describe(
-          "Replace the theme folder if it already exists (default true). With url the active theme is never overwritten; with file_path on cvrt-mcp-endpoints >= 1.20.0 it is replaced too."
+          "Replace the theme folder if it already exists (default true). The ACTIVE theme is only replaced when replace_active is also true."
+        ),
+      replace_active: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(
+          "Allow replacing the ACTIVE theme (default false; without it the site answers 409 active_theme). Replaces the live theme: a theme with broken PHP takes the site down. cvrt-mcp-endpoints >= 1.20.0."
         ),
     },
-    async ({ site, url, file_path, activate, overwrite }) => {
+    async ({ site, url, file_path, activate, overwrite, replace_active }) => {
       if ((url === undefined) === (file_path === undefined)) {
         throw new Error("mcp_install_theme_zip needs exactly one of url or file_path");
       }
@@ -168,18 +175,40 @@ export function register(server: McpServer) {
         source: string;
         replaced?: boolean;
       };
+      const mapActiveTheme = (e: unknown): never => {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (/active_theme/.test(msg)) {
+          throw new Error(
+            `The zip's theme is the ACTIVE theme on this site. Pass replace_active: true to replace it (this swaps the live theme; broken PHP takes the site down). Site said: ${msg}`
+          );
+        }
+        throw e;
+      };
       if (url !== undefined) {
-        return jsonResult(await wp.post<Installed>("/mcp/v1/themes/install-zip", { url, activate, overwrite }));
+        try {
+          return jsonResult(
+            await wp.post<Installed>("/mcp/v1/themes/install-zip", {
+              url,
+              activate,
+              overwrite,
+              ...(replace_active ? { replace_active: true } : {}),
+            })
+          );
+        } catch (e) {
+          return mapActiveTheme(e);
+        }
       }
       const zip = readThemeZip(file_path as string);
       try {
         const result = await wp.postRaw<Installed>("/mcp/v1/themes/install-zip", zip, "application/zip", {
           activate: String(activate ?? false),
           overwrite: String(overwrite ?? true),
+          ...(replace_active ? { replace_active: "true" } : {}),
         });
         return jsonResult(result);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
+        if (/active_theme/.test(msg)) return mapActiveTheme(e);
         if (/rest_no_route|rest_missing_callback_param|missing parameter\(s\): url/i.test(msg)) {
           throw new Error(
             `The site does not support uploading a theme zip: it needs cvrt-mcp-endpoints >= 1.20.0 (site said: ${msg})`

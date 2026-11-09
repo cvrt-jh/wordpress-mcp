@@ -48,6 +48,21 @@ describe("mcp_install_theme_zip", () => {
     expect(postRaw).not.toHaveBeenCalled();
   });
 
+  it("url mode sends replace_active only when true and maps 409 active_theme", async () => {
+    post.mockResolvedValue({});
+    await tool("mcp_install_theme_zip").handler({ site: "a", url: "https://x.test/t.zip", activate: false, overwrite: true, replace_active: true });
+    expect(post).toHaveBeenCalledWith("/mcp/v1/themes/install-zip", {
+      url: "https://x.test/t.zip",
+      activate: false,
+      overwrite: true,
+      replace_active: true,
+    });
+    post.mockRejectedValue(new Error('WordPress API error 409: {"code":"active_theme"}'));
+    await expect(
+      tool("mcp_install_theme_zip").handler({ site: "a", url: "https://x.test/t.zip" })
+    ).rejects.toThrow(/replace_active/);
+  });
+
   describe("file_path upload mode", () => {
     const dir = mkdtempSync(join(tmpdir(), "wpmcp-zip-"));
     const zipBytes = Buffer.concat([Buffer.from([0x50, 0x4b, 0x03, 0x04]), Buffer.from("rest-of-zip")]);
@@ -118,6 +133,20 @@ describe("mcp_install_theme_zip", () => {
       writeFileSync(f, big);
       await expect(run({ file_path: f })).rejects.toThrow(/64 MB/);
       expect(postRaw).not.toHaveBeenCalled();
+    });
+
+    it("sends replace_active as a query param only when true", async () => {
+      postRaw.mockResolvedValue({});
+      await run({ file_path: good, replace_active: true });
+      expect(postRaw.mock.calls[0][3]).toEqual({ activate: "false", overwrite: "true", replace_active: "true" });
+      postRaw.mockClear();
+      await run({ file_path: good, replace_active: false });
+      expect(postRaw.mock.calls[0][3]).not.toHaveProperty("replace_active");
+    });
+
+    it("maps 409 active_theme to an error naming replace_active", async () => {
+      postRaw.mockRejectedValue(new Error('WordPress API error 409: {"code":"active_theme"}'));
+      await expect(run({ file_path: good })).rejects.toThrow(/replace_active/);
     });
 
     it("explains that the site needs cvrt-mcp-endpoints 1.20.0 on 404 rest_no_route", async () => {

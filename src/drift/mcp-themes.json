@@ -26,8 +26,8 @@
   },
   "mcp_install_theme_zip": {
     "method": "POST", "route": "/mcp/v1/themes/install-zip",
-    "source": "cvrt-mcp-endpoints 1.14.2 class-themes-endpoint.php install_theme_zip (args url, activate, overwrite; NO token, unlike plugins/install-zip). 1.20.0 adds an upload mode: Content-Type application/zip, raw zip body, activate/overwrite as query params, no url (covered in mcp-themes.test.ts; this entry checks url mode)",
-    "server": ["url", "activate", "overwrite"], "fields": ["url", "activate", "overwrite"],
+    "source": "cvrt-mcp-endpoints 1.14.2 class-themes-endpoint.php install_theme_zip (args url, activate, overwrite; NO token, unlike plugins/install-zip). 1.20.0 adds an upload mode: Content-Type application/zip, raw zip body, activate/overwrite/replace_active as query params, no url; replace_active opts in to replacing the active theme, else 409 active_theme (covered in mcp-themes.test.ts; this entry checks url mode)",
+    "server": ["url", "activate", "overwrite", "replace_active"], "fields": ["url", "activate", "overwrite", "replace_active"],
     "local": { "file_path": "local zip upload mode: the file is sent as the raw request body, never as a field; url and file_path are mutually exclusive, so the url-mode sample leaves it out" },
     "sample": { "file_path": null }
   }

@@ -9,10 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `mcp_install_theme_zip` takes `file_path` (absolute local path to a .zip) as an alternative to `url`: the file is
-  uploaded as `application/zip` with `activate` and `overwrite` as query params (cvrt-mcp-endpoints 1.20.0+, which also
-  lets `overwrite` replace the active theme). Exactly one of `url` / `file_path` is required. The zip is checked
+  uploaded as `application/zip` with `activate` and `overwrite` as query params (cvrt-mcp-endpoints 1.20.0+). Exactly one of `url` / `file_path` is required. The zip is checked
   locally first (real regular file, .zip, `PK\x03\x04` magic, max 64 MB); an older site answering `rest_no_route` or
   asking for `url` gets a clear "needs cvrt-mcp-endpoints >= 1.20.0" error.
+- `mcp_install_theme_zip` `replace_active` (default false, sent only when true, both modes): required to replace the
+  ACTIVE theme; without it the site answers 409 `active_theme`, which is mapped to an error naming `replace_active`.
 - Client `postRaw` accepts binary bodies and query params.
 
 ## [3.12.0] - 2026-10-10
