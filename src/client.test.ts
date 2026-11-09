@@ -53,6 +53,17 @@ describe("forSite", () => {
     expect(headers.Authorization).toMatch(/^Basic /);
   });
 
+  it("postRaw sends binary bytes unchanged and puts params in the query", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+    const bytes = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0xff, 0x00]);
+    await forSite("a").postRaw("/mcp/v1/themes/install-zip", bytes, "application/zip", { activate: "true", overwrite: "false" });
+
+    const [url, init] = fetchSpy.mock.calls[0];
+    expect(String(url)).toBe("https://a.example/wp-json/mcp/v1/themes/install-zip?activate=true&overwrite=false");
+    expect(init?.body).toBe(bytes);
+    expect((init?.headers as Record<string, string>)["Content-Type"]).toBe("application/zip");
+  });
+
   it("delete sends a JSON body only when one is given", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response("{}", { status: 200 }));
     const wp = forSite("a");

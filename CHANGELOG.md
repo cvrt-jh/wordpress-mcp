@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.13.0] - 2026-11-09
+
+### Added
+- `mcp_install_theme_zip` takes `file_path` (absolute local path to a .zip) as an alternative to `url`: the file is
+  uploaded as `application/zip` with `activate` and `overwrite` as query params (cvrt-mcp-endpoints 1.20.0+, which also
+  lets `overwrite` replace the active theme). Exactly one of `url` / `file_path` is required. The zip is checked
+  locally first (real regular file, .zip, `PK\x03\x04` magic, max 64 MB); an older site answering `rest_no_route` or
+  asking for `url` gets a clear "needs cvrt-mcp-endpoints >= 1.20.0" error.
+- Client `postRaw` accepts binary bodies and query params.
+
 ## [3.12.0] - 2026-10-10
 
 ### Added

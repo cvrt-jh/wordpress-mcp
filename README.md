@@ -224,9 +224,10 @@ These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-end
 - `mcp_check_plugin_updates` - Run Plugin Update Checker and wp.org checks now, list updates
 - `mcp_update_all_plugins` - Update all plugins
 
-### Theme Management (5)
+### Theme Management (6)
 - `mcp_search_themes` - Search WordPress.org themes
 - `mcp_install_theme` - Install theme from WordPress.org
+- `mcp_install_theme_zip` - Install a theme from a public ZIP `url` or upload a local `file_path` (.zip, max 64 MB; works for private or locally built themes and can replace the active theme, needs cvrt-mcp-endpoints 1.20.0+)
 - `mcp_update_theme` - Update single theme
 - `mcp_update_all_themes` - Update all themes
 - `mcp_delete_theme` - Delete inactive theme

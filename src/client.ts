@@ -10,8 +10,13 @@ export interface SiteClient {
   post<T>(endpoint: string, body: Record<string, unknown>): Promise<T>;
   put<T>(endpoint: string, body: Record<string, unknown>): Promise<T>;
   delete<T>(endpoint: string, params?: Record<string, string | number>, body?: Record<string, unknown>): Promise<T>;
-  /** POST a raw (non-JSON) body, e.g. CSV for endpoints that read get_body(). */
-  postRaw<T>(endpoint: string, body: string, contentType: string): Promise<T>;
+  /** POST a raw (non-JSON) body, e.g. CSV or a zip for endpoints that read get_body(). Params go in the query string. */
+  postRaw<T>(
+    endpoint: string,
+    body: string | Uint8Array,
+    contentType: string,
+    params?: Record<string, string | number>
+  ): Promise<T>;
 }
 
 export function forSite(siteId: string): SiteClient {
@@ -53,9 +58,18 @@ export function forSite(siteId: string): SiteClient {
       if (body !== undefined) init.body = JSON.stringify(body);
       return handle<T>(await fetch(buildUrl(endpoint, params), init));
     },
-    async postRaw<T>(endpoint: string, body: string, contentType: string) {
+    async postRaw<T>(
+      endpoint: string,
+      body: string | Uint8Array,
+      contentType: string,
+      params?: Record<string, string | number>
+    ) {
       return handle<T>(
-        await fetch(buildUrl(endpoint), { method: "POST", headers: { ...headers, "Content-Type": contentType }, body })
+        await fetch(buildUrl(endpoint, params), {
+          method: "POST",
+          headers: { ...headers, "Content-Type": contentType },
+          body: body as BodyInit,
+        })
       );
     },
   };
