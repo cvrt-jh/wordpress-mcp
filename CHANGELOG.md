@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.14.0] - 2026-11-13
+
+### Added
+- `media_*` (21 tools) for [cvrt] Media 0.1.0 (`mcp/media/v1`): status, settings (write-only GitHub token), stats,
+  attachments and per-attachment actions, bulk control, backups, the Elementor Image Optimizer migration, SVG
+  backfill and URL scan. `media_cleanup_backups` requires exactly one scope; `media_bulk_restore`,
+  `media_eio_run` and `media_eio_cleanup` send `confirm: true` only when the caller passed it.
+
 ## [3.13.0] - 2026-11-09
 
 ### Added

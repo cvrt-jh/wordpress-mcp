@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.12.1-blue.svg)](https://modelcontextprotocol.io)
 
-Lightweight WordPress MCP server for site management. **266 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
+Lightweight WordPress MCP server for site management. **335 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
 
 **v3.5**: `fields_*` (12 tools) for [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+ - status, settings, field types, location values, schemas and CRUD + JSON sync for field groups, post types, taxonomies and options pages.
 
@@ -134,7 +134,7 @@ All responses are automatically trimmed. Example:
 | HTML tags | excerpts | Clean text output |
 | Pretty-print JSON | all | Compact single-line output |
 
-## Tools (314)
+## Tools (335)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself.
 
@@ -475,6 +475,20 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `fields_get_schema` - Editor form schema of a definition kind
 - `fields_list_definitions` / `fields_get_definition` / `fields_create_definition` / `fields_update_definition` / `fields_delete_definition` - CRUD for `groups`, `post-types`, `taxonomies`, `options-pages`
 - `fields_sync_definition` - Copy a JSON-sourced definition into the database
+
+### Media Optimization Module (21 tools) - Requires [cvrt-media](https://github.com/cvrt-gmbh/cvrt-media) 0.1.0+
+
+Separate from the cvrt-mcp-endpoints `mcp_*_media` tools (library management). File replace is not a tool (it needs an upload; use WP-CLI).
+
+- `media_get_status` / `media_get_stats` - Version, encoders, entitlement, EIO state; library statistics
+- `media_get_settings` / `media_update_settings` - Settings; the GitHub token is write-only (`{ set }`), a blank value keeps it, `clear_github_token: true` removes it
+- `media_list_attachments` / `media_get_attachment` - Attachments with their records (`per_page` max 100)
+- `media_optimize_attachment` / `media_reoptimize_attachment` / `media_restore_attachment` / `media_undo_replace` - Per attachment actions
+- `media_get_bulk` / `media_bulk_action` (start, pause, resume, cancel, retry) / `media_bulk_step` - Bulk optimization
+- `media_bulk_restore` - Restore every original (needs `confirm: true`)
+- `media_get_backups` / `media_cleanup_backups` - Backups of originals; cleanup needs exactly one scope (`older_than_days`, `ids` max 500, or `all: true`) and makes the cleaned originals unrestorable
+- `media_eio_dry_run` / `media_eio_run` / `media_eio_cleanup` - Elementor Image Optimizer migration (run max 500, run and cleanup need `confirm: true`)
+- `media_svg_backfill` (max 500) / `media_scan_urls` (max 5000) - SVG sizes; old image link scan
 
 ### Order Fulfillment Module (8 tools) - Requires cvrt-order-fulfillment 0.2.0+
 
