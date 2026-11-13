@@ -212,7 +212,7 @@ export function register(server: McpServer) {
       return jsonResult(
         await forSite(site).post<Record<string, unknown>>(
           `${NS}/backups/cleanup`,
-          defined({ older_than_days, ids, all: all === true ? true : undefined })
+          defined({ older_than_days, ids: ids !== undefined && ids.length > 0 ? ids : undefined, all: all === true ? true : undefined })
         )
       );
     }

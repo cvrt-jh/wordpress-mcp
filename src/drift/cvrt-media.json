@@ -74,7 +74,13 @@
       "per_page",
       "status"
     ],
-    "response": []
+    "response": {
+      "items": [],
+      "total": 0,
+      "pages": 0,
+      "page": 1,
+      "per_page": 20
+    }
   },
   "media_get_attachment": {
     "method": "GET",

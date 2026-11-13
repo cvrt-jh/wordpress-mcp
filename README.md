@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.12.1-blue.svg)](https://modelcontextprotocol.io)
 
-Lightweight WordPress MCP server for site management. **266 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
+Lightweight WordPress MCP server for site management. **335 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
 
 **v3.5**: `fields_*` (12 tools) for [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+ - status, settings, field types, location values, schemas and CRUD + JSON sync for field groups, post types, taxonomies and options pages.
 
@@ -134,7 +134,7 @@ All responses are automatically trimmed. Example:
 | HTML tags | excerpts | Clean text output |
 | Pretty-print JSON | all | Compact single-line output |
 
-## Tools (314)
+## Tools (335)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself.
 

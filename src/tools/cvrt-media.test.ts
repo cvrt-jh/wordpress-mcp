@@ -248,6 +248,12 @@ describe("cvrt-media tools: media_cleanup_backups", () => {
     expect(post).not.toHaveBeenCalled();
   });
 
+  it("treats an empty ids list next to older_than_days as that one scope and does not send ids", async () => {
+    await call({ ids: [], older_than_days: 30 });
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(post).toHaveBeenLastCalledWith(`${NS}/backups/cleanup`, { older_than_days: 30 });
+  });
+
   it("bounds ids to 500 and days to 3650", () => {
     const { ids, older_than_days } = tool("media_cleanup_backups").schema as Record<string, z.ZodTypeAny>;
     expect(ids.safeParse(Array.from({ length: 500 }, (_, i) => i + 1)).success).toBe(true);
