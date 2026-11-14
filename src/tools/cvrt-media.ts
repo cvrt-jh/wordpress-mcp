@@ -219,6 +219,37 @@ export function register(server: McpServer) {
   );
 
   server.tool(
+    "media_get_recovery",
+    "Unfinished [cvrt] Media records the background runner backs off or skips (needs [cvrt] Media 0.1.1+). Returns { counts: { stuck, waiting }, items } where items list attachment, state (stuck, waiting, due), attempts, retry_after and rows with size, reason, relative path and redacted error. Read-only; retry with media_retry_recovery.",
+    {
+      site,
+      state: z.enum(["stuck", "waiting", "all"]).optional().describe("Which records to list, default stuck"),
+      limit: limit(500, "Most attachments listed").optional(),
+    },
+    async ({ site, state, limit }) =>
+      jsonResult(await forSite(site).get<Record<string, unknown>>(`${NS}/recovery`, defined({ state, limit }) as Record<string, string | number>))
+  );
+
+  server.tool(
+    "media_retry_recovery",
+    "Make unfinished [cvrt] Media records due again (needs [cvrt] Media 0.1.1+): resets the back-off counters only, never touches a file; the runner's next pass works them. Needs exactly one scope: ids (attachment ids, at most 500) or all: true (every stuck record). Returns { retried, counts }.",
+    {
+      site,
+      ids: z.array(z.number().int().min(1)).max(500).optional().describe("Scope: attachment ids to retry, at most 500"),
+      all: z.boolean().optional().describe("Scope: true retries every stuck record"),
+    },
+    async ({ site, ids, all }) => {
+      const hasIds = ids !== undefined && ids.length > 0;
+      if (hasIds === (all === true)) {
+        throw new Error("media_retry_recovery needs exactly one scope: ids (non-empty) or all: true");
+      }
+      return jsonResult(
+        await forSite(site).post<Record<string, unknown>>(`${NS}/recovery/retry`, defined({ ids: hasIds ? ids : undefined, all: all === true ? true : undefined }))
+      );
+    }
+  );
+
+  server.tool(
     "media_eio_dry_run",
     "Dry run of the Elementor Image Optimizer migration: what would be adopted, changes nothing.",
     { site },

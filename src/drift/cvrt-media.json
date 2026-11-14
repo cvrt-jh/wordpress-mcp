@@ -199,6 +199,38 @@
       "older_than_days"
     ]
   },
+  "media_get_recovery": {
+    "method": "GET",
+    "route": "/mcp/media/v1/recovery",
+    "source": "cvrt-media 0.1.1 includes/class-rest-api.php get_recovery, recovery_args (state stuck|waiting|all, limit 1..500)",
+    "server": [
+      "state",
+      "limit"
+    ],
+    "fields": [
+      "state",
+      "limit"
+    ]
+  },
+  "media_retry_recovery": {
+    "method": "POST",
+    "route": "/mcp/media/v1/recovery/retry",
+    "source": "cvrt-media 0.1.1 includes/class-rest-api.php retry_recovery, retry_args (exactly one scope of ids, all; the tool refuses zero or several, so the sample sends one scope)",
+    "server": [
+      "ids",
+      "all"
+    ],
+    "fields": [
+      "ids",
+      "all"
+    ],
+    "sample": {
+      "all": null
+    },
+    "sends": [
+      "ids"
+    ]
+  },
   "media_eio_dry_run": {
     "method": "GET",
     "route": "/mcp/media/v1/migration/eio",
