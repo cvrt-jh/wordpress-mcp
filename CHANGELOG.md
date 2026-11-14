@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.14.1] - 2026-11-14
+
+### Added
+- `media_get_recovery` and `media_retry_recovery` for [cvrt] Media 0.1.1 (`GET mcp/media/v1/recovery`,
+  `POST mcp/media/v1/recovery/retry`): list the unfinished records the runner backs off (counts of stuck and
+  waiting, items with redacted errors) and make them due again. `media_retry_recovery` requires exactly one scope
+  (`ids` max 500, or `all: true`) and only resets back-off counters, it never touches a file.
+
 ## [3.14.0] - 2026-11-13
 
 ### Added

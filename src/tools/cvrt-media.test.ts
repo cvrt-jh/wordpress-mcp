@@ -48,7 +48,7 @@ beforeEach(() => {
 });
 
 describe("cvrt-media tools: registration", () => {
-  it("registers exactly the 21 tools, each with a site argument", () => {
+  it("registers exactly the 23 tools, each with a site argument", () => {
     const all = tools();
     expect([...all.keys()].sort()).toEqual(
       [
@@ -68,6 +68,8 @@ describe("cvrt-media tools: registration", () => {
         "media_bulk_restore",
         "media_get_backups",
         "media_cleanup_backups",
+        "media_get_recovery",
+        "media_retry_recovery",
         "media_eio_dry_run",
         "media_eio_run",
         "media_eio_cleanup",
@@ -269,6 +271,55 @@ describe("cvrt-media tools: media_cleanup_backups", () => {
     expect(d).toMatch(/can no longer be restored/);
     expect(d).toMatch(/exactly one/);
     expect(d).toMatch(/deleted, bytes, remaining, skipped/);
+  });
+});
+
+describe("cvrt-media tools: recovery", () => {
+  it("media_get_recovery GETs /recovery with only the given query args", async () => {
+    await tool("media_get_recovery").handler({ site: "a" });
+    expect(get).toHaveBeenLastCalledWith(`${NS}/recovery`, {});
+    await tool("media_get_recovery").handler({ site: "a", state: "all", limit: 50 });
+    expect(get).toHaveBeenLastCalledWith(`${NS}/recovery`, { state: "all", limit: 50 });
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("media_get_recovery bounds state and limit like the REST class", () => {
+    const { state, limit } = tool("media_get_recovery").schema as Record<string, z.ZodTypeAny>;
+    for (const ok of ["stuck", "waiting", "all"]) expect(state.safeParse(ok).success).toBe(true);
+    expect(state.safeParse("due").success).toBe(false);
+    expect(limit.safeParse(500).success).toBe(true);
+    expect(limit.safeParse(501).success).toBe(false);
+    expect(limit.safeParse(0).success).toBe(false);
+  });
+
+  const retry = (args: Record<string, unknown>) => tool("media_retry_recovery").handler({ site: "a", ...args });
+
+  it("media_retry_recovery sends each single scope to /recovery/retry", async () => {
+    await retry({ ids: [3, 4] });
+    expect(post).toHaveBeenLastCalledWith(`${NS}/recovery/retry`, { ids: [3, 4] });
+    await retry({ all: true });
+    expect(post).toHaveBeenLastCalledWith(`${NS}/recovery/retry`, { all: true });
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it("media_retry_recovery refuses no scope or two scopes, and sends nothing", async () => {
+    await expect(retry({})).rejects.toThrow(/exactly one/);
+    await expect(retry({ all: false })).rejects.toThrow(/exactly one/);
+    await expect(retry({ ids: [] })).rejects.toThrow(/exactly one/);
+    await expect(retry({ ids: [1], all: true })).rejects.toThrow(/exactly one/);
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("media_retry_recovery treats an empty ids list next to all: true as that one scope", async () => {
+    await retry({ ids: [], all: true });
+    expect(post).toHaveBeenLastCalledWith(`${NS}/recovery/retry`, { all: true });
+  });
+
+  it("media_retry_recovery bounds ids to 500 positive integers", () => {
+    const { ids } = tool("media_retry_recovery").schema as Record<string, z.ZodTypeAny>;
+    expect(ids.safeParse(Array.from({ length: 500 }, (_, i) => i + 1)).success).toBe(true);
+    expect(ids.safeParse(Array.from({ length: 501 }, (_, i) => i + 1)).success).toBe(false);
+    expect(ids.safeParse([0]).success).toBe(false);
   });
 });
 
