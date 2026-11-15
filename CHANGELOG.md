@@ -12,7 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   located field value of a post, term, user or options page, and write values by field name (validated by the field types,
   all-or-nothing). `object` is checked against `[a-z0-9_]+` before it reaches the URL; `values` needs at least one entry.
 - `fields_update_settings` takes `compat_acf_functions` (cvrt-fields opt-in ACF compatibility layer; `false` is sent, an
-  omitted value keeps the setting).
+  omitted value keeps the setting) and `shortcode_options_pages` (options page definition keys whose values
+  `[cvrt_field post_id="option"]` / `[acf post_id="option"]` may print; `[]` switches every page off; an unknown key is a
+  400 from cvrt-fields). Both need cvrt-fields 0.4.0+: the tool reads `fields_status` features first and refuses (nothing
+  sent) when the site's cvrt-fields lacks the key, because older versions ignore it and still answer 200.
 
 ## [3.14.1] - 2026-11-14
 

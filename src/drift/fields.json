@@ -26,7 +26,11 @@
       "clear_github_token",
       "compat_acf_functions",
       "shortcode_options_pages"
-    ]
+    ],
+    "response": {
+      "version": "0.4.0",
+      "features": ["compat_acf_functions", "shortcode_options_pages"]
+    }
   },
   "fields_get_values": {
     "method": "GET",

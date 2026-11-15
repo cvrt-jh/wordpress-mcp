@@ -55,7 +55,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "fields_update_settings",
-    "Update cvrt-fields settings. github_token is write-only and stored encrypted; a blank or omitted token keeps the stored one. clear_github_token: true deletes it. compat_acf_functions switches the opt-in ACF compatibility layer. shortcode_options_pages lists the options pages whose values shortcodes may print. Returns the settings as fields_get_settings does (token as { set }, compat_acf_functions as a boolean, shortcode_options_pages as a list).",
+    "Update cvrt-fields settings. github_token is write-only and stored encrypted; a blank or omitted token keeps the stored one. clear_github_token: true deletes it. compat_acf_functions switches the opt-in ACF compatibility layer. shortcode_options_pages lists the options pages whose values shortcodes may print. Returns the settings as fields_get_settings does (token as { set }, compat_acf_functions as a boolean, shortcode_options_pages as a list). compat_acf_functions and shortcode_options_pages need cvrt-fields 0.4.0+: the tool checks fields_status features first and refuses (nothing sent) on an older version, which would ignore them and answer 200.",
     {
       site: z.string().describe("Site id (see list_sites)"),
       github_token: z
@@ -79,6 +79,18 @@ export function register(server: McpServer) {
     async ({ site, ...args }) => {
       const wp = forSite(site);
       const body = Object.fromEntries(Object.entries(args).filter(([, v]) => v !== undefined));
+      // cvrt-fields up to 0.3.1 ignores these keys and still answers 200, which reads as success.
+      const gated = ["compat_acf_functions", "shortcode_options_pages"].filter((key) => key in body);
+      if (gated.length > 0) {
+        const status = await wp.get<{ version?: string; features?: unknown }>(`${NS}/status`);
+        const features = Array.isArray(status.features) ? status.features : [];
+        const missing = gated.find((key) => !features.includes(key));
+        if (missing !== undefined) {
+          throw new Error(
+            `cvrt-fields ${status.version ?? "(unknown version)"} on this site has no ${missing} (feature ${missing} in fields_status). Update cvrt-fields (0.4.0+); nothing was sent.`
+          );
+        }
+      }
       return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/settings`, body));
     }
   );

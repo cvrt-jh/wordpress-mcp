@@ -96,7 +96,30 @@ describe("fields tools", () => {
     expect(put).toHaveBeenLastCalledWith("/mcp/fields/v1/settings", { clear_github_token: true });
   });
 
+  it("fields_update_settings checks no status for the token keys", async () => {
+    put.mockResolvedValue({ github_token: { set: true } });
+    await tool("fields_update_settings").handler({ site: "a", github_token: "ghp_x" });
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["compat_acf_functions", { compat_acf_functions: true }],
+    ["shortcode_options_pages", { shortcode_options_pages: ["ui_options_page_site"] }],
+  ])("fields_update_settings refuses %s on a cvrt-fields without that feature (it would answer 200 and store nothing)", async (feature, args) => {
+    get.mockResolvedValue({ version: "0.3.1" });
+    await expect(tool("fields_update_settings").handler({ site: "a", ...args })).rejects.toThrow(
+      `cvrt-fields 0.3.1 on this site has no ${feature} (feature ${feature} in fields_status)`
+    );
+    expect(get).toHaveBeenCalledWith("/mcp/fields/v1/status");
+    expect(put).not.toHaveBeenCalled();
+
+    get.mockResolvedValue({ version: "0.4.0", features: ["something_else"] });
+    await expect(tool("fields_update_settings").handler({ site: "a", ...args })).rejects.toThrow("nothing was sent");
+    expect(put).not.toHaveBeenCalled();
+  });
+
   it("fields_update_settings sends compat_acf_functions, including false", async () => {
+    get.mockResolvedValue({ version: "0.4.0", features: ["compat_acf_functions", "shortcode_options_pages"] });
     put.mockResolvedValue({ compat_acf_functions: false });
     await tool("fields_update_settings").handler({ site: "a", compat_acf_functions: true });
     expect(put).toHaveBeenLastCalledWith("/mcp/fields/v1/settings", { compat_acf_functions: true });
@@ -106,6 +129,7 @@ describe("fields tools", () => {
   });
 
   it("fields_update_settings sends shortcode_options_pages, including an empty list", async () => {
+    get.mockResolvedValue({ version: "0.4.0", features: ["compat_acf_functions", "shortcode_options_pages"] });
     put.mockResolvedValue({ shortcode_options_pages: ["ui_options_page_site"] });
     await tool("fields_update_settings").handler({ site: "a", shortcode_options_pages: ["ui_options_page_site"] });
     expect(put).toHaveBeenLastCalledWith("/mcp/fields/v1/settings", { shortcode_options_pages: ["ui_options_page_site"] });

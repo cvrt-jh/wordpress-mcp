@@ -466,7 +466,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `legal_get_accessibility` / `legal_put_accessibility` - The self-hosted accessibility tool (replaces the Ally widget, no third-party request); `repairs` switches the markup repair rules (0.9.0+)
 - `legal_get_accessibility_report` / `legal_reset_accessibility_report` - What the markup repair fixed and what is still open, per page (0.9.0+)
 
-### Fields Module (14 tools) - Requires [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+
+### Fields Module (14 tools) - Requires [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+ (`fields_get_values` / `fields_update_values` need 0.2.1+, `compat_acf_functions` / `shortcode_options_pages` in `fields_update_settings` 0.4.0+)
 
 - `fields_status` - Plugin version, definition counts, ACF / Elementor presence, JSON sync state
 - `fields_get_settings` / `fields_update_settings` - Update token (masked as `{ set }`, write-only, stored encrypted), JSON sync path and the opt-in ACF compatibility layer (`compat_acf_functions`), and the options pages whose values shortcodes may print (`shortcode_options_pages`, options page keys, default none)
