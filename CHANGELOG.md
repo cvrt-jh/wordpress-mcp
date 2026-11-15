@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `seo_import_migrate` takes `own_hosts` (string[], same feature): hosts that are the site besides home and
   siteurl. The plugin no longer infers them from absolute RankMath sources; it reports such hosts as
   `source_host` warnings.
+- `seo_redirects_audit` (`GET mcp/seo/v1/redirects/audit`) and `seo_redirects_known_hosts` (`POST`, `known_hosts`
+  replaces the confirmed target hosts) for the cvrt-seo-manager redirect audit (feature `redirect_audit`, after
+  1.14.1); both refuse a plugin without the feature. Drift fixtures added.
 
 ### Changed
 - `seo_import_migrate` refuses a real (non-dry-run) RankMath import when `seo_status` lacks

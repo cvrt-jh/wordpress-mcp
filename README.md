@@ -422,6 +422,8 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `seo_get_redirect` - Get a redirect by id
 - `seo_update_redirect` - Update a redirect by id
 - `seo_delete_redirect` - Delete a redirect by id
+- `seo_redirects_audit` - Check the stored redirect rules: duplicates, no leading slash, sources or targets on other hosts, captured or IDN target hosts (cvrt-seo-manager after 1.14.1)
+- `seo_redirects_known_hosts` - Confirm redirect target hosts as intended (replaces the list) so the audit stops flagging them
 - `seo_list_monitor_log` - List the 404/redirect monitor log entries
 - `seo_clear_monitor_log` - Clear the 404/redirect monitor log
 - `seo_create_redirect_from_log` - Create a redirect directly from a monitor log entry

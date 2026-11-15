@@ -412,6 +412,43 @@ export function register(server: McpServer) {
     }
   );
 
+  // The audit route exists from cvrt-seo-manager after 1.14.1 (feature redirect_audit);
+  // on an older plugin /redirects/audit would 404, so say why instead.
+  const requireAudit = async (wp: ReturnType<typeof forSite>): Promise<void> => {
+    const status = await wp.get<{ version?: string; features?: unknown }>(`${NS}/status`);
+    const features = Array.isArray(status.features) ? status.features : [];
+    if (!features.includes("redirect_audit")) {
+      throw new Error(
+        `cvrt-seo-manager ${status.version ?? "(unknown version)"} on this site has no redirect audit (feature redirect_audit). Update the plugin; nothing was sent.`
+      );
+    }
+  };
+
+  server.tool(
+    "seo_redirects_audit",
+    "Check the stored redirect rules (cvrt-seo-manager after 1.14.1, feature redirect_audit). Runs the pending one-time rewrite of exact sources, then returns { normalised, rewrite, findings: [{ code, message, ids, ... }], known_hosts }. Codes: duplicate_source (winner + ids that never fire), normalise_failed, idn_target_host, target_host_from_capture, missing_leading_slash, foreign_source_host, external_target_host (one per host, host field; confirm an intended host with seo_redirects_known_hosts). The same findings show as an admin notice.",
+    { site },
+    async ({ site }) => {
+      const wp = forSite(site);
+      await requireAudit(wp);
+      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/redirects/audit`));
+    }
+  );
+
+  server.tool(
+    "seo_redirects_known_hosts",
+    "Confirm redirect target hosts as intended (cvrt-seo-manager after 1.14.1, feature redirect_audit): REPLACES the stored list (pass every host to keep; [] clears it), so external_target_host stops flagging targets on them. Returns the audit as seo_redirects_audit does, with known_hosts. Only confirm a host you checked; an old staging host is a dead target, fix or delete those rules instead.",
+    {
+      site,
+      known_hosts: z.array(z.string()).describe("Every host confirmed as an intended redirect target (www. and case are ignored)"),
+    },
+    async ({ site, known_hosts }) => {
+      const wp = forSite(site);
+      await requireAudit(wp);
+      return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/redirects/audit`, { known_hosts }));
+    }
+  );
+
   server.tool(
     "seo_update_redirect",
     "Update a redirect (partial: omitted fields keep their stored value). Returns the redirect.",

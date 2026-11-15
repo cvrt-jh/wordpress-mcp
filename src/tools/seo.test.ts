@@ -351,6 +351,35 @@ describe("other tools", () => {
     expect(text).toMatch(/allow_external_targets/);
   });
 
+  it("seo_redirects_audit reads the audit on a site that has it", async () => {
+    get.mockResolvedValueOnce({ version: "1.15.0", features: ["redirect_audit"] });
+    get.mockResolvedValueOnce({ normalised: true, findings: [], known_hosts: [] });
+    const result = await tool("seo_redirects_audit").handler({ site: "a" });
+    expect(get).toHaveBeenLastCalledWith(`${NS}/redirects/audit`);
+    expect(JSON.stringify(result)).toMatch(/normalised/);
+  });
+
+  it("seo_redirects_audit and seo_redirects_known_hosts refuse a site without the audit", async () => {
+    get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run"] });
+    await expect(tool("seo_redirects_audit").handler({ site: "a" })).rejects.toThrow(/redirect_audit/);
+    await expect(tool("seo_redirects_known_hosts").handler({ site: "a", known_hosts: ["partner.de"] })).rejects.toThrow(
+      /redirect_audit/
+    );
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("seo_redirects_known_hosts replaces the confirmed hosts", async () => {
+    get.mockResolvedValue({ version: "1.15.0", features: ["redirect_audit"] });
+    post.mockResolvedValue({ findings: [], known_hosts: ["partner.de"] });
+    await tool("seo_redirects_known_hosts").handler({ site: "a", known_hosts: ["partner.de"] });
+    expect(post).toHaveBeenCalledWith(`${NS}/redirects/audit`, { known_hosts: ["partner.de"] });
+
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_redirects_known_hosts" ? (text = d) : undefined) } as never);
+    expect(text).toMatch(/replaces/i);
+    expect(text).toMatch(/external_target_host/);
+  });
+
   it("seo_status documents features, which seo_import_migrate relies on", () => {
     let text = "";
     register({ tool: (name: string, d: string) => (name === "seo_status" ? (text = d) : undefined) } as never);
