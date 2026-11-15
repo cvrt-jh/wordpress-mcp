@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   1.14.1); both refuse a plugin without the feature. Drift fixtures added.
 
 ### Changed
+- README tool counts corrected to the registered tools (342 with the two new fields tools; Standard 48, Extended 98,
+  ACF 11, WooCommerce 39, SEO 34, Legal 37, Fields 14, Order Fulfillment 7) and pinned by `src/drift.test.ts`: the total, every
+  `### <Module> (N tools)` heading against the tools its source files register, and every tool file mapped to one
+  module (or listed as documented without a count: fort, stripe, woo-helper).
 - `seo_import_migrate` refuses a real (non-dry-run) RankMath import when `seo_status` lacks
   `migrate_external_targets`: cvrt-seo-manager up to 1.14.1 imports redirect sources without slash and targets
   on other hosts enabled (cavort-it.systems, 8 dead rules). The message says to update the plugin first; dry runs,
