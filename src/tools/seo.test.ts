@@ -272,6 +272,26 @@ describe("other tools", () => {
     expect(text).toMatch(/changes/);
   });
 
+  it("seo_status documents features, which seo_import_migrate relies on", () => {
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_status" ? (text = d) : undefined) } as never);
+    expect(text).toMatch(/features/);
+    expect(text).toMatch(/migrate_dry_run/);
+  });
+
+  it("seo_sitemap_health documents build_ms and the per-call progress", () => {
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_sitemap_health" ? (text = d) : undefined) } as never);
+    expect(text).toMatch(/build_ms/);
+    expect(text).toMatch(/at least one URL/);
+  });
+
+  it("seo_import_settings returns the { imported, skipped } report as is", async () => {
+    post.mockResolvedValue({ imported: 1, skipped: { csm_kg_logo: "too small" } });
+    const r = await tool("seo_import_settings").handler({ site: "a", data: { csm_kg_name: "X" } });
+    expect(parse(r)).toEqual({ imported: 1, skipped: { csm_kg_logo: "too small" } });
+  });
+
   it("seo_import_settings documents the skipped-keys report", () => {
     let text = "";
     register({ tool: (name: string, d: string) => (name === "seo_import_settings" ? (text = d) : undefined) } as never);

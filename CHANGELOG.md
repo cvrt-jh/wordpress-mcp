@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `seo_import_migrate`: `dry_run` is documented for the per-post pass too. cvrt-seo-manager after 1.14.1 honours
   it there and returns `changes` and `unsupported`; older versions ignored it and wrote. A per-post dry run is now
   only sent when `seo_status` lists the feature `migrate_dry_run`; otherwise the tool refuses and sends nothing.
+- `seo_status` documents `features` (`migrate_dry_run`, `sitemap_health`) and types it; `seo_import_settings` is typed
+  `{ imported, skipped } | number`; `seo_sitemap_health` documents `build_ms` and that every call checks at least
+  one URL.
 - `seo_import_settings` documents the new `{ imported, skipped }` response; `seo_sitemap_health` the 8 s timeout and
   the end-within-25-s budget rule.
 - `seo_update_post_seo`: new field `sitemap_exclude` (bool). `seo_update_settings` documents `author_archives`,

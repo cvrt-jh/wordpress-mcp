@@ -153,12 +153,17 @@ function requireFields(body: Record<string, unknown>, what: string): void {
 export function register(server: McpServer) {
   server.tool(
     "seo_status",
-    "Get cvrt-seo-manager status: { version, configured, dependencies: { php, wordpress } }.",
+    "Get cvrt-seo-manager status: { version, configured, permalinks, dependencies: { php, wordpress }, features }. features (cvrt-seo-manager after 1.14.1) lists capabilities: migrate_dry_run (seo_import_migrate honours dry_run for the per-post pass; without it the tool refuses a per-post dry run), sitemap_health (seo_sitemap_health available). Older versions have no features field.",
     { site },
     async ({ site }) => {
       const wp = forSite(site);
       return jsonResult(
-        await wp.get<{ version: string; configured: boolean; dependencies: { php: string; wordpress: string } }>(`${NS}/status`)
+        await wp.get<{
+          version: string;
+          configured: boolean;
+          dependencies: { php: string; wordpress: string };
+          features?: string[];
+        }>(`${NS}/status`)
       );
     }
   );
@@ -503,7 +508,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "seo_sitemap_health",
-    "Check the sitemap (cvrt-seo-manager after 1.14.1): the site fetches every sitemap file and every listed URL on its own host (redirects not followed) and returns { total, offset, checked, truncated, next_offset, sitemaps_checked, findings: [{ url, type, detail }], limits, duration_ms }. Finding types: status (not 200), redirect, noindex (robots meta or X-Robots-Tag), canonical (another URL), sitemap (a sitemap file not 200), offsite (not on the site's host, never fetched). One request at a time, 8 s timeout each, a request starts only when it can end within 25 s; page with offset = next_offset while truncated. Sitemap files are checked on offset 0 only.",
+    "Check the sitemap (cvrt-seo-manager after 1.14.1): the site fetches every sitemap file and every listed URL on its own host (redirects not followed) and returns { total, offset, checked, truncated, next_offset, sitemaps_checked, findings: [{ url, type, detail }], limits, duration_ms, build_ms }. Finding types: status (not 200), redirect, noindex (robots meta or X-Robots-Tag), canonical (another URL), sitemap (a sitemap file not 200), offsite (not on the site's host, never fetched). One request at a time, 8 s timeout each, a request starts only when it can end within 25 s (counted after the sitemap build, reported as build_ms), and every call checks at least one URL; page with offset = next_offset while truncated. Sitemap files are checked on offset 0 only.",
     {
       site,
       limit: z.number().int().min(1).max(500).optional().describe("URLs to check in this call (1-500, default 100)"),
@@ -570,7 +575,8 @@ export function register(server: McpServer) {
     async ({ site, data }) => {
       requireFields(data, "setting");
       const wp = forSite(site);
-      return jsonResult(await wp.post<number>(`${NS}/import/settings`, data));
+      // { imported, skipped } after 1.14.1; a bare count before.
+      return jsonResult(await wp.post<{ imported: number; skipped: Record<string, string> } | number>(`${NS}/import/settings`, data));
     }
   );
 
