@@ -412,17 +412,19 @@ export function register(server: McpServer) {
     }
   );
 
-  // The audit route exists from cvrt-seo-manager after 1.14.1 (feature redirect_audit);
-  // on an older plugin /redirects/audit would 404, so say why instead.
-  const requireAudit = async (wp: ReturnType<typeof forSite>): Promise<void> => {
+  // Routes added after cvrt-seo-manager 1.14.1 announce themselves in /status features;
+  // on an older plugin they would answer a bare rest_no_route 404, so say why instead.
+  const requireFeature = async (wp: ReturnType<typeof forSite>, feature: string, what: string): Promise<void> => {
     const status = await wp.get<{ version?: string; features?: unknown }>(`${NS}/status`);
     const features = Array.isArray(status.features) ? status.features : [];
-    if (!features.includes("redirect_audit")) {
+    if (!features.includes(feature)) {
       throw new Error(
-        `cvrt-seo-manager ${status.version ?? "(unknown version)"} on this site has no redirect audit (feature redirect_audit). Update the plugin; nothing was sent.`
+        `cvrt-seo-manager ${status.version ?? "(unknown version)"} on this site has no ${what} (feature ${feature}). Update the plugin; nothing was sent.`
       );
     }
   };
+  const requireAudit = (wp: ReturnType<typeof forSite>): Promise<void> =>
+    requireFeature(wp, "redirect_audit", "redirect audit");
 
   server.tool(
     "seo_redirects_audit",
@@ -545,7 +547,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "seo_sitemap_health",
-    "Check the sitemap (cvrt-seo-manager after 1.14.1): the site fetches every sitemap file and every listed URL on its own host (redirects not followed) and returns { total, offset, checked, truncated, next_offset, sitemaps_checked, sitemaps_pending, findings: [{ url, type, detail }], limits, duration_ms, build_ms }. Finding types: status (not 200), redirect, noindex (robots meta or X-Robots-Tag), canonical (another URL), sitemap (a sitemap file not 200), sitemap_timeout (a sitemap file that does not fit the budget even on a call that only checks the files), offsite (not on the site's host, never fetched). One request at a time, 8 s timeout each, a request starts only when it can end within 25 s (the sitemap build, reported as build_ms, counts against it), and every call checks at least one URL, so a call lasts about max(build + 8 s, 25 s); page with offset = next_offset while truncated. Sitemap files are checked at offset 0 or when sitemaps=true; if a call answers sitemaps_pending: true (a slow cold build left no budget for them), pass sitemaps=true with the next offset; on the last page next_offset = total (that call only checks the files).",
+    "Check the sitemap (cvrt-seo-manager after 1.14.1, feature sitemap_health; refused with a clear message on an older plugin): the site fetches every sitemap file and every listed URL on its own host (redirects not followed) and returns { total, offset, checked, truncated, next_offset, sitemaps_checked, sitemaps_pending, findings: [{ url, type, detail }], limits, duration_ms, build_ms }. Finding types: status (not 200), redirect, noindex (robots meta or X-Robots-Tag), canonical (another URL), sitemap (a sitemap file not 200), sitemap_timeout (a sitemap file that does not fit the budget even on a call that only checks the files), offsite (not on the site's host, never fetched). One request at a time, 8 s timeout each, a request starts only when it can end within 25 s (the sitemap build, reported as build_ms, counts against it), and every call checks at least one URL, so a call lasts about max(build + 8 s, 25 s); page with offset = next_offset while truncated. Sitemap files are checked at offset 0 or when sitemaps=true; if a call answers sitemaps_pending: true (a slow cold build left no budget for them), pass sitemaps=true with the next offset; on the last page next_offset = total (that call only checks the files).",
     {
       site,
       limit: z.number().int().min(1).max(500).optional().describe("URLs to check in this call (1-500, default 100)"),
@@ -557,6 +559,7 @@ export function register(server: McpServer) {
     },
     async ({ site, limit, offset, sitemaps }) => {
       const wp = forSite(site);
+      await requireFeature(wp, "sitemap_health", "sitemap health check");
       const flag = sitemaps === undefined ? undefined : sitemaps ? 1 : 0;
       return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/sitemap/health`, defined({ limit, offset, sitemaps: flag })));
     }

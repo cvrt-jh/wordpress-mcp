@@ -223,8 +223,21 @@ describe("other tools", () => {
     expect(post).toHaveBeenCalledWith(`${NS}/sitemap/submit`, {});
   });
 
+  // /status answers with the sitemap_health feature, /sitemap/health with the report.
+  const healthSite = (report: Record<string, unknown>) =>
+    get.mockImplementation(async (path: string) =>
+      path === `${NS}/status` ? { version: "1.15.0", features: ["sitemap_health"] } : report
+    );
+
+  it("seo_sitemap_health refuses a site without the sitemap_health feature", async () => {
+    get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run"] });
+    await expect(tool("seo_sitemap_health").handler({ site: "a" })).rejects.toThrow(/sitemap_health/);
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(get).toHaveBeenCalledWith(`${NS}/status`);
+  });
+
   it("seo_sitemap_health GETs /sitemap/health with only the given paging params", async () => {
-    get.mockResolvedValue({ total: 3, checked: 3, findings: [], truncated: false, next_offset: null });
+    healthSite({ total: 3, checked: 3, findings: [], truncated: false, next_offset: null });
     await tool("seo_sitemap_health").handler({ site: "a" });
     expect(get).toHaveBeenLastCalledWith(`${NS}/sitemap/health`, {});
     const r = await tool("seo_sitemap_health").handler({ site: "a", limit: 50, offset: 100 });
@@ -233,7 +246,7 @@ describe("other tools", () => {
   });
 
   it("seo_sitemap_health passes sitemaps as 1/0 and documents sitemaps_pending", async () => {
-    get.mockResolvedValue({ checked: 1, sitemaps_pending: false });
+    healthSite({ checked: 1, sitemaps_pending: false });
     await tool("seo_sitemap_health").handler({ site: "a", offset: 1, sitemaps: true });
     expect(get).toHaveBeenLastCalledWith(`${NS}/sitemap/health`, { offset: 1, sitemaps: 1 });
 
