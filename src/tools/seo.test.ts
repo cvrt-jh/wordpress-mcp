@@ -246,6 +246,17 @@ describe("other tools", () => {
     expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath", settings: true });
   });
 
+  it("seo_import_migrate passes dry_run through for the per-post pass and says so", async () => {
+    post.mockResolvedValue({ dry_run: true, changes: [], unsupported: [] });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", dry_run: true });
+    expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath", dry_run: true });
+
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_import_migrate" ? (text = d) : undefined) } as never);
+    expect(text).not.toMatch(/not honoured|Ignored for the meta/);
+    expect(text).toMatch(/changes/);
+  });
+
   it("seo_import_settings sends the flat map as the body", async () => {
     post.mockResolvedValue(1);
     await tool("seo_import_settings").handler({ site: "a", data: { csm_title_separator: "|" } });

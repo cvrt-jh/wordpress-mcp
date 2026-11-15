@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   400 from cvrt-fields). Both need cvrt-fields 0.4.0+: the tool reads `fields_status` features first and refuses (nothing
   sent) when the site's cvrt-fields lacks the key, because older versions ignore it and still answer 200.
 
+### Changed
+- `seo_import_migrate`: `dry_run` is documented for the per-post pass too. cvrt-seo-manager after 1.14.1 honours
+  it there and returns `changes` and `unsupported`; older versions ignored it and wrote (the tool already sent it).
+
 ## [3.14.1] - 2026-11-14
 
 ### Added

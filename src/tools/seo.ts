@@ -621,12 +621,12 @@ export function register(server: McpServer) {
 
   server.tool(
     "seo_import_migrate",
-    "Migrate from RankMath or Yoast. Default: per-post/term meta and redirects are migrated (WRITES immediately, dry_run is not honoured here) and { posts_migrated, terms_migrated, redirects_migrated, errors } is returned. With settings=true (RankMath only) ONLY the global titles/meta/sitemap/robots settings are ported instead, and dry_run=true reports { written, skipped, dry_run } without writing.",
+    "Migrate from RankMath or Yoast. Default: per-post/term meta, schema and redirects are migrated and { posts_migrated, terms_migrated, redirects_migrated, errors, dry_run, changes: [{ object, id, key, value }], unsupported: [{ object, id, title, reason }] } is returned; with dry_run=true nothing is written and changes lists what would be (cvrt-seo-manager after 1.14.1; older versions ignore dry_run here and WRITE). With settings=true (RankMath only) ONLY the global titles/meta/sitemap/robots settings are ported instead, and dry_run=true reports { written, skipped, dry_run } without writing.",
     {
       site,
       source: z.enum(["rankmath", "yoast"]).describe("Plugin to migrate from"),
       settings: z.boolean().optional().describe("Port the global settings instead of the meta (RankMath only, default false)"),
-      dry_run: z.boolean().optional().describe("With settings=true: compute but write nothing (default false). Ignored for the meta migration."),
+      dry_run: z.boolean().optional().describe("Compute and list every change, write nothing (default false). Honoured by the meta migration from cvrt-seo-manager after 1.14.1; older versions write anyway."),
     },
     async ({ site, source, settings, dry_run }) => {
       const wp = forSite(site);
