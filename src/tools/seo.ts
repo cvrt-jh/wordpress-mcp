@@ -107,7 +107,7 @@ const termSeoFields = {
 };
 
 const SETTINGS_DOC = [
-  "Update cvrt-seo-manager settings (partial: only the keys you send change; unknown keys are ignored).",
+  "Update cvrt-seo-manager settings (partial: only the keys you send change). Since cvrt-seo-manager after 1.14.1 an unknown key answers 400 csm_unknown_setting (data.unknown lists them, an option name like csm_title_separator gets the right key suggested) and nothing is written; a removed key (sitemap_authors) is skipped and listed in ignored_removed; the masked IndexNow key from seo_get_settings can be sent back unchanged. Older versions ignored unknown keys.",
   "Send keys flat ({ title_separator: '|' }) or grouped ({ titles: { title_separator: '|' } }); keys are the option names without the csm_ prefix. Returns the full settings (GET shape, secrets masked).",
   "Groups and keys:",
   "titles: title_separator, title_home, desc_home, title_post, desc_post, title_page, desc_page, title_product, desc_product, title_category, title_tag, title_author, title_search, title_404 (templates, tokens like %title% %sep% %sitename%).",

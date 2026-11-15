@@ -405,6 +405,14 @@ describe("other tools", () => {
     expect(text).toMatch(/external_target_host/);
   });
 
+  it("seo_update_settings documents the 400 for unknown keys and ignored_removed", () => {
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_update_settings" ? (text = d) : undefined) } as never);
+    expect(text).toMatch(/csm_unknown_setting/);
+    expect(text).toMatch(/ignored_removed/);
+    expect(text).not.toMatch(/unknown keys are ignored\)/);
+  });
+
   it("seo_status documents features, which seo_import_migrate relies on", () => {
     let text = "";
     register({ tool: (name: string, d: string) => (name === "seo_status" ? (text = d) : undefined) } as never);
