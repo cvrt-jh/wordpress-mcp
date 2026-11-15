@@ -469,7 +469,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 ### Fields Module (14 tools) - Requires [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+
 
 - `fields_status` - Plugin version, definition counts, ACF / Elementor presence, JSON sync state
-- `fields_get_settings` / `fields_update_settings` - Update token (masked as `{ set }`, write-only, stored encrypted), JSON sync path and the opt-in ACF compatibility layer (`compat_acf_functions`), and the options pages whose values shortcodes may print (`shortcode_options_pages`, default none)
+- `fields_get_settings` / `fields_update_settings` - Update token (masked as `{ set }`, write-only, stored encrypted), JSON sync path and the opt-in ACF compatibility layer (`compat_acf_functions`), and the options pages whose values shortcodes may print (`shortcode_options_pages`, options page keys, default none)
 - `fields_get_values` / `fields_update_values` - Read / write the field values of a post, term, user or options page by field name (validated, all-or-nothing)
 - `fields_list_types` - Available field types
 - `fields_get_location_values` - Values for location rules

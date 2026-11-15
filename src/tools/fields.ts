@@ -70,10 +70,10 @@ export function register(server: McpServer) {
           "Opt-in ACF compatibility layer (default false): get_field(), the_field(), get_fields(), update_field() and [acf] exist while ACF is not loaded; never active when ACF is loaded. false switches it off; omitted keeps the setting"
         ),
       shortcode_options_pages: z
-        .array(z.string().regex(/^[A-Za-z0-9_.-]+$/))
+        .array(z.string().regex(/^[a-z0-9_]+$/))
         .optional()
         .describe(
-          "Menu slugs of the options pages marked \"Available in shortcodes\": only their fields are printed by [cvrt_field post_id=\"option\"] / [acf post_id=\"option\"] (default none). Replaces the whole list; [] switches every page off; omitted keeps it. Only pages whose values may be public (any post author can place a shortcode)"
+          "Definition keys (e.g. ui_options_page_site, see fields_list_definitions options-pages; not menu slugs) of the options pages marked \"Available in shortcodes\": only their fields are printed by [cvrt_field post_id=\"option\"] / [acf post_id=\"option\"] (default none). Replaces the whole list; [] switches every page off; omitted keeps it. Only pages whose values may be public (any post author can place a shortcode)"
         ),
     },
     async ({ site, ...args }) => {
