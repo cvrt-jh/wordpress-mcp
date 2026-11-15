@@ -90,6 +90,11 @@ const postSeoFields = {
   breadcrumb_title: z.string().nullable().optional().describe(`Title used in breadcrumbs. ${NULL_CLEARS}`),
   pillar_content: z.boolean().nullable().optional().describe(`Mark as pillar (cornerstone) content. ${NULL_CLEARS}`),
   seo_score: z.number().int().nullable().optional().describe(`Stored SEO score (0-100). ${NULL_CLEARS}`),
+  sitemap_exclude: z
+    .boolean()
+    .nullable()
+    .optional()
+    .describe(`Leave the post out of the XML sitemap; robots unchanged (cvrt-seo-manager after 1.14.1). ${NULL_CLEARS}`),
 };
 
 /** Per-term SEO fields (Cvrt_CSM_REST_API::TERM_META_KEYS). */
@@ -106,15 +111,15 @@ const SETTINGS_DOC = [
   "Send keys flat ({ title_separator: '|' }) or grouped ({ titles: { title_separator: '|' } }); keys are the option names without the csm_ prefix. Returns the full settings (GET shape, secrets masked).",
   "Groups and keys:",
   "titles: title_separator, title_home, desc_home, title_post, desc_post, title_page, desc_page, title_product, desc_product, title_category, title_tag, title_author, title_search, title_404 (templates, tokens like %title% %sep% %sitename%).",
-  "robots: default_robots (text); booleans noindex_archives, noindex_tags, noindex_author, noindex_search, noindex_paginated, noindex_password_protected, noindex_empty_archives, robots_max_directives.",
+  "robots: default_robots (text); booleans noindex_archives, noindex_tags, noindex_author, noindex_search, noindex_paginated, noindex_password_protected, noindex_empty_archives, robots_max_directives; after 1.14.1 also author_archives (enabled | redirect = 301 to home | disabled = 404), noindex_post_types, noindex_taxonomies (arrays of slugs: noindex and out of the sitemap unless an entry says index).",
   "social: default_og_image (attachment ID), default_twitter_card (summary | summary_large_image), social_profiles (object network => URL, e.g. { facebook: 'https://...', twitter: '@handle' }), social_extra_profiles (1.12.0+: extra schema sameAs profile URLs as an array, a JSON array string or one URL per line; only absolute http(s) URLs are kept, duplicates removed), og_home_title, og_home_description, og_home_image (attachment ID).",
-  "knowledge_graph: kg_type, kg_name, kg_description (multi-line), kg_logo (attachment ID), kg_url.",
+  "knowledge_graph: kg_type, kg_name, kg_alternate_name (after 1.14.1), kg_description (multi-line), kg_logo (attachment ID; after 1.14.1 a Google Images format of at least 112x112 px, else 400 csm_kg_logo_format and nothing is written), kg_url.",
   "schema: schema_defaults (object post_type => BlogPosting | Article | NewsArticle | WebPage | Product), schema_article_type, software_app (site-wide SoftwareApplication object, same shape as the per-post field).",
   "verification: verify_google, verify_bing, verify_pinterest, verify_yandex (public meta tokens).",
   "indexnow: indexnow_enabled (bool), indexnow_key (SECRET, write-only; blank keeps the stored key).",
   "search_console: gsc_service_account (SECRET, write-only: the service-account JSON key as a string; validated before anything is written; blank keeps it, null clears it), gsc_property, gsc_auto_submit (bool).",
   "advanced: robots_txt_extra (multi-line), llms_txt.",
-  "sitemap: sitemap_post_types, sitemap_taxonomies, html_sitemap_post_types (arrays of slugs), sitemap_exclude_noindex, sitemap_images, sitemap_authors (bools), sitemap_max_per_page (int).",
+  "sitemap: sitemap_post_types, sitemap_taxonomies, html_sitemap_post_types (arrays of slugs), sitemap_exclude_noindex, sitemap_images (bools), sitemap_max_per_page (int); sitemap_authors up to 1.14.1 only (never read, removed after).",
   "breadcrumbs: breadcrumbs_enabled, breadcrumbs_show_home, breadcrumbs_show_post_title (bools), breadcrumbs_separator, breadcrumbs_home_label.",
   "images: image_seo_enabled (bool), image_alt_template, image_title_template.",
   "links: nofollow_external, external_new_tab, strip_category_base (bools).",

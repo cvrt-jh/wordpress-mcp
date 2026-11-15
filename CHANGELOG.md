@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `seo_import_migrate`: `dry_run` is documented for the per-post pass too. cvrt-seo-manager after 1.14.1 honours
   it there and returns `changes` and `unsupported`; older versions ignored it and wrote (the tool already sent it).
+- `seo_update_post_seo`: new field `sitemap_exclude` (bool). `seo_update_settings` documents `author_archives`,
+  `noindex_post_types`, `noindex_taxonomies`, `kg_alternate_name` and the logo rule; `sitemap_authors` is gone
+  from the plugin after 1.14.1 (drift fixture updated).
 
 ## [3.14.1] - 2026-11-14
 
