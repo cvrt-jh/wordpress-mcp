@@ -232,6 +232,16 @@ describe("other tools", () => {
     expect(parse(r).checked).toBe(3);
   });
 
+  it("seo_sitemap_health passes sitemaps as 1/0 and documents sitemaps_pending", async () => {
+    get.mockResolvedValue({ checked: 1, sitemaps_pending: false });
+    await tool("seo_sitemap_health").handler({ site: "a", offset: 1, sitemaps: true });
+    expect(get).toHaveBeenLastCalledWith(`${NS}/sitemap/health`, { offset: 1, sitemaps: 1 });
+
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_sitemap_health" ? (text = d) : undefined) } as never);
+    expect(text).toMatch(/sitemaps_pending/);
+  });
+
   it("seo_sitemap_health only accepts the route's limit range", () => {
     const limit = z.object(tool("seo_sitemap_health").schema).shape.limit;
     expect(limit.safeParse(0).success).toBe(false);

@@ -508,15 +508,20 @@ export function register(server: McpServer) {
 
   server.tool(
     "seo_sitemap_health",
-    "Check the sitemap (cvrt-seo-manager after 1.14.1): the site fetches every sitemap file and every listed URL on its own host (redirects not followed) and returns { total, offset, checked, truncated, next_offset, sitemaps_checked, findings: [{ url, type, detail }], limits, duration_ms, build_ms }. Finding types: status (not 200), redirect, noindex (robots meta or X-Robots-Tag), canonical (another URL), sitemap (a sitemap file not 200), offsite (not on the site's host, never fetched). One request at a time, 8 s timeout each, a request starts only when it can end within 25 s (the sitemap build, reported as build_ms, counts against it), and every call checks at least one URL, so a call lasts about max(build + 8 s, 25 s); page with offset = next_offset while truncated. Sitemap files are checked on offset 0 only.",
+    "Check the sitemap (cvrt-seo-manager after 1.14.1): the site fetches every sitemap file and every listed URL on its own host (redirects not followed) and returns { total, offset, checked, truncated, next_offset, sitemaps_checked, sitemaps_pending, findings: [{ url, type, detail }], limits, duration_ms, build_ms }. Finding types: status (not 200), redirect, noindex (robots meta or X-Robots-Tag), canonical (another URL), sitemap (a sitemap file not 200), offsite (not on the site's host, never fetched). One request at a time, 8 s timeout each, a request starts only when it can end within 25 s (the sitemap build, reported as build_ms, counts against it), and every call checks at least one URL, so a call lasts about max(build + 8 s, 25 s); page with offset = next_offset while truncated. Sitemap files are checked at offset 0 or when sitemaps=true; if a call answers sitemaps_pending: true (a slow cold build left no budget for them), pass sitemaps=true with the next offset.",
     {
       site,
       limit: z.number().int().min(1).max(500).optional().describe("URLs to check in this call (1-500, default 100)"),
       offset: z.number().int().min(0).optional().describe("Index of the first URL to check (default 0; use next_offset to continue)"),
+      sitemaps: z
+        .boolean()
+        .optional()
+        .describe("Check the sitemap files on this call (default: only at offset 0); send true after a response with sitemaps_pending"),
     },
-    async ({ site, limit, offset }) => {
+    async ({ site, limit, offset, sitemaps }) => {
       const wp = forSite(site);
-      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/sitemap/health`, defined({ limit, offset })));
+      const flag = sitemaps === undefined ? undefined : sitemaps ? 1 : 0;
+      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/sitemap/health`, defined({ limit, offset, sitemaps: flag })));
     }
   );
 
