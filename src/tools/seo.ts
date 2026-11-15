@@ -153,7 +153,7 @@ function requireFields(body: Record<string, unknown>, what: string): void {
 export function register(server: McpServer) {
   server.tool(
     "seo_status",
-    "Get cvrt-seo-manager status: { version, configured, permalinks, dependencies: { php, wordpress }, features }. features (cvrt-seo-manager after 1.14.1) lists capabilities: migrate_dry_run (seo_import_migrate honours dry_run for the per-post pass; without it the tool refuses a per-post dry run), sitemap_health (seo_sitemap_health available). Older versions have no features field.",
+    "Get cvrt-seo-manager status: { version, configured, permalinks, dependencies: { php, wordpress }, features }. features (cvrt-seo-manager after 1.14.1) lists capabilities: migrate_dry_run (seo_import_migrate honours dry_run for the per-post pass; without it the tool refuses a per-post dry run), sitemap_health (seo_sitemap_health available), redirect_audit (GET /redirects/audit), migrate_external_targets (seo_import_migrate takes allow_external_targets; RankMath redirects to another host are imported disabled and listed in warnings). Older versions have no features field.",
     { site },
     async ({ site }) => {
       const wp = forSite(site);
@@ -637,27 +637,42 @@ export function register(server: McpServer) {
 
   server.tool(
     "seo_import_migrate",
-    "Migrate from RankMath or Yoast. Default: per-post/term meta, schema and redirects are migrated and { posts_migrated, terms_migrated, redirects_migrated, errors, dry_run, changes: [{ object, id, key, value }], unsupported: [{ object, id, title, reason }] } is returned; with dry_run=true nothing is written and changes lists what would be. A per-post dry run is only sent when seo_status lists the feature migrate_dry_run (cvrt-seo-manager after 1.14.1); on an older plugin, which would WRITE, the tool refuses and sends nothing. With settings=true (RankMath only) ONLY the global titles/meta/sitemap/robots settings are ported instead, and dry_run=true reports { written, skipped, dry_run } without writing.",
+    "Migrate from RankMath or Yoast. Default: per-post/term meta, schema and redirects are migrated and { posts_migrated, terms_migrated, redirects_migrated, errors, dry_run, changes: [{ object, id, key, value }], unsupported: [{ object, id, title, reason }] } is returned; with dry_run=true nothing is written and changes lists what would be. A per-post dry run is only sent when seo_status lists the feature migrate_dry_run (cvrt-seo-manager after 1.14.1); on an older plugin, which would WRITE, the tool refuses and sends nothing. With settings=true (RankMath only) ONLY the global titles/meta/sitemap/robots settings are ported instead, and dry_run=true reports { written, skipped, dry_run } without writing. RankMath redirects (feature migrate_external_targets): a target on the site's own host is imported relative; a target on any other host is listed in warnings: [{ object, source, target, host, enabled, message }] and imported disabled unless allow_external_targets=true (run the dry run first and check those hosts; an old staging host is the usual case).",
     {
       site,
       source: z.enum(["rankmath", "yoast"]).describe("Plugin to migrate from"),
       settings: z.boolean().optional().describe("Port the global settings instead of the meta (RankMath only, default false)"),
       dry_run: z.boolean().optional().describe("Compute and list every change, write nothing (default false). Honoured by the meta migration from cvrt-seo-manager after 1.14.1; older versions write anyway."),
+      allow_external_targets: z
+        .boolean()
+        .optional()
+        .describe(
+          "Import RankMath redirects whose target is on another host ENABLED (default false: imported disabled, listed in warnings either way). Needs the feature migrate_external_targets; the tool refuses it on an older plugin, which would ignore it."
+        ),
     },
-    async ({ site, source, settings, dry_run }) => {
+    async ({ site, source, settings, dry_run, allow_external_targets }) => {
       const wp = forSite(site);
-      // Up to cvrt-seo-manager 1.14.1 the per-post pass ignored dry_run and WROTE.
-      // Only a site that announces migrate_dry_run in /status gets the request.
-      if (dry_run === true && settings !== true) {
+      const perPostDryRun = dry_run === true && settings !== true;
+      if (perPostDryRun || allow_external_targets === true) {
         const status = await wp.get<{ version?: string; features?: unknown }>(`${NS}/status`);
         const features = Array.isArray(status.features) ? status.features : [];
-        if (!features.includes("migrate_dry_run")) {
+        const version = status.version ?? "(unknown version)";
+        // Up to cvrt-seo-manager 1.14.1 the per-post pass ignored dry_run and WROTE.
+        // Only a site that announces migrate_dry_run in /status gets the request.
+        if (perPostDryRun && !features.includes("migrate_dry_run")) {
           throw new Error(
-            `cvrt-seo-manager ${status.version ?? "(unknown version)"} on this site ignores dry_run for the per-post migration and would WRITE. Update the plugin (it must list migrate_dry_run in seo_status features); nothing was sent.`
+            `cvrt-seo-manager ${version} on this site ignores dry_run for the per-post migration and would WRITE. Update the plugin (it must list migrate_dry_run in seo_status features); nothing was sent.`
+          );
+        }
+        if (allow_external_targets === true && !features.includes("migrate_external_targets")) {
+          throw new Error(
+            `cvrt-seo-manager ${version} on this site does not know allow_external_targets (feature migrate_external_targets): it would import every RankMath redirect as it is, without warnings. Update the plugin; nothing was sent.`
           );
         }
       }
-      return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/import/migrate`, defined({ source, settings, dry_run })));
+      return jsonResult(
+        await wp.post<Record<string, unknown>>(`${NS}/import/migrate`, defined({ source, settings, dry_run, allow_external_targets }))
+      );
     }
   );
 }

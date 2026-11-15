@@ -284,6 +284,29 @@ describe("other tools", () => {
     expect(text).toMatch(/changes/);
   });
 
+  it("seo_import_migrate passes allow_external_targets through to a site that honours it", async () => {
+    get.mockResolvedValue({ version: "1.15.0", features: ["migrate_dry_run", "migrate_external_targets"] });
+    post.mockResolvedValue({ warnings: [] });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", allow_external_targets: true });
+    expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath", allow_external_targets: true });
+  });
+
+  it("seo_import_migrate refuses allow_external_targets on a site that would ignore it", async () => {
+    get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run"] });
+    await expect(
+      tool("seo_import_migrate").handler({ site: "a", source: "rankmath", allow_external_targets: true })
+    ).rejects.toThrow(/migrate_external_targets/);
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("seo_import_migrate documents warnings and the disabled import", () => {
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_import_migrate" ? (text = d) : undefined) } as never);
+    expect(text).toMatch(/warnings/);
+    expect(text).toMatch(/disabled/);
+    expect(text).toMatch(/allow_external_targets/);
+  });
+
   it("seo_status documents features, which seo_import_migrate relies on", () => {
     let text = "";
     register({ tool: (name: string, d: string) => (name === "seo_status" ? (text = d) : undefined) } as never);
