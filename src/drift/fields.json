@@ -14,14 +14,45 @@
   "fields_update_settings": {
     "method": "PUT",
     "route": "/mcp/fields/v1/settings",
-    "source": "cvrt-fields 0.2.0 includes/class-rest-api.php update_settings -> class-settings.php update (reads github_token, clear_github_token)",
+    "source": "cvrt-fields includes/class-rest-api.php update_settings -> class-settings.php update (reads github_token, clear_github_token; compat_acf_functions and shortcode_options_pages since the feat/acf-migration-blockers branch)",
     "server": [
       "github_token",
-      "clear_github_token"
+      "clear_github_token",
+      "compat_acf_functions",
+      "shortcode_options_pages"
     ],
     "fields": [
       "github_token",
-      "clear_github_token"
+      "clear_github_token",
+      "compat_acf_functions",
+      "shortcode_options_pages"
+    ],
+    "response": {
+      "version": "0.4.0",
+      "features": ["compat_acf_functions", "shortcode_options_pages"]
+    }
+  },
+  "fields_get_values": {
+    "method": "GET",
+    "route": "/mcp/fields/v1/values/{object}",
+    "source": "cvrt-fields 0.2.1 includes/class-rest-api.php get_values -> class-values.php read (object = post ID, term_N, user_N or an options storage id; route regex [a-z0-9_]+)",
+    "server": [],
+    "path": [
+      "object"
+    ]
+  },
+  "fields_update_values": {
+    "method": "PUT",
+    "route": "/mcp/fields/v1/values/{object}",
+    "source": "cvrt-fields 0.2.1 includes/class-rest-api.php update_values -> class-values.php write (reads the values map, field name => value as a form would submit it, all-or-nothing)",
+    "server": [
+      "values"
+    ],
+    "path": [
+      "object"
+    ],
+    "fields": [
+      "values"
     ]
   },
   "fields_list_types": {

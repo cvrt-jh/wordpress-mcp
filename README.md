@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.12.1-blue.svg)](https://modelcontextprotocol.io)
 
-Lightweight WordPress MCP server for site management. **337 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
+Lightweight WordPress MCP server for site management. **339 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
 
 **v3.5**: `fields_*` (12 tools) for [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+ - status, settings, field types, location values, schemas and CRUD + JSON sync for field groups, post types, taxonomies and options pages.
 
@@ -134,7 +134,7 @@ All responses are automatically trimmed. Example:
 | HTML tags | excerpts | Clean text output |
 | Pretty-print JSON | all | Compact single-line output |
 
-## Tools (337)
+## Tools (339)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself.
 
@@ -466,10 +466,11 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `legal_get_accessibility` / `legal_put_accessibility` - The self-hosted accessibility tool (replaces the Ally widget, no third-party request); `repairs` switches the markup repair rules (0.9.0+)
 - `legal_get_accessibility_report` / `legal_reset_accessibility_report` - What the markup repair fixed and what is still open, per page (0.9.0+)
 
-### Fields Module (12 tools) - Requires [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+
+### Fields Module (14 tools) - Requires [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+ (`fields_get_values` / `fields_update_values` need 0.2.1+, `compat_acf_functions` / `shortcode_options_pages` in `fields_update_settings` 0.4.0+)
 
 - `fields_status` - Plugin version, definition counts, ACF / Elementor presence, JSON sync state
-- `fields_get_settings` / `fields_update_settings` - Update token (masked as `{ set }`, write-only, stored encrypted) and JSON sync path
+- `fields_get_settings` / `fields_update_settings` - Update token (masked as `{ set }`, write-only, stored encrypted), JSON sync path and the opt-in ACF compatibility layer (`compat_acf_functions`), and the options pages whose values shortcodes may print (`shortcode_options_pages`, options page keys, default none)
+- `fields_get_values` / `fields_update_values` - Read / write the field values of a post, term, user or options page by field name (validated, all-or-nothing)
 - `fields_list_types` - Available field types
 - `fields_get_location_values` - Values for location rules
 - `fields_get_schema` - Editor form schema of a definition kind
