@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `feat/rankmath-migration-blockers`): the site fetches every sitemap file and listed URL on its own host and
   reports `status`, `redirect`, `noindex`, `canonical`, `sitemap` and `offsite` findings. `limit` 1-500
   (default 100), `offset`; page with `next_offset` while `truncated`. `sitemaps` (bool, sent as 1/0) checks the
-  sitemap files on a later call; pass it after a response with `sitemaps_pending: true`.
+  sitemap files on a later call; pass it after a response with `sitemaps_pending: true` (on the last page
+  `next_offset` = `total`). Finding type `sitemap_timeout` for a file that does not fit even a files-only call.
 - `fields_get_values` and `fields_update_values` for cvrt-fields 0.2.1+ (`GET|PUT mcp/fields/v1/values/{object}`): read every
   located field value of a post, term, user or options page, and write values by field name (validated by the field types,
   all-or-nothing). `object` is checked against `[a-z0-9_]+` before it reaches the URL; `values` needs at least one entry.

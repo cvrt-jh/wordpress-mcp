@@ -240,6 +240,8 @@ describe("other tools", () => {
     let text = "";
     register({ tool: (name: string, d: string) => (name === "seo_sitemap_health" ? (text = d) : undefined) } as never);
     expect(text).toMatch(/sitemaps_pending/);
+    expect(text).toMatch(/sitemap_timeout/);
+    expect(text).toMatch(/next_offset = total/);
   });
 
   it("seo_sitemap_health only accepts the route's limit range", () => {
