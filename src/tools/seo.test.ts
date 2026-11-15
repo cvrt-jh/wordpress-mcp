@@ -265,11 +265,40 @@ describe("other tools", () => {
     expect(post).not.toHaveBeenCalled();
   });
 
-  it("seo_import_migrate checks the feature only for a per-post dry run", async () => {
+  it("seo_import_migrate does not ask /status for a settings run or a Yoast import", async () => {
     post.mockResolvedValue({ written: {}, skipped: [], dry_run: true });
     await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", settings: true, dry_run: true });
-    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath" });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", settings: true });
+    await tool("seo_import_migrate").handler({ site: "a", source: "yoast" });
     expect(get).not.toHaveBeenCalled();
+  });
+
+  it("seo_import_migrate refuses a real RankMath import on a plugin without migrate_external_targets", async () => {
+    // Up to 1.14.1 the import stored sources without slash and foreign targets
+    // enabled (cavort-it.systems: 8 rules to a gone staging host).
+    get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run"] });
+    await expect(tool("seo_import_migrate").handler({ site: "a", source: "rankmath" })).rejects.toThrow(
+      /Update cvrt-seo-manager first/
+    );
+    await expect(tool("seo_import_migrate").handler({ site: "a", source: "rankmath", dry_run: false })).rejects.toThrow(
+      /migrate_external_targets/
+    );
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("seo_import_migrate still allows a dry run on such a plugin", async () => {
+    get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run"] });
+    post.mockResolvedValue({ dry_run: true, changes: [] });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", dry_run: true });
+    expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath", dry_run: true });
+  });
+
+  it("seo_import_migrate runs a real RankMath import on a plugin that announces the feature", async () => {
+    get.mockResolvedValue({ version: "1.15.0", features: ["migrate_dry_run", "migrate_external_targets"] });
+    post.mockResolvedValue({ warnings: [] });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath" });
+    expect(get).toHaveBeenCalledWith(`${NS}/status`);
+    expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath" });
   });
 
   it("seo_import_migrate passes dry_run through for the per-post pass and says so", async () => {

@@ -637,7 +637,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "seo_import_migrate",
-    "Migrate from RankMath or Yoast. Default: per-post/term meta, schema and redirects are migrated and { posts_migrated, terms_migrated, redirects_migrated, errors, dry_run, changes: [{ object, id, key, value }], unsupported: [{ object, id, title, reason }] } is returned; with dry_run=true nothing is written and changes lists what would be. A per-post dry run is only sent when seo_status lists the feature migrate_dry_run (cvrt-seo-manager after 1.14.1); on an older plugin, which would WRITE, the tool refuses and sends nothing. With settings=true (RankMath only) ONLY the global titles/meta/sitemap/robots settings are ported instead, and dry_run=true reports { written, skipped, dry_run } without writing. RankMath redirects (feature migrate_external_targets): a target on the site's own host is imported relative; a target on any other host is listed in warnings: [{ object, code, source, target, host, enabled, imported, message }] (code external_target) and imported disabled unless allow_external_targets=true (run the dry run first and check those hosts; an old staging host is the usual case). Only home and siteurl count as the site's own: a host seen in an absolute RankMath source is reported (code source_host, with rankmath_ids; its sources as foreign_source, not imported) and counts as own only when passed in own_hosts.",
+    "Migrate from RankMath or Yoast. RUN dry_run=true FIRST for RankMath and read warnings. A real (non-dry-run) RankMath import is refused unless seo_status lists migrate_external_targets (older plugins import redirects to old staging hosts enabled); update the plugin first. Default: per-post/term meta, schema and redirects are migrated and { posts_migrated, terms_migrated, redirects_migrated, errors, dry_run, changes: [{ object, id, key, value }], unsupported: [{ object, id, title, reason }] } is returned; with dry_run=true nothing is written and changes lists what would be. A per-post dry run is only sent when seo_status lists the feature migrate_dry_run (cvrt-seo-manager after 1.14.1); on an older plugin, which would WRITE, the tool refuses and sends nothing. With settings=true (RankMath only) ONLY the global titles/meta/sitemap/robots settings are ported instead, and dry_run=true reports { written, skipped, dry_run } without writing. RankMath redirects (feature migrate_external_targets): a target on the site's own host is imported relative; a target on any other host is listed in warnings: [{ object, code, source, target, host, enabled, imported, message }] (code external_target) and imported disabled unless allow_external_targets=true (run the dry run first and check those hosts; an old staging host is the usual case). Only home and siteurl count as the site's own: a host seen in an absolute RankMath source is reported (code source_host, with rankmath_ids; its sources as foreign_source, not imported) and counts as own only when passed in own_hosts.",
     {
       site,
       source: z.enum(["rankmath", "yoast"]).describe("Plugin to migrate from"),
@@ -659,7 +659,11 @@ export function register(server: McpServer) {
     async ({ site, source, settings, dry_run, allow_external_targets, own_hosts }) => {
       const wp = forSite(site);
       const perPostDryRun = dry_run === true && settings !== true;
-      const needsHostFeature = allow_external_targets === true || (own_hosts?.length ?? 0) > 0;
+      // A real RankMath per-post import also imports the redirects; up to
+      // cvrt-seo-manager 1.14.1 that stored sources without slash and targets on
+      // other hosts enabled (cavort-it.systems: 8 rules to a gone staging host).
+      const realRankMathImport = source === "rankmath" && settings !== true && dry_run !== true;
+      const needsHostFeature = realRankMathImport || allow_external_targets === true || (own_hosts?.length ?? 0) > 0;
       if (perPostDryRun || needsHostFeature) {
         const status = await wp.get<{ version?: string; features?: unknown }>(`${NS}/status`);
         const features = Array.isArray(status.features) ? status.features : [];
@@ -669,6 +673,11 @@ export function register(server: McpServer) {
         if (perPostDryRun && !features.includes("migrate_dry_run")) {
           throw new Error(
             `cvrt-seo-manager ${version} on this site ignores dry_run for the per-post migration and would WRITE. Update the plugin (it must list migrate_dry_run in seo_status features); nothing was sent.`
+          );
+        }
+        if (realRankMathImport && !features.includes("migrate_external_targets")) {
+          throw new Error(
+            `Update cvrt-seo-manager first: ${version} on this site lacks the feature migrate_external_targets, and its RankMath import would store redirect sources without leading slash and import targets on other hosts (old staging domains) ENABLED, without warnings. Nothing was sent. A dry run (dry_run=true) is still allowed to look at the data.`
           );
         }
         if (needsHostFeature && !features.includes("migrate_external_targets")) {
