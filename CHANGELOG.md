@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `seo_sitemap_health` for `GET mcp/seo/v1/sitemap/health` (cvrt-seo-manager after 1.14.1, branch
+  `feat/rankmath-migration-blockers`): the site fetches every sitemap file and listed URL on its own host and
+  reports `status`, `redirect`, `noindex`, `canonical`, `sitemap` and `offsite` findings. `limit` 1-500
+  (default 100), `offset`; page with `next_offset` while `truncated`.
 - `fields_get_values` and `fields_update_values` for cvrt-fields 0.2.1+ (`GET|PUT mcp/fields/v1/values/{object}`): read every
   located field value of a post, term, user or options page, and write values by field name (validated by the field types,
   all-or-nothing). `object` is checked against `[a-z0-9_]+` before it reaches the URL; `values` needs at least one entry.

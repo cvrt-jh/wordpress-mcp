@@ -223,6 +223,23 @@ describe("other tools", () => {
     expect(post).toHaveBeenCalledWith(`${NS}/sitemap/submit`, {});
   });
 
+  it("seo_sitemap_health GETs /sitemap/health with only the given paging params", async () => {
+    get.mockResolvedValue({ total: 3, checked: 3, findings: [], truncated: false, next_offset: null });
+    await tool("seo_sitemap_health").handler({ site: "a" });
+    expect(get).toHaveBeenLastCalledWith(`${NS}/sitemap/health`, {});
+    const r = await tool("seo_sitemap_health").handler({ site: "a", limit: 50, offset: 100 });
+    expect(get).toHaveBeenLastCalledWith(`${NS}/sitemap/health`, { limit: 50, offset: 100 });
+    expect(parse(r).checked).toBe(3);
+  });
+
+  it("seo_sitemap_health only accepts the route's limit range", () => {
+    const limit = z.object(tool("seo_sitemap_health").schema).shape.limit;
+    expect(limit.safeParse(0).success).toBe(false);
+    expect(limit.safeParse(501).success).toBe(false);
+    expect(limit.safeParse(500).success).toBe(true);
+    expect(z.object(tool("seo_sitemap_health").schema).shape.offset.safeParse(-1).success).toBe(false);
+  });
+
   it("seo_import_migrate sends source and the given flags only", async () => {
     post.mockResolvedValue({});
     await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", settings: true });

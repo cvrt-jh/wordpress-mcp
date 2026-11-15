@@ -497,6 +497,20 @@ export function register(server: McpServer) {
   );
 
   server.tool(
+    "seo_sitemap_health",
+    "Check the sitemap (cvrt-seo-manager after 1.14.1): the site fetches every sitemap file and every listed URL on its own host (redirects not followed) and returns { total, offset, checked, truncated, next_offset, sitemaps_checked, findings: [{ url, type, detail }], limits, duration_ms }. Finding types: status (not 200), redirect, noindex (robots meta or X-Robots-Tag), canonical (another URL), sitemap (a sitemap file not 200), offsite (not on the site's host, never fetched). One request at a time, 10 s timeout each, no new request after 25 s; page with offset = next_offset while truncated. Sitemap files are checked on offset 0 only.",
+    {
+      site,
+      limit: z.number().int().min(1).max(500).optional().describe("URLs to check in this call (1-500, default 100)"),
+      offset: z.number().int().min(0).optional().describe("Index of the first URL to check (default 0; use next_offset to continue)"),
+    },
+    async ({ site, limit, offset }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/sitemap/health`, defined({ limit, offset })));
+    }
+  );
+
+  server.tool(
     "seo_sitemap_ping",
     "Submit the sitemap to Google Search Console (needs the search_console settings) and return the status Search Console reports. The old Google/Bing ping URLs are switched off.",
     { site },

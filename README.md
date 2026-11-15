@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.12.1-blue.svg)](https://modelcontextprotocol.io)
 
-Lightweight WordPress MCP server for site management. **339 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
+Lightweight WordPress MCP server for site management. **340 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
 
 **v3.5**: `fields_*` (12 tools) for [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+ - status, settings, field types, location values, schemas and CRUD + JSON sync for field groups, post types, taxonomies and options pages.
 
@@ -134,7 +134,7 @@ All responses are automatically trimmed. Example:
 | HTML tags | excerpts | Clean text output |
 | Pretty-print JSON | all | Compact single-line output |
 
-## Tools (339)
+## Tools (340)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself.
 
@@ -402,7 +402,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `woo_update_product_meta` - Update product meta
 - `woo_bulk_update_stock` - Bulk stock update
 
-### SEO Module (31 tools) - Requires [cvrt-seo-manager](https://github.com/cvrt-gmbh/cvrt-seo-manager)
+### SEO Module (32 tools) - Requires [cvrt-seo-manager](https://github.com/cvrt-gmbh/cvrt-seo-manager)
 
 - `seo_status` - Get cvrt-seo-manager status (version, configured, dependencies)
 - `seo_get_settings` - Get cvrt-seo-manager settings
@@ -426,6 +426,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `seo_clear_monitor_log` - Clear the 404/redirect monitor log
 - `seo_create_redirect_from_log` - Create a redirect directly from a monitor log entry
 - `seo_sitemap_status` - Get sitemap status
+- `seo_sitemap_health` - Fetch every listed sitemap URL and report non-200, redirects, noindex, foreign canonicals and off-site URLs (`limit`, `offset`; cvrt-seo-manager after 1.14.1)
 - `seo_sitemap_ping` - Ping search engines with the sitemap
 - `seo_indexnow_ping` - Submit URLs to IndexNow
 - `seo_export_settings` - Export cvrt-seo-manager settings
