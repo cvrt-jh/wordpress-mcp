@@ -73,7 +73,7 @@ export function register(server: McpServer) {
         .array(z.string().regex(/^[a-z0-9_]+$/))
         .optional()
         .describe(
-          "Definition keys (e.g. ui_options_page_site, see fields_list_definitions options-pages; not menu slugs) of the options pages marked \"Available in shortcodes\": only their fields are printed by [cvrt_field post_id=\"option\"] / [acf post_id=\"option\"] (default none). Replaces the whole list; [] switches every page off; omitted keeps it. Only pages whose values may be public (any post author can place a shortcode)"
+          "Definition keys (e.g. ui_options_page_site, see fields_list_definitions options-pages; not menu slugs) of the options pages marked \"Available in shortcodes\": only their fields are printed by [cvrt_field post_id=\"option\"] / [acf post_id=\"option\"] (default none). Replaces the whole list; [] switches every page off; omitted keeps it. A key of no registered options page is refused (400 cvrt_fields_unknown_options_page naming it, nothing saved). Only pages whose values may be public (any post author can place a shortcode)"
         ),
     },
     async ({ site, ...args }) => {
