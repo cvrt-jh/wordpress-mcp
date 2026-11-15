@@ -422,13 +422,13 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `seo_get_redirect` - Get a redirect by id
 - `seo_update_redirect` - Update a redirect by id
 - `seo_delete_redirect` - Delete a redirect by id
-- `seo_redirects_audit` - Check the stored redirect rules: duplicates, no leading slash, sources or targets on other hosts, captured or IDN target hosts (cvrt-seo-manager after 1.14.1)
+- `seo_redirects_audit` - Check the stored redirect rules: duplicates, no leading slash, sources or targets on other hosts, captured or IDN target hosts (cvrt-seo-manager 1.15.0+)
 - `seo_redirects_known_hosts` - Confirm redirect target hosts as intended (replaces the list) so the audit stops flagging them
 - `seo_list_monitor_log` - List the 404/redirect monitor log entries
 - `seo_clear_monitor_log` - Clear the 404/redirect monitor log
 - `seo_create_redirect_from_log` - Create a redirect directly from a monitor log entry
 - `seo_sitemap_status` - Get sitemap status
-- `seo_sitemap_health` - Fetch every listed sitemap URL and report non-200, redirects, noindex, foreign canonicals and off-site URLs (`limit`, `offset`; cvrt-seo-manager after 1.14.1)
+- `seo_sitemap_health` - Fetch every listed sitemap URL and report non-200, redirects, noindex, foreign canonicals and off-site URLs (`limit`, `offset`; cvrt-seo-manager 1.15.0+)
 - `seo_sitemap_ping` - Ping search engines with the sitemap
 - `seo_indexnow_ping` - Submit URLs to IndexNow
 - `seo_export_settings` - Export cvrt-seo-manager settings

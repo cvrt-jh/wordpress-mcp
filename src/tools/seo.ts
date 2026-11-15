@@ -94,7 +94,7 @@ const postSeoFields = {
     .boolean()
     .nullable()
     .optional()
-    .describe(`Leave the post out of the XML sitemap; robots unchanged (cvrt-seo-manager after 1.14.1). ${NULL_CLEARS}`),
+    .describe(`Leave the post out of the XML sitemap; robots unchanged (cvrt-seo-manager 1.15.0+). ${NULL_CLEARS}`),
 };
 
 /** Per-term SEO fields (Cvrt_CSM_REST_API::TERM_META_KEYS). */
@@ -107,19 +107,19 @@ const termSeoFields = {
 };
 
 const SETTINGS_DOC = [
-  "Update cvrt-seo-manager settings (partial: only the keys you send change). Since cvrt-seo-manager after 1.14.1 an unknown key answers 400 csm_unknown_setting (data.unknown lists them, an option name like csm_title_separator gets the right key suggested) and nothing is written; a removed key (sitemap_authors) is skipped and listed in ignored_removed; the masked IndexNow key from seo_get_settings can be sent back unchanged. Older versions ignored unknown keys.",
+  "Update cvrt-seo-manager settings (partial: only the keys you send change). From cvrt-seo-manager 1.15.0 on, an unknown key answers 400 csm_unknown_setting (data.unknown lists them, an option name like csm_title_separator gets the right key suggested) and nothing is written; a removed key (sitemap_authors) is skipped and listed in ignored_removed; the masked IndexNow key from seo_get_settings can be sent back unchanged. Older versions ignored unknown keys.",
   "Send keys flat ({ title_separator: '|' }) or grouped ({ titles: { title_separator: '|' } }); keys are the option names without the csm_ prefix. Returns the full settings (GET shape, secrets masked).",
   "Groups and keys:",
   "titles: title_separator, title_home, desc_home, title_post, desc_post, title_page, desc_page, title_product, desc_product, title_category, title_tag, title_author, title_search, title_404 (templates, tokens like %title% %sep% %sitename%).",
-  "robots: default_robots (text); booleans noindex_archives, noindex_tags, noindex_author, noindex_search, noindex_paginated, noindex_password_protected, noindex_empty_archives, robots_max_directives; after 1.14.1 also author_archives (enabled | redirect = 301 to home | disabled = 404), noindex_post_types, noindex_taxonomies (arrays of slugs: noindex and out of the sitemap unless an entry says index).",
+  "robots: default_robots (text); booleans noindex_archives, noindex_tags, noindex_author, noindex_search, noindex_paginated, noindex_password_protected, noindex_empty_archives, robots_max_directives; 1.15.0+ also author_archives (enabled | redirect = 301 to home | disabled = 404), noindex_post_types, noindex_taxonomies (arrays of slugs: noindex and out of the sitemap unless an entry says index).",
   "social: default_og_image (attachment ID), default_twitter_card (summary | summary_large_image), social_profiles (object network => URL, e.g. { facebook: 'https://...', twitter: '@handle' }), social_extra_profiles (1.12.0+: extra schema sameAs profile URLs as an array, a JSON array string or one URL per line; only absolute http(s) URLs are kept, duplicates removed), og_home_title, og_home_description, og_home_image (attachment ID).",
-  "knowledge_graph: kg_type, kg_name, kg_alternate_name (after 1.14.1), kg_description (multi-line), kg_logo (attachment ID; after 1.14.1 a Google Images format of at least 112x112 px, else 400 csm_kg_logo_format and nothing is written), kg_url.",
+  "knowledge_graph: kg_type, kg_name, kg_alternate_name (1.15.0+), kg_description (multi-line), kg_logo (attachment ID; 1.15.0+: a Google Images format of at least 112x112 px, else 400 csm_kg_logo_format and nothing is written), kg_url.",
   "schema: schema_defaults (object post_type => BlogPosting | Article | NewsArticle | WebPage | Product), schema_article_type, software_app (site-wide SoftwareApplication object, same shape as the per-post field).",
   "verification: verify_google, verify_bing, verify_pinterest, verify_yandex (public meta tokens).",
   "indexnow: indexnow_enabled (bool), indexnow_key (SECRET, write-only; blank keeps the stored key).",
   "search_console: gsc_service_account (SECRET, write-only: the service-account JSON key as a string; validated before anything is written; blank keeps it, null clears it), gsc_property, gsc_auto_submit (bool).",
   "advanced: robots_txt_extra (multi-line), llms_txt.",
-  "sitemap: sitemap_post_types, sitemap_taxonomies, html_sitemap_post_types (arrays of slugs), sitemap_exclude_noindex, sitemap_images (bools), sitemap_max_per_page (int); sitemap_authors up to 1.14.1 only (never read, removed after).",
+  "sitemap: sitemap_post_types, sitemap_taxonomies, html_sitemap_post_types (arrays of slugs), sitemap_exclude_noindex, sitemap_images (bools), sitemap_max_per_page (int); sitemap_authors up to 1.14.1 only (never read, removed in 1.15.0).",
   "breadcrumbs: breadcrumbs_enabled, breadcrumbs_show_home, breadcrumbs_show_post_title (bools), breadcrumbs_separator, breadcrumbs_home_label.",
   "images: image_seo_enabled (bool), image_alt_template, image_title_template.",
   "links: nofollow_external, external_new_tab, strip_category_base (bools).",
@@ -153,7 +153,7 @@ function requireFields(body: Record<string, unknown>, what: string): void {
 export function register(server: McpServer) {
   server.tool(
     "seo_status",
-    "Get cvrt-seo-manager status: { version, configured, permalinks, dependencies: { php, wordpress }, features }. features (cvrt-seo-manager after 1.14.1) lists capabilities: migrate_dry_run (seo_import_migrate honours dry_run for the per-post pass; without it the tool refuses a per-post dry run), sitemap_health (seo_sitemap_health available), redirect_audit (GET /redirects/audit), migrate_external_targets (seo_import_migrate takes allow_external_targets; RankMath redirects to another host are imported disabled and listed in warnings). Older versions have no features field.",
+    "Get cvrt-seo-manager status: { version, configured, permalinks, dependencies: { php, wordpress }, features }. features (cvrt-seo-manager 1.15.0+) lists capabilities: migrate_dry_run (seo_import_migrate honours dry_run for the per-post pass; without it the tool refuses a per-post dry run), sitemap_health (seo_sitemap_health available), redirect_audit (GET /redirects/audit), migrate_external_targets (seo_import_migrate takes allow_external_targets; RankMath redirects to another host are imported disabled and listed in warnings). Older versions have no features field.",
     { site },
     async ({ site }) => {
       const wp = forSite(site);
@@ -412,7 +412,7 @@ export function register(server: McpServer) {
     }
   );
 
-  // Routes added after cvrt-seo-manager 1.14.1 announce themselves in /status features;
+  // Routes added in cvrt-seo-manager 1.15.0 announce themselves in /status features;
   // on an older plugin they would answer a bare rest_no_route 404, so say why instead.
   const requireFeature = async (wp: ReturnType<typeof forSite>, feature: string, what: string): Promise<void> => {
     const status = await wp.get<{ version?: string; features?: unknown }>(`${NS}/status`);
@@ -428,7 +428,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "seo_redirects_audit",
-    "Check the stored redirect rules (cvrt-seo-manager after 1.14.1, feature redirect_audit). Runs the pending one-time rewrite of exact sources, then returns { normalised, rewrite, findings: [{ code, message, ids, ... }], known_hosts }. Codes: duplicate_source (winner + ids that never fire), normalise_failed, idn_target_host, target_host_from_capture, missing_leading_slash, foreign_source_host, external_target_host (one per host, host field; confirm an intended host with seo_redirects_known_hosts). The same findings show as an admin notice.",
+    "Check the stored redirect rules (cvrt-seo-manager 1.15.0+, feature redirect_audit). Runs the pending one-time rewrite of exact sources, then returns { normalised, rewrite, findings: [{ code, message, ids, ... }], known_hosts }. Codes: duplicate_source (winner + ids that never fire), normalise_failed, idn_target_host, target_host_from_capture, missing_leading_slash, foreign_source_host, external_target_host (one per host, host field; confirm an intended host with seo_redirects_known_hosts). The same findings show as an admin notice.",
     { site },
     async ({ site }) => {
       const wp = forSite(site);
@@ -439,7 +439,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "seo_redirects_known_hosts",
-    "Confirm redirect target hosts as intended (cvrt-seo-manager after 1.14.1, feature redirect_audit): REPLACES the stored list (pass every host to keep; [] clears it), so external_target_host stops flagging targets on them. Returns the audit as seo_redirects_audit does, with known_hosts. Only confirm a host you checked; an old staging host is a dead target, fix or delete those rules instead.",
+    "Confirm redirect target hosts as intended (cvrt-seo-manager 1.15.0+, feature redirect_audit): REPLACES the stored list (pass every host to keep; [] clears it), so external_target_host stops flagging targets on them. Returns the audit as seo_redirects_audit does, with known_hosts. Only confirm a host you checked; an old staging host is a dead target, fix or delete those rules instead.",
     {
       site,
       known_hosts: z.array(z.string()).describe("Every host confirmed as an intended redirect target (www. and case are ignored)"),
@@ -547,7 +547,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "seo_sitemap_health",
-    "Check the sitemap (cvrt-seo-manager after 1.14.1, feature sitemap_health; refused with a clear message on an older plugin): the site fetches every sitemap file and every listed URL on its own host (redirects not followed) and returns { total, offset, checked, truncated, next_offset, sitemaps_checked, sitemaps_pending, findings: [{ url, type, detail }], limits, duration_ms, build_ms }. Finding types: status (not 200), redirect, noindex (robots meta or X-Robots-Tag), canonical (another URL), sitemap (a sitemap file not 200), sitemap_timeout (a sitemap file that does not fit the budget even on a call that only checks the files), offsite (not on the site's host, never fetched). One request at a time, 8 s timeout each, a request starts only when it can end within 25 s (the sitemap build, reported as build_ms, counts against it), and every call checks at least one URL, so a call lasts about max(build + 8 s, 25 s); page with offset = next_offset while truncated. Sitemap files are checked at offset 0 or when sitemaps=true; if a call answers sitemaps_pending: true (a slow cold build left no budget for them), pass sitemaps=true with the next offset; on the last page next_offset = total (that call only checks the files).",
+    "Check the sitemap (cvrt-seo-manager 1.15.0+, feature sitemap_health; refused with a clear message on an older plugin): the site fetches every sitemap file and every listed URL on its own host (redirects not followed) and returns { total, offset, checked, truncated, next_offset, sitemaps_checked, sitemaps_pending, findings: [{ url, type, detail }], limits, duration_ms, build_ms }. Finding types: status (not 200), redirect, noindex (robots meta or X-Robots-Tag), canonical (another URL), sitemap (a sitemap file not 200), sitemap_timeout (a sitemap file that does not fit the budget even on a call that only checks the files), offsite (not on the site's host, never fetched). One request at a time, 8 s timeout each, a request starts only when it can end within 25 s (the sitemap build, reported as build_ms, counts against it), and every call checks at least one URL, so a call lasts about max(build + 8 s, 25 s); page with offset = next_offset while truncated. Sitemap files are checked at offset 0 or when sitemaps=true; if a call answers sitemaps_pending: true (a slow cold build left no budget for them), pass sitemaps=true with the next offset; on the last page next_offset = total (that call only checks the files).",
     {
       site,
       limit: z.number().int().min(1).max(500).optional().describe("URLs to check in this call (1-500, default 100)"),
@@ -612,7 +612,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "seo_import_settings",
-    "Import settings from a flat { csm_name: value } map (the seo_export_settings shape). Only csm_* keys are written; secrets (csm_indexnow_key, csm_gsc_service_account, csm_github_token) are never imported. Returns { imported, skipped: { key: reason } } (cvrt-seo-manager after 1.14.1: a refused logo, a secret or a non-csm_ key is listed in skipped); older versions return the bare number of options written.",
+    "Import settings from a flat { csm_name: value } map (the seo_export_settings shape). Only csm_* keys are written; secrets (csm_indexnow_key, csm_gsc_service_account, csm_github_token) are never imported. Returns { imported, skipped: { key: reason } } (cvrt-seo-manager 1.15.0+: a refused logo, a secret or a non-csm_ key is listed in skipped); older versions return the bare number of options written.",
     {
       site,
       data: z.record(z.any()).describe("Flat map of csm_* option names to values, e.g. { csm_title_separator: '|' }"),
@@ -620,7 +620,7 @@ export function register(server: McpServer) {
     async ({ site, data }) => {
       requireFields(data, "setting");
       const wp = forSite(site);
-      // { imported, skipped } after 1.14.1; a bare count before.
+      // { imported, skipped } since 1.15.0; a bare count before.
       return jsonResult(await wp.post<{ imported: number; skipped: Record<string, string> } | number>(`${NS}/import/settings`, data));
     }
   );
@@ -677,12 +677,12 @@ export function register(server: McpServer) {
 
   server.tool(
     "seo_import_migrate",
-    "Migrate from RankMath or Yoast. RUN dry_run=true FIRST for RankMath and read warnings. A real (non-dry-run) RankMath import is refused unless seo_status lists migrate_external_targets (older plugins import redirects to old staging hosts enabled); update the plugin first. Default: per-post/term meta, schema and redirects are migrated and { posts_migrated, terms_migrated, redirects_migrated, errors, dry_run, changes: [{ object, id, key, value }], unsupported: [{ object, id, title, reason }] } is returned; with dry_run=true nothing is written and changes lists what would be. A per-post dry run is only sent when seo_status lists the feature migrate_dry_run (cvrt-seo-manager after 1.14.1); on an older plugin, which would WRITE, the tool refuses and sends nothing. With settings=true (RankMath only) ONLY the global titles/meta/sitemap/robots settings are ported instead, and dry_run=true reports { written, skipped, dry_run } without writing. RankMath redirects (feature migrate_external_targets): a target on the site's own host is imported relative; a target on any other host is listed in warnings: [{ object, code, source, target, host, enabled, imported, message }] (code external_target) and imported disabled unless allow_external_targets=true (run the dry run first and check those hosts; an old staging host is the usual case). Only home and siteurl count as the site's own: a host seen in an absolute RankMath source is reported (code source_host, with rankmath_ids; its sources as foreign_source, not imported) and counts as own only when passed in own_hosts.",
+    "Migrate from RankMath or Yoast. RUN dry_run=true FIRST for RankMath and read warnings. A real (non-dry-run) RankMath import is refused unless seo_status lists migrate_external_targets (older plugins import redirects to old staging hosts enabled); update the plugin first. Default: per-post/term meta, schema and redirects are migrated and { posts_migrated, terms_migrated, redirects_migrated, errors, dry_run, changes: [{ object, id, key, value }], unsupported: [{ object, id, title, reason }] } is returned; with dry_run=true nothing is written and changes lists what would be. A per-post dry run is only sent when seo_status lists the feature migrate_dry_run (cvrt-seo-manager 1.15.0+); on an older plugin, which would WRITE, the tool refuses and sends nothing. With settings=true (RankMath only) ONLY the global titles/meta/sitemap/robots settings are ported instead, and dry_run=true reports { written, skipped, dry_run } without writing. RankMath redirects (feature migrate_external_targets): a target on the site's own host is imported relative; a target on any other host is listed in warnings: [{ object, code, source, target, host, enabled, imported, message }] (code external_target) and imported disabled unless allow_external_targets=true (run the dry run first and check those hosts; an old staging host is the usual case). Only home and siteurl count as the site's own: a host seen in an absolute RankMath source is reported (code source_host, with rankmath_ids; its sources as foreign_source, not imported) and counts as own only when passed in own_hosts.",
     {
       site,
       source: z.enum(["rankmath", "yoast"]).describe("Plugin to migrate from"),
       settings: z.boolean().optional().describe("Port the global settings instead of the meta (RankMath only, default false)"),
-      dry_run: z.boolean().optional().describe("Compute and list every change, write nothing (default false). Honoured by the meta migration from cvrt-seo-manager after 1.14.1; older versions write anyway."),
+      dry_run: z.boolean().optional().describe("Compute and list every change, write nothing (default false). Honoured by the meta migration from cvrt-seo-manager 1.15.0+; older versions write anyway."),
       allow_external_targets: z
         .boolean()
         .optional()
