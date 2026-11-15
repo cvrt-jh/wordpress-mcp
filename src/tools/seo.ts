@@ -503,7 +503,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "seo_sitemap_health",
-    "Check the sitemap (cvrt-seo-manager after 1.14.1): the site fetches every sitemap file and every listed URL on its own host (redirects not followed) and returns { total, offset, checked, truncated, next_offset, sitemaps_checked, findings: [{ url, type, detail }], limits, duration_ms }. Finding types: status (not 200), redirect, noindex (robots meta or X-Robots-Tag), canonical (another URL), sitemap (a sitemap file not 200), offsite (not on the site's host, never fetched). One request at a time, 10 s timeout each, no new request after 25 s; page with offset = next_offset while truncated. Sitemap files are checked on offset 0 only.",
+    "Check the sitemap (cvrt-seo-manager after 1.14.1): the site fetches every sitemap file and every listed URL on its own host (redirects not followed) and returns { total, offset, checked, truncated, next_offset, sitemaps_checked, findings: [{ url, type, detail }], limits, duration_ms }. Finding types: status (not 200), redirect, noindex (robots meta or X-Robots-Tag), canonical (another URL), sitemap (a sitemap file not 200), offsite (not on the site's host, never fetched). One request at a time, 8 s timeout each, a request starts only when it can end within 25 s; page with offset = next_offset while truncated. Sitemap files are checked on offset 0 only.",
     {
       site,
       limit: z.number().int().min(1).max(500).optional().describe("URLs to check in this call (1-500, default 100)"),
@@ -562,7 +562,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "seo_import_settings",
-    "Import settings from a flat { csm_name: value } map (the seo_export_settings shape). Only csm_* keys are written; secrets (csm_indexnow_key, csm_gsc_service_account, csm_github_token) are never imported. Returns the number of options written.",
+    "Import settings from a flat { csm_name: value } map (the seo_export_settings shape). Only csm_* keys are written; secrets (csm_indexnow_key, csm_gsc_service_account, csm_github_token) are never imported. Returns { imported, skipped: { key: reason } } (cvrt-seo-manager after 1.14.1: a refused logo, a secret or a non-csm_ key is listed in skipped); older versions return the bare number of options written.",
     {
       site,
       data: z.record(z.any()).describe("Flat map of csm_* option names to values, e.g. { csm_title_separator: '|' }"),
@@ -626,7 +626,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "seo_import_migrate",
-    "Migrate from RankMath or Yoast. Default: per-post/term meta, schema and redirects are migrated and { posts_migrated, terms_migrated, redirects_migrated, errors, dry_run, changes: [{ object, id, key, value }], unsupported: [{ object, id, title, reason }] } is returned; with dry_run=true nothing is written and changes lists what would be (cvrt-seo-manager after 1.14.1; older versions ignore dry_run here and WRITE). With settings=true (RankMath only) ONLY the global titles/meta/sitemap/robots settings are ported instead, and dry_run=true reports { written, skipped, dry_run } without writing.",
+    "Migrate from RankMath or Yoast. Default: per-post/term meta, schema and redirects are migrated and { posts_migrated, terms_migrated, redirects_migrated, errors, dry_run, changes: [{ object, id, key, value }], unsupported: [{ object, id, title, reason }] } is returned; with dry_run=true nothing is written and changes lists what would be. A per-post dry run is only sent when seo_status lists the feature migrate_dry_run (cvrt-seo-manager after 1.14.1); on an older plugin, which would WRITE, the tool refuses and sends nothing. With settings=true (RankMath only) ONLY the global titles/meta/sitemap/robots settings are ported instead, and dry_run=true reports { written, skipped, dry_run } without writing.",
     {
       site,
       source: z.enum(["rankmath", "yoast"]).describe("Plugin to migrate from"),
@@ -635,6 +635,17 @@ export function register(server: McpServer) {
     },
     async ({ site, source, settings, dry_run }) => {
       const wp = forSite(site);
+      // Up to cvrt-seo-manager 1.14.1 the per-post pass ignored dry_run and WROTE.
+      // Only a site that announces migrate_dry_run in /status gets the request.
+      if (dry_run === true && settings !== true) {
+        const status = await wp.get<{ version?: string; features?: unknown }>(`${NS}/status`);
+        const features = Array.isArray(status.features) ? status.features : [];
+        if (!features.includes("migrate_dry_run")) {
+          throw new Error(
+            `cvrt-seo-manager ${status.version ?? "(unknown version)"} on this site ignores dry_run for the per-post migration and would WRITE. Update the plugin (it must list migrate_dry_run in seo_status features); nothing was sent.`
+          );
+        }
+      }
       return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/import/migrate`, defined({ source, settings, dry_run })));
     }
   );

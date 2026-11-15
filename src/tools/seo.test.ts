@@ -246,7 +246,22 @@ describe("other tools", () => {
     expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath", settings: true });
   });
 
+  it("seo_import_migrate refuses a per-post dry run on a site that would write (no migrate_dry_run feature)", async () => {
+    get.mockResolvedValue({ version: "1.14.1" });
+    await expect(tool("seo_import_migrate").handler({ site: "a", source: "rankmath", dry_run: true })).rejects.toThrow(/would WRITE/);
+    expect(get).toHaveBeenCalledWith(`${NS}/status`);
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("seo_import_migrate checks the feature only for a per-post dry run", async () => {
+    post.mockResolvedValue({ written: {}, skipped: [], dry_run: true });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", settings: true, dry_run: true });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath" });
+    expect(get).not.toHaveBeenCalled();
+  });
+
   it("seo_import_migrate passes dry_run through for the per-post pass and says so", async () => {
+    get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run", "sitemap_health"] });
     post.mockResolvedValue({ dry_run: true, changes: [], unsupported: [] });
     await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", dry_run: true });
     expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath", dry_run: true });
@@ -255,6 +270,12 @@ describe("other tools", () => {
     register({ tool: (name: string, d: string) => (name === "seo_import_migrate" ? (text = d) : undefined) } as never);
     expect(text).not.toMatch(/not honoured|Ignored for the meta/);
     expect(text).toMatch(/changes/);
+  });
+
+  it("seo_import_settings documents the skipped-keys report", () => {
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_import_settings" ? (text = d) : undefined) } as never);
+    expect(text).toMatch(/skipped/);
   });
 
   it("seo_import_settings sends the flat map as the body", async () => {
