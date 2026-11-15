@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `migrate_external_targets`): without it RankMath redirects whose target is on another host are imported
   disabled; either way they are listed in the new `warnings`. The tool refuses the flag on a plugin that does
   not announce the feature (it would import them enabled without warnings). Drift fixture updated.
+- `seo_import_migrate` takes `own_hosts` (string[], same feature): hosts that are the site besides home and
+  siteurl. The plugin no longer infers them from absolute RankMath sources; it reports such hosts as
+  `source_host` warnings.
 - `seo_sitemap_health` for `GET mcp/seo/v1/sitemap/health` (cvrt-seo-manager after 1.14.1, branch
   `feat/rankmath-migration-blockers`): the site fetches every sitemap file and listed URL on its own host and
   reports `status`, `redirect`, `noindex`, `canonical`, `sitemap` and `offsite` findings. `limit` 1-500

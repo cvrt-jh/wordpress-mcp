@@ -299,6 +299,21 @@ describe("other tools", () => {
     expect(post).not.toHaveBeenCalled();
   });
 
+  it("seo_import_migrate passes own_hosts through to a site that honours it", async () => {
+    get.mockResolvedValue({ version: "1.15.0", features: ["migrate_dry_run", "migrate_external_targets"] });
+    post.mockResolvedValue({ warnings: [] });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", dry_run: true, own_hosts: ["b3zbr2.myrdbx.io"] });
+    expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath", dry_run: true, own_hosts: ["b3zbr2.myrdbx.io"] });
+  });
+
+  it("seo_import_migrate refuses own_hosts on a site that would ignore it", async () => {
+    get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run"] });
+    await expect(
+      tool("seo_import_migrate").handler({ site: "a", source: "rankmath", dry_run: true, own_hosts: ["old.example"] })
+    ).rejects.toThrow(/own_hosts/);
+    expect(post).not.toHaveBeenCalled();
+  });
+
   it("seo_import_migrate documents warnings and the disabled import", () => {
     let text = "";
     register({ tool: (name: string, d: string) => (name === "seo_import_migrate" ? (text = d) : undefined) } as never);
