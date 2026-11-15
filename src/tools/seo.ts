@@ -713,8 +713,13 @@ export function register(server: McpServer) {
           );
         }
         if (realRankMathImport && !features.includes("migrate_external_targets")) {
+          // Released plugins up to 1.14.1 lack migrate_dry_run as well, so the
+          // per-post dry run is refused there too; only say what really works.
+          const whatWorks = features.includes("migrate_dry_run")
+            ? "A dry run (dry_run=true) is still allowed to look at the data."
+            : "On this version only a settings dry run (settings=true, dry_run=true) is possible; the per-post dry run would write too.";
           throw new Error(
-            `Update cvrt-seo-manager first: ${version} on this site lacks the feature migrate_external_targets, and its RankMath import would store redirect sources without leading slash and import targets on other hosts (old staging domains) ENABLED, without warnings. Nothing was sent. A dry run (dry_run=true) is still allowed to look at the data.`
+            `Update cvrt-seo-manager first: ${version} on this site lacks the feature migrate_external_targets, and its RankMath import would store redirect sources without leading slash and import targets on other hosts (old staging domains) ENABLED, without warnings. Nothing was sent. ${whatWorks}`
           );
         }
         if (needsHostFeature && !features.includes("migrate_external_targets")) {

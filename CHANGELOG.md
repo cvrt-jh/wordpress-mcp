@@ -23,7 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `seo_import_migrate` refuses a real (non-dry-run) RankMath import when `seo_status` lacks
   `migrate_external_targets`: cvrt-seo-manager up to 1.14.1 imports redirect sources without slash and targets
   on other hosts enabled (cavort-it.systems, 8 dead rules). The message says to update the plugin first; dry runs,
-  settings runs and Yoast imports are unchanged.
+  settings runs and Yoast imports are unchanged. On a plugin that also lacks `migrate_dry_run` (every release up
+  to 1.14.1) it says that only a settings dry run is possible there.
 - `seo_sitemap_health` for `GET mcp/seo/v1/sitemap/health` (cvrt-seo-manager after 1.14.1, branch
   `feat/rankmath-migration-blockers`): the site fetches every sitemap file and listed URL on its own host and
   reports `status`, `redirect`, `noindex`, `canonical`, `sitemap` and `offsite` findings. `limit` 1-500

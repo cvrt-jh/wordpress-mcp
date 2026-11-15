@@ -286,6 +286,18 @@ describe("other tools", () => {
     expect(post).not.toHaveBeenCalled();
   });
 
+  it("seo_import_migrate tells a 1.14.1 site that only a settings dry run works there", async () => {
+    // Every released plugin up to 1.14.1 lacks both features: the per-post
+    // dry run is refused too, so the message must not offer it.
+    get.mockResolvedValue({ version: "1.14.1" });
+    const error = await tool("seo_import_migrate")
+      .handler({ site: "a", source: "rankmath" })
+      .catch((e: Error) => e);
+    expect((error as Error).message).toMatch(/only a settings dry run \(settings=true, dry_run=true\)/);
+    expect((error as Error).message).not.toMatch(/A dry run \(dry_run=true\) is still allowed/);
+    expect(post).not.toHaveBeenCalled();
+  });
+
   it("seo_import_migrate still allows a dry run on such a plugin", async () => {
     get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run"] });
     post.mockResolvedValue({ dry_run: true, changes: [] });
