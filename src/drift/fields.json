@@ -14,16 +14,18 @@
   "fields_update_settings": {
     "method": "PUT",
     "route": "/mcp/fields/v1/settings",
-    "source": "cvrt-fields includes/class-rest-api.php update_settings -> class-settings.php update (reads github_token, clear_github_token; compat_acf_functions since the feat/acf-migration-blockers branch)",
+    "source": "cvrt-fields includes/class-rest-api.php update_settings -> class-settings.php update (reads github_token, clear_github_token; compat_acf_functions and shortcode_options_pages since the feat/acf-migration-blockers branch)",
     "server": [
       "github_token",
       "clear_github_token",
-      "compat_acf_functions"
+      "compat_acf_functions",
+      "shortcode_options_pages"
     ],
     "fields": [
       "github_token",
       "clear_github_token",
-      "compat_acf_functions"
+      "compat_acf_functions",
+      "shortcode_options_pages"
     ]
   },
   "fields_get_values": {

@@ -105,6 +105,18 @@ describe("fields tools", () => {
     expect(put).toHaveBeenLastCalledWith("/mcp/fields/v1/settings", { compat_acf_functions: false });
   });
 
+  it("fields_update_settings sends shortcode_options_pages, including an empty list", async () => {
+    put.mockResolvedValue({ shortcode_options_pages: ["site-settings"] });
+    await tool("fields_update_settings").handler({ site: "a", shortcode_options_pages: ["site-settings"] });
+    expect(put).toHaveBeenLastCalledWith("/mcp/fields/v1/settings", { shortcode_options_pages: ["site-settings"] });
+
+    await tool("fields_update_settings").handler({ site: "a", shortcode_options_pages: [] });
+    expect(put).toHaveBeenLastCalledWith("/mcp/fields/v1/settings", { shortcode_options_pages: [] });
+
+    const schema = z.object(tool("fields_update_settings").schema);
+    expect(schema.safeParse({ site: "a", shortcode_options_pages: ["bad slug<x>"] }).success).toBe(false);
+  });
+
   it("fields_get_values reads the values of one object", async () => {
     get.mockResolvedValue({ object: "42", fields: [{ name: "telephone", value: "06101 1" }] });
     const result = await tool("fields_get_values").handler({ site: "a", object: "42" });

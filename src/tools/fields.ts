@@ -55,7 +55,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "fields_update_settings",
-    "Update cvrt-fields settings. github_token is write-only and stored encrypted; a blank or omitted token keeps the stored one. clear_github_token: true deletes it. compat_acf_functions switches the opt-in ACF compatibility layer. Returns the settings as fields_get_settings does (token as { set }, compat_acf_functions as a boolean).",
+    "Update cvrt-fields settings. github_token is write-only and stored encrypted; a blank or omitted token keeps the stored one. clear_github_token: true deletes it. compat_acf_functions switches the opt-in ACF compatibility layer. shortcode_options_pages lists the options pages whose values shortcodes may print. Returns the settings as fields_get_settings does (token as { set }, compat_acf_functions as a boolean, shortcode_options_pages as a list).",
     {
       site: z.string().describe("Site id (see list_sites)"),
       github_token: z
@@ -68,6 +68,12 @@ export function register(server: McpServer) {
         .optional()
         .describe(
           "Opt-in ACF compatibility layer (default false): get_field(), the_field(), get_fields(), update_field() and [acf] exist while ACF is not loaded; never active when ACF is loaded. false switches it off; omitted keeps the setting"
+        ),
+      shortcode_options_pages: z
+        .array(z.string().regex(/^[A-Za-z0-9_.-]+$/))
+        .optional()
+        .describe(
+          "Menu slugs of the options pages marked \"Available in shortcodes\": only their fields are printed by [cvrt_field post_id=\"option\"] / [acf post_id=\"option\"] (default none). Replaces the whole list; [] switches every page off; omitted keeps it. Only pages whose values may be public (any post author can place a shortcode)"
         ),
     },
     async ({ site, ...args }) => {
