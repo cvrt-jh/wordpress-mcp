@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { z } from "zod";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // Every tool resolves its site through forSite; stub it so no env or network
 // is needed and the exact REST call can be asserted.
@@ -63,6 +66,13 @@ describe("fields tools", () => {
         "fields_update_values",
       ].sort(),
     );
+  });
+
+  it("the README's Fields Module header states the registered tool count", () => {
+    // The vN.N release notes are history and keep the count of their release.
+    const readme = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../../README.md"), "utf8");
+
+    expect(readme.match(/^### Fields Module \((\d+) tools\)/m)?.[1]).toBe(String(tools().size));
   });
 
   it.each([
