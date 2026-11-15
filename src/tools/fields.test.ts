@@ -53,12 +53,14 @@ describe("fields tools", () => {
         "fields_get_location_values",
         "fields_get_schema",
         "fields_get_settings",
+        "fields_get_values",
         "fields_list_definitions",
         "fields_list_types",
         "fields_status",
         "fields_sync_definition",
         "fields_update_definition",
         "fields_update_settings",
+        "fields_update_values",
       ].sort(),
     );
   });
@@ -82,6 +84,52 @@ describe("fields tools", () => {
 
     await tool("fields_update_settings").handler({ site: "a", clear_github_token: true });
     expect(put).toHaveBeenLastCalledWith("/mcp/fields/v1/settings", { clear_github_token: true });
+  });
+
+  it("fields_update_settings sends compat_acf_functions, including false", async () => {
+    put.mockResolvedValue({ compat_acf_functions: false });
+    await tool("fields_update_settings").handler({ site: "a", compat_acf_functions: true });
+    expect(put).toHaveBeenLastCalledWith("/mcp/fields/v1/settings", { compat_acf_functions: true });
+
+    await tool("fields_update_settings").handler({ site: "a", compat_acf_functions: false });
+    expect(put).toHaveBeenLastCalledWith("/mcp/fields/v1/settings", { compat_acf_functions: false });
+  });
+
+  it("fields_get_values reads the values of one object", async () => {
+    get.mockResolvedValue({ object: "42", fields: [{ name: "telephone", value: "06101 1" }] });
+    const result = await tool("fields_get_values").handler({ site: "a", object: "42" });
+    expect(get).toHaveBeenCalledWith("/mcp/fields/v1/values/42");
+    expect(JSON.parse(result.content[0].text).fields[0]).toEqual({ name: "telephone", value: "06101 1" });
+
+    await tool("fields_get_values").handler({ site: "a", object: "term_5" });
+    expect(get).toHaveBeenLastCalledWith("/mcp/fields/v1/values/term_5");
+    await tool("fields_get_values").handler({ site: "a", object: "options" });
+    expect(get).toHaveBeenLastCalledWith("/mcp/fields/v1/values/options");
+  });
+
+  it("fields_update_values PUTs { values } for the object", async () => {
+    put.mockResolvedValue({ object: "42", fields: [] });
+    await tool("fields_update_values").handler({ site: "a", object: "42", values: { telephone: "069 99", open: true } });
+    expect(put).toHaveBeenCalledWith("/mcp/fields/v1/values/42", { values: { telephone: "069 99", open: true } });
+  });
+
+  it("values tools accept only the object shapes the endpoint routes", () => {
+    for (const name of ["fields_get_values", "fields_update_values"]) {
+      const schema = z.object(tool(name).schema);
+      const base = name === "fields_update_values" ? { values: { a: "b" } } : {};
+      for (const ok of ["42", "term_5", "user_3", "options", "footer"]) {
+        expect(schema.safeParse({ site: "a", object: ok, ...base }).success, `${name} ${ok}`).toBe(true);
+      }
+      for (const bad of ["", "../status", "42/../../x", "Term_5", "a b", "42?x=1"]) {
+        expect(schema.safeParse({ site: "a", object: bad, ...base }).success, `${name} ${bad}`).toBe(false);
+      }
+    }
+  });
+
+  it("fields_update_values needs at least one value", () => {
+    const schema = z.object(tool("fields_update_values").schema);
+    expect(schema.safeParse({ site: "a", object: "42", values: {} }).success).toBe(false);
+    expect(schema.safeParse({ site: "a", object: "42" }).success).toBe(false);
   });
 
   it("definition tools build kind and key paths", async () => {

@@ -21,6 +21,13 @@ const key = z
   .regex(/^[a-z0-9_]+$/)
   .describe("Definition key (lowercase letters, digits, underscore), e.g. group_event or event");
 
+const valuesObject = z
+  .string()
+  .regex(/^[a-z0-9_]+$/)
+  .describe(
+    "Object as ACF's post_id: a post ID (\"42\"), \"term_5\", \"user_3\", or the storage id of an options page (\"options\" for the default one)"
+  );
+
 const definition = z
   .record(z.string(), z.unknown())
   .describe("Definition object in the shape of fields_get_schema for this kind (ACF-compatible)");
@@ -48,7 +55,7 @@ export function register(server: McpServer) {
 
   server.tool(
     "fields_update_settings",
-    "Update cvrt-fields settings. github_token is write-only and stored encrypted; a blank or omitted token keeps the stored one. clear_github_token: true deletes it. Returns the settings as fields_get_settings does (token as { set }).",
+    "Update cvrt-fields settings. github_token is write-only and stored encrypted; a blank or omitted token keeps the stored one. clear_github_token: true deletes it. compat_acf_functions switches the opt-in ACF compatibility layer. Returns the settings as fields_get_settings does (token as { set }, compat_acf_functions as a boolean).",
     {
       site: z.string().describe("Site id (see list_sites)"),
       github_token: z
@@ -56,11 +63,44 @@ export function register(server: McpServer) {
         .optional()
         .describe("GitHub token for plugin updates; write-only, stored encrypted, blank keeps the stored one"),
       clear_github_token: z.boolean().optional().describe("true deletes the stored token (wins over github_token)"),
+      compat_acf_functions: z
+        .boolean()
+        .optional()
+        .describe(
+          "Opt-in ACF compatibility layer (default false): get_field(), the_field(), get_fields(), update_field() and [acf] exist while ACF is not loaded; never active when ACF is loaded. false switches it off; omitted keeps the setting"
+        ),
     },
     async ({ site, ...args }) => {
       const wp = forSite(site);
       const body = Object.fromEntries(Object.entries(args).filter(([, v]) => v !== undefined));
       return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/settings`, body));
+    }
+  );
+
+  server.tool(
+    "fields_get_values",
+    "Read every field value of one object (post, term, user or options page) that the field groups located on it define: name, key, type, group, the raw stored value and an escaped HTML rendering. 404 for an unknown object, 403 when the user may not edit it (cvrt-fields 0.2.1+).",
+    { site: z.string().describe("Site id (see list_sites)"), object: valuesObject },
+    async ({ site, object }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/values/${object}`));
+    }
+  );
+
+  server.tool(
+    "fields_update_values",
+    "Write field values of one object by field name, validated by the field types and all-or-nothing: when any value is invalid nothing is saved (400 cvrt_fields_invalid_values with per-field errors). Only fields of active groups located on the object can be written. Values are given as a form would submit them (gallery: array of image ids, select: value or array, true/false: 1/0). Returns the object's values as fields_get_values does (cvrt-fields 0.2.1+).",
+    {
+      site: z.string().describe("Site id (see list_sites)"),
+      object: valuesObject,
+      values: z
+        .record(z.string(), z.unknown())
+        .refine((v) => Object.keys(v).length > 0, "send at least one field value")
+        .describe("Field name => value, e.g. { telephone: \"06101 123456\", open: 1 }"),
+    },
+    async ({ site, object, values }) => {
+      const wp = forSite(site);
+      return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/values/${object}`, { values }));
     }
   );
 

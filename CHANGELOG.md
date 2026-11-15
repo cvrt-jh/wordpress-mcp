@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `fields_get_values` and `fields_update_values` for cvrt-fields 0.2.1+ (`GET|PUT mcp/fields/v1/values/{object}`): read every
+  located field value of a post, term, user or options page, and write values by field name (validated by the field types,
+  all-or-nothing). `object` is checked against `[a-z0-9_]+` before it reaches the URL; `values` needs at least one entry.
+- `fields_update_settings` takes `compat_acf_functions` (cvrt-fields opt-in ACF compatibility layer; `false` is sent, an
+  omitted value keeps the setting).
+
 ## [3.14.1] - 2026-11-14
 
 ### Added
