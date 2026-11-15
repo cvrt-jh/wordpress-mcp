@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.12.1-blue.svg)](https://modelcontextprotocol.io)
 
-Lightweight WordPress MCP server for site management. **339 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
+Lightweight WordPress MCP server for site management. **342 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
 
 **v3.5**: `fields_*` (12 tools) for [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+ - status, settings, field types, location values, schemas and CRUD + JSON sync for field groups, post types, taxonomies and options pages.
 
@@ -134,14 +134,14 @@ All responses are automatically trimmed. Example:
 | HTML tags | excerpts | Clean text output |
 | Pretty-print JSON | all | Compact single-line output |
 
-## Tools (339)
+## Tools (342)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself.
 
 ### Sites (1)
 - `list_sites` - List configured site ids and URLs (no `site` argument; passwords never returned)
 
-### Standard WordPress REST API (42 tools)
+### Standard WordPress REST API (48 tools)
 
 These work with any WordPress site:
 
@@ -213,7 +213,7 @@ These work with any WordPress site:
 
 ---
 
-### Extended Tools (43 tools) - Requires cvrt-mcp-endpoints plugin
+### Extended Tools (98 tools) - Requires cvrt-mcp-endpoints plugin
 
 These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-endpoints) WordPress plugin to be installed and activated.
 
@@ -288,7 +288,7 @@ These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-end
 
 ---
 
-### ACF Module (31 tools) - Requires wp-pilot-pro + ACF
+### ACF Module (11 tools) - Requires wp-pilot-pro + ACF
 
 Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and Advanced Custom Fields.
 
@@ -341,7 +341,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and Advanced 
 
 ---
 
-### WooCommerce Module (42 tools) - Requires wp-pilot-pro + WooCommerce
+### WooCommerce Module (39 tools) - Requires wp-pilot-pro + WooCommerce
 
 Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommerce.
 
@@ -402,7 +402,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `woo_update_product_meta` - Update product meta
 - `woo_bulk_update_stock` - Bulk stock update
 
-### SEO Module (31 tools) - Requires [cvrt-seo-manager](https://github.com/cvrt-gmbh/cvrt-seo-manager)
+### SEO Module (34 tools) - Requires [cvrt-seo-manager](https://github.com/cvrt-gmbh/cvrt-seo-manager)
 
 - `seo_status` - Get cvrt-seo-manager status (version, configured, dependencies)
 - `seo_get_settings` - Get cvrt-seo-manager settings
@@ -422,10 +422,13 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `seo_get_redirect` - Get a redirect by id
 - `seo_update_redirect` - Update a redirect by id
 - `seo_delete_redirect` - Delete a redirect by id
+- `seo_redirects_audit` - Check the stored redirect rules: duplicates, no leading slash, sources or targets on other hosts, captured or IDN target hosts (cvrt-seo-manager after 1.14.1)
+- `seo_redirects_known_hosts` - Confirm redirect target hosts as intended (replaces the list) so the audit stops flagging them
 - `seo_list_monitor_log` - List the 404/redirect monitor log entries
 - `seo_clear_monitor_log` - Clear the 404/redirect monitor log
 - `seo_create_redirect_from_log` - Create a redirect directly from a monitor log entry
 - `seo_sitemap_status` - Get sitemap status
+- `seo_sitemap_health` - Fetch every listed sitemap URL and report non-200, redirects, noindex, foreign canonicals and off-site URLs (`limit`, `offset`; cvrt-seo-manager after 1.14.1)
 - `seo_sitemap_ping` - Ping search engines with the sitemap
 - `seo_indexnow_ping` - Submit URLs to IndexNow
 - `seo_export_settings` - Export cvrt-seo-manager settings
@@ -436,7 +439,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `seo_import_redirects` - Import redirects
 - `seo_import_migrate` - Run a migration import (e.g
 
-### Legal Module (34 tools) - Requires [cvrt-legal](https://github.com/cvrt-gmbh/cvrt-legal) (`legal_get_page` / `legal_link_page` need 0.4.2+, `legal_consent_log_*` 0.5.0+, social 0.6.0+, generator and facts 0.7.0+, accessibility 0.8.0+)
+### Legal Module (37 tools) - Requires [cvrt-legal](https://github.com/cvrt-gmbh/cvrt-legal) (`legal_get_page` / `legal_link_page` need 0.4.2+, `legal_consent_log_*` 0.5.0+, social 0.6.0+, generator and facts 0.7.0+, accessibility 0.8.0+)
 
 - `legal_status` - Legal document status for a site: which documents are required, filled and published, plus a single compliant flag
 - `legal_list_documents` - List all legal document types with their required/filled state and linked page
@@ -492,7 +495,7 @@ Separate from the cvrt-mcp-endpoints `mcp_*_media` tools (library management). F
 - `media_eio_dry_run` / `media_eio_run` / `media_eio_cleanup` - Elementor Image Optimizer migration (run max 500, run and cleanup need `confirm: true`)
 - `media_svg_backfill` (max 500) / `media_scan_urls` (max 5000) - SVG sizes; old image link scan
 
-### Order Fulfillment Module (8 tools) - Requires cvrt-order-fulfillment 0.2.0+
+### Order Fulfillment Module (7 tools) - Requires cvrt-order-fulfillment 0.2.0+
 
 - `fulfillment_get_settings` - Get the cvrt-order-fulfillment plugin settings
 - `fulfillment_update_settings` - Update cvrt-order-fulfillment settings

@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `seo_sitemap_health` for `GET mcp/seo/v1/sitemap/health` (cvrt-seo-manager after 1.14.1, feature
+  `sitemap_health`): the site fetches every sitemap file and listed URL on its own host and reports `status`,
+  `redirect`, `noindex`, `canonical`, `sitemap`, `sitemap_timeout` (a file that does not fit even a files-only
+  call) and `offsite` findings. `limit` 1-500 (default 100), `offset`; page with `next_offset` while `truncated`.
+  `sitemaps` (bool, sent as 1/0) checks the sitemap files on a later call; pass it after a response with
+  `sitemaps_pending: true` (on the last page `next_offset` = `total`). Documents `build_ms`, the 8 s timeout, the
+  end-within-25-s budget rule and that every call checks at least one URL. Refuses an older plugin with a clear
+  message (it would answer a bare `rest_no_route` 404), like the redirect audit tools.
+- `seo_import_migrate` takes `allow_external_targets` (cvrt-seo-manager after 1.14.1, feature
+  `migrate_external_targets`): without it RankMath redirects whose target is on another host are imported
+  disabled; either way they are listed in the new `warnings`. The tool refuses the flag on a plugin that does
+  not announce the feature (it would import them enabled without warnings). Drift fixture updated.
+- `seo_import_migrate` takes `own_hosts` (string[], same feature): hosts that are the site besides home and
+  siteurl. The plugin no longer infers them from absolute RankMath sources; it reports such hosts as
+  `source_host` warnings.
+- `seo_redirects_audit` (`GET mcp/seo/v1/redirects/audit`) and `seo_redirects_known_hosts` (`POST`, `known_hosts`
+  replaces the confirmed target hosts) for the cvrt-seo-manager redirect audit (feature `redirect_audit`, after
+  1.14.1); both refuse a plugin without the feature. Drift fixtures added.
 - `fields_get_values` and `fields_update_values` for cvrt-fields 0.2.1+ (`GET|PUT mcp/fields/v1/values/{object}`): read every
   located field value of a post, term, user or options page, and write values by field name (validated by the field types,
   all-or-nothing). `object` is checked against `[a-z0-9_]+` before it reaches the URL; `values` needs at least one entry.
@@ -16,6 +34,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `[cvrt_field post_id="option"]` / `[acf post_id="option"]` may print; `[]` switches every page off; an unknown key is a
   400 from cvrt-fields). Both need cvrt-fields 0.4.0+: the tool reads `fields_status` features first and refuses (nothing
   sent) when the site's cvrt-fields lacks the key, because older versions ignore it and still answer 200.
+
+### Changed
+- README tool counts corrected to the registered tools (342 with the two new fields tools; Standard 48, Extended 98,
+  ACF 11, WooCommerce 39, SEO 34, Legal 37, Fields 14, Order Fulfillment 7) and pinned by `src/drift.test.ts`: the total, every
+  `### <Module> (N tools)` heading against the tools its source files register, and every tool file mapped to one
+  module (or listed as documented without a count: fort, stripe, woo-helper).
+- `seo_import_migrate` refuses a real (non-dry-run) RankMath import when `seo_status` lacks
+  `migrate_external_targets`: cvrt-seo-manager up to 1.14.1 imports redirect sources without slash and targets
+  on other hosts enabled (cavort-it.systems, 8 dead rules). The message says to update the plugin first; dry runs,
+  settings runs and Yoast imports are unchanged. On a plugin that also lacks `migrate_dry_run` (every release up
+  to 1.14.1) it says that only a settings dry run is possible there.
+- `seo_import_migrate`: `dry_run` is documented for the per-post pass too. cvrt-seo-manager after 1.14.1 honours
+  it there and returns `changes` and `unsupported`; older versions ignored it and wrote. A per-post dry run is now
+  only sent when `seo_status` lists the feature `migrate_dry_run`; otherwise the tool refuses and sends nothing.
+- `seo_status` documents `features` (`migrate_dry_run`, `sitemap_health`, `redirect_audit`,
+  `migrate_external_targets`) and types it; `seo_import_settings` is typed `{ imported, skipped } | number` and
+  documents the new `{ imported, skipped }` response.
+- `seo_update_post_seo`: new field `sitemap_exclude` (bool). `seo_update_settings` documents `author_archives`,
+  `noindex_post_types`, `noindex_taxonomies`, `kg_alternate_name` and the logo rule; `sitemap_authors` is gone
+  from the plugin after 1.14.1 (drift fixture updated). It also documents that an unknown key now answers 400
+  `csm_unknown_setting` (nothing written) and a removed key is listed in `ignored_removed`; before, the tool text
+  said unknown keys are ignored. The drift fixture source text says the same.
 
 ## [3.14.1] - 2026-11-14
 

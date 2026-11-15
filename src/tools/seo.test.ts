@@ -223,10 +223,220 @@ describe("other tools", () => {
     expect(post).toHaveBeenCalledWith(`${NS}/sitemap/submit`, {});
   });
 
+  // /status answers with the sitemap_health feature, /sitemap/health with the report.
+  const healthSite = (report: Record<string, unknown>) =>
+    get.mockImplementation(async (path: string) =>
+      path === `${NS}/status` ? { version: "1.15.0", features: ["sitemap_health"] } : report
+    );
+
+  it("seo_sitemap_health refuses a site without the sitemap_health feature", async () => {
+    get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run"] });
+    await expect(tool("seo_sitemap_health").handler({ site: "a" })).rejects.toThrow(/sitemap_health/);
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(get).toHaveBeenCalledWith(`${NS}/status`);
+  });
+
+  it("seo_sitemap_health GETs /sitemap/health with only the given paging params", async () => {
+    healthSite({ total: 3, checked: 3, findings: [], truncated: false, next_offset: null });
+    await tool("seo_sitemap_health").handler({ site: "a" });
+    expect(get).toHaveBeenLastCalledWith(`${NS}/sitemap/health`, {});
+    const r = await tool("seo_sitemap_health").handler({ site: "a", limit: 50, offset: 100 });
+    expect(get).toHaveBeenLastCalledWith(`${NS}/sitemap/health`, { limit: 50, offset: 100 });
+    expect(parse(r).checked).toBe(3);
+  });
+
+  it("seo_sitemap_health passes sitemaps as 1/0 and documents sitemaps_pending", async () => {
+    healthSite({ checked: 1, sitemaps_pending: false });
+    await tool("seo_sitemap_health").handler({ site: "a", offset: 1, sitemaps: true });
+    expect(get).toHaveBeenLastCalledWith(`${NS}/sitemap/health`, { offset: 1, sitemaps: 1 });
+
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_sitemap_health" ? (text = d) : undefined) } as never);
+    expect(text).toMatch(/sitemaps_pending/);
+    expect(text).toMatch(/sitemap_timeout/);
+    expect(text).toMatch(/next_offset = total/);
+  });
+
+  it("seo_sitemap_health only accepts the route's limit range", () => {
+    const limit = z.object(tool("seo_sitemap_health").schema).shape.limit;
+    expect(limit.safeParse(0).success).toBe(false);
+    expect(limit.safeParse(501).success).toBe(false);
+    expect(limit.safeParse(500).success).toBe(true);
+    expect(z.object(tool("seo_sitemap_health").schema).shape.offset.safeParse(-1).success).toBe(false);
+  });
+
   it("seo_import_migrate sends source and the given flags only", async () => {
     post.mockResolvedValue({});
     await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", settings: true });
     expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath", settings: true });
+  });
+
+  it("seo_import_migrate refuses a per-post dry run on a site that would write (no migrate_dry_run feature)", async () => {
+    get.mockResolvedValue({ version: "1.14.1" });
+    await expect(tool("seo_import_migrate").handler({ site: "a", source: "rankmath", dry_run: true })).rejects.toThrow(/would WRITE/);
+    expect(get).toHaveBeenCalledWith(`${NS}/status`);
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("seo_import_migrate does not ask /status for a settings run or a Yoast import", async () => {
+    post.mockResolvedValue({ written: {}, skipped: [], dry_run: true });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", settings: true, dry_run: true });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", settings: true });
+    await tool("seo_import_migrate").handler({ site: "a", source: "yoast" });
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it("seo_import_migrate refuses a real RankMath import on a plugin without migrate_external_targets", async () => {
+    // Up to 1.14.1 the import stored sources without slash and foreign targets
+    // enabled (cavort-it.systems: 8 rules to a gone staging host).
+    get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run"] });
+    await expect(tool("seo_import_migrate").handler({ site: "a", source: "rankmath" })).rejects.toThrow(
+      /Update cvrt-seo-manager first/
+    );
+    await expect(tool("seo_import_migrate").handler({ site: "a", source: "rankmath", dry_run: false })).rejects.toThrow(
+      /migrate_external_targets/
+    );
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("seo_import_migrate tells a 1.14.1 site that only a settings dry run works there", async () => {
+    // Every released plugin up to 1.14.1 lacks both features: the per-post
+    // dry run is refused too, so the message must not offer it.
+    get.mockResolvedValue({ version: "1.14.1" });
+    const error = await tool("seo_import_migrate")
+      .handler({ site: "a", source: "rankmath" })
+      .catch((e: Error) => e);
+    expect((error as Error).message).toMatch(/only a settings dry run \(settings=true, dry_run=true\)/);
+    expect((error as Error).message).not.toMatch(/A dry run \(dry_run=true\) is still allowed/);
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("seo_import_migrate still allows a dry run on such a plugin", async () => {
+    get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run"] });
+    post.mockResolvedValue({ dry_run: true, changes: [] });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", dry_run: true });
+    expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath", dry_run: true });
+  });
+
+  it("seo_import_migrate runs a real RankMath import on a plugin that announces the feature", async () => {
+    get.mockResolvedValue({ version: "1.15.0", features: ["migrate_dry_run", "migrate_external_targets"] });
+    post.mockResolvedValue({ warnings: [] });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath" });
+    expect(get).toHaveBeenCalledWith(`${NS}/status`);
+    expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath" });
+  });
+
+  it("seo_import_migrate passes dry_run through for the per-post pass and says so", async () => {
+    get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run", "sitemap_health"] });
+    post.mockResolvedValue({ dry_run: true, changes: [], unsupported: [] });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", dry_run: true });
+    expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath", dry_run: true });
+
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_import_migrate" ? (text = d) : undefined) } as never);
+    expect(text).not.toMatch(/not honoured|Ignored for the meta/);
+    expect(text).toMatch(/changes/);
+  });
+
+  it("seo_import_migrate passes allow_external_targets through to a site that honours it", async () => {
+    get.mockResolvedValue({ version: "1.15.0", features: ["migrate_dry_run", "migrate_external_targets"] });
+    post.mockResolvedValue({ warnings: [] });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", allow_external_targets: true });
+    expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath", allow_external_targets: true });
+  });
+
+  it("seo_import_migrate refuses allow_external_targets on a site that would ignore it", async () => {
+    get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run"] });
+    await expect(
+      tool("seo_import_migrate").handler({ site: "a", source: "rankmath", allow_external_targets: true })
+    ).rejects.toThrow(/migrate_external_targets/);
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("seo_import_migrate passes own_hosts through to a site that honours it", async () => {
+    get.mockResolvedValue({ version: "1.15.0", features: ["migrate_dry_run", "migrate_external_targets"] });
+    post.mockResolvedValue({ warnings: [] });
+    await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", dry_run: true, own_hosts: ["b3zbr2.myrdbx.io"] });
+    expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath", dry_run: true, own_hosts: ["b3zbr2.myrdbx.io"] });
+  });
+
+  it("seo_import_migrate refuses own_hosts on a site that would ignore it", async () => {
+    get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run"] });
+    await expect(
+      tool("seo_import_migrate").handler({ site: "a", source: "rankmath", dry_run: true, own_hosts: ["old.example"] })
+    ).rejects.toThrow(/own_hosts/);
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("seo_import_migrate documents warnings and the disabled import", () => {
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_import_migrate" ? (text = d) : undefined) } as never);
+    expect(text).toMatch(/warnings/);
+    expect(text).toMatch(/disabled/);
+    expect(text).toMatch(/allow_external_targets/);
+  });
+
+  it("seo_redirects_audit reads the audit on a site that has it", async () => {
+    get.mockResolvedValueOnce({ version: "1.15.0", features: ["redirect_audit"] });
+    get.mockResolvedValueOnce({ normalised: true, findings: [], known_hosts: [] });
+    const result = await tool("seo_redirects_audit").handler({ site: "a" });
+    expect(get).toHaveBeenLastCalledWith(`${NS}/redirects/audit`);
+    expect(JSON.stringify(result)).toMatch(/normalised/);
+  });
+
+  it("seo_redirects_audit and seo_redirects_known_hosts refuse a site without the audit", async () => {
+    get.mockResolvedValue({ version: "1.14.1", features: ["migrate_dry_run"] });
+    await expect(tool("seo_redirects_audit").handler({ site: "a" })).rejects.toThrow(/redirect_audit/);
+    await expect(tool("seo_redirects_known_hosts").handler({ site: "a", known_hosts: ["partner.de"] })).rejects.toThrow(
+      /redirect_audit/
+    );
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("seo_redirects_known_hosts replaces the confirmed hosts", async () => {
+    get.mockResolvedValue({ version: "1.15.0", features: ["redirect_audit"] });
+    post.mockResolvedValue({ findings: [], known_hosts: ["partner.de"] });
+    await tool("seo_redirects_known_hosts").handler({ site: "a", known_hosts: ["partner.de"] });
+    expect(post).toHaveBeenCalledWith(`${NS}/redirects/audit`, { known_hosts: ["partner.de"] });
+
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_redirects_known_hosts" ? (text = d) : undefined) } as never);
+    expect(text).toMatch(/replaces/i);
+    expect(text).toMatch(/external_target_host/);
+  });
+
+  it("seo_update_settings documents the 400 for unknown keys and ignored_removed", () => {
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_update_settings" ? (text = d) : undefined) } as never);
+    expect(text).toMatch(/csm_unknown_setting/);
+    expect(text).toMatch(/ignored_removed/);
+    expect(text).not.toMatch(/unknown keys are ignored\)/);
+  });
+
+  it("seo_status documents features, which seo_import_migrate relies on", () => {
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_status" ? (text = d) : undefined) } as never);
+    expect(text).toMatch(/features/);
+    expect(text).toMatch(/migrate_dry_run/);
+  });
+
+  it("seo_sitemap_health documents build_ms and the per-call progress", () => {
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_sitemap_health" ? (text = d) : undefined) } as never);
+    expect(text).toMatch(/build_ms/);
+    expect(text).toMatch(/at least one URL/);
+  });
+
+  it("seo_import_settings returns the { imported, skipped } report as is", async () => {
+    post.mockResolvedValue({ imported: 1, skipped: { csm_kg_logo: "too small" } });
+    const r = await tool("seo_import_settings").handler({ site: "a", data: { csm_kg_name: "X" } });
+    expect(parse(r)).toEqual({ imported: 1, skipped: { csm_kg_logo: "too small" } });
+  });
+
+  it("seo_import_settings documents the skipped-keys report", () => {
+    let text = "";
+    register({ tool: (name: string, d: string) => (name === "seo_import_settings" ? (text = d) : undefined) } as never);
+    expect(text).toMatch(/skipped/);
   });
 
   it("seo_import_settings sends the flat map as the body", async () => {

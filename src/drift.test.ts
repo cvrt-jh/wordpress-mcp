@@ -251,6 +251,76 @@ describe("drift: tools vs endpoint fixtures", () => {
     expect({ noEntry, noTool }).toEqual({ noEntry: [], noTool: [] });
   });
 
+  // The README's tool counts are a public claim and drifted twice (338 written,
+  // 340 registered; SEO said 32 for 34). Pin the total and every module heading
+  // ("### <Module> (N tools)") to the tools its source files register.
+  describe("README tool counts", () => {
+    const readme = readFileSync(join(here, "..", "README.md"), "utf8");
+
+    // Module heading -> the src/tools files whose tools it counts.
+    const modules: Record<string, string[]> = {
+      Sites: ["sites"],
+      "Standard WordPress REST API": ["site", "posts", "pages", "users", "plugins", "themes", "media", "taxonomies", "comments"],
+      "Extended Tools": [
+        "mcp-plugins",
+        "mcp-themes",
+        "mcp-core",
+        "mcp-database",
+        "mcp-options",
+        "mcp-menus",
+        "mcp-widgets",
+        "mcp-health",
+        "mcp-cpt",
+        "mcp-taxonomies",
+        "mcp-users",
+        "mcp-media",
+        "mcp-elementor",
+      ],
+      "ACF Module": ["mcp-acf"],
+      "WooCommerce Module": ["mcp-woo"],
+      "SEO Module": ["seo"],
+      "Legal Module": ["legal"],
+      "Fields Module": ["fields"],
+      "Media Optimization Module": ["cvrt-media"],
+      "Order Fulfillment Module": ["fulfillment"],
+    };
+    // Files documented in their own "## ..." section without a count.
+    const uncounted = ["fort", "stripe", "woo-helper"];
+
+    async function toolsOf(file: string): Promise<number> {
+      const mod = (await import(/* @vite-ignore */ join(here, "tools", `${file}.ts`))) as { register: (s: unknown) => void };
+      let n = 0;
+      mod.register({ tool: () => (n += 1) });
+      return n;
+    }
+
+    it("the total in the intro and the Tools heading equals the registered tools", () => {
+      expect(readme.match(/\*\*(\d+) tools\*\*/)?.[1]).toBe(String(tools.size));
+      expect(readme.match(/^## Tools \((\d+)\)/m)?.[1]).toBe(String(tools.size));
+    });
+
+    it("every tool file belongs to exactly one module heading or the uncounted list", () => {
+      const files = readdirSync(join(here, "tools"))
+        .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))
+        .map((f) => f.replace(/\.ts$/, ""));
+      const mapped = [...Object.values(modules).flat(), ...uncounted];
+      expect(mapped.filter((f, i) => mapped.indexOf(f) !== i)).toEqual([]);
+      expect(sorted(mapped)).toEqual(sorted(files));
+    });
+
+    it("every module heading states the tools its files register", async () => {
+      const problems: string[] = [];
+      for (const [module, files] of Object.entries(modules)) {
+        const escaped = module.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const stated = readme.match(new RegExp(`^### ${escaped} \\((\\d+)(?: tools)?\\)`, "m"))?.[1];
+        let real = 0;
+        for (const file of files) real += await toolsOf(file);
+        if (stated !== String(real)) problems.push(`${module}: README says ${stated ?? "(no heading)"}, registered ${real}`);
+      }
+      expect(problems).toEqual([]);
+    });
+  });
+
   for (const [name, entry] of fixtures) {
     it(name, async () => {
       const tool = tools.get(name);
