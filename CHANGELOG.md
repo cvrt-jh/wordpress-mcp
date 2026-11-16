@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.15.0] - 2026-11-16
+
 ### Added
 - `seo_sitemap_health` for `GET mcp/seo/v1/sitemap/health` (cvrt-seo-manager 1.15.0+, feature
   `sitemap_health`): the site fetches every sitemap file and listed URL on its own host and reports `status`,
