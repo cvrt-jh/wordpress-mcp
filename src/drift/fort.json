@@ -26,7 +26,7 @@
   "fort_logs_read": {
     "method": "GET",
     "route": "/v1/sites/{hex}/logs/{type}",
-    "source": "bearfort saas/crates/api/src/routes/sites.rs get_logs + validate.rs log_query (query lines, grep, since; fix/fort-logs-and-cache-purge)",
+    "source": "bearfort saas/crates/api/src/routes/sites.rs get_logs + validate.rs log_query (query lines, grep, since; bearfort PR #41, in prod since deploy-prod-20261009091042)",
     "server": [
       "lines",
       "grep",
