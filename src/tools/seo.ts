@@ -124,7 +124,7 @@ const SETTINGS_DOC = [
 	"titles: title_separator, title_home, desc_home, title_post, desc_post, title_page, desc_page, title_product, desc_product, title_category, title_tag, title_author, title_search, title_404 (templates, tokens like %title% %sep% %sitename%).",
 	"robots: default_robots (text); booleans noindex_archives, noindex_tags, noindex_author, noindex_search, noindex_paginated, noindex_password_protected, noindex_empty_archives, robots_max_directives; 1.15.0+ also author_archives (enabled | redirect = 301 to home | disabled = 404), noindex_post_types, noindex_taxonomies (arrays of slugs: noindex and out of the sitemap unless an entry says index).",
 	"social: default_og_image (attachment ID), default_twitter_card (summary | summary_large_image), social_profiles (object network => URL, e.g. { facebook: 'https://...', twitter: '@handle' }), social_extra_profiles (1.12.0+: extra schema sameAs profile URLs as an array, a JSON array string or one URL per line; only absolute http(s) URLs are kept, duplicates removed), og_home_title, og_home_description, og_home_image (attachment ID).",
-	"knowledge_graph: kg_type, kg_name, kg_alternate_name (1.15.0+), kg_description (multi-line), kg_logo (attachment ID; 1.15.0+: a Google Images format of at least 112x112 px, else 400 csm_kg_logo_format and nothing is written), kg_url.",
+	"knowledge_graph: kg_type, kg_name, kg_alternate_name (1.15.0+), kg_description (multi-line), kg_logo (1.17.0+ accepts an attachment ID, a media-library URL of this site, the stored logo sent back unchanged, or 0 removes the logo; anything else answers 400 csm_kg_logo_format and nothing is written, the error carries code and message; the attachment must be a Google Images format of at least 112x112 px), kg_url.",
 	"schema: schema_defaults (object post_type => BlogPosting | Article | NewsArticle | WebPage | Product), schema_article_type, software_app (site-wide SoftwareApplication object, same shape as the per-post field).",
 	"verification: verify_google, verify_bing, verify_pinterest, verify_yandex (public meta tokens).",
 	"indexnow: indexnow_enabled (bool), indexnow_key (SECRET, write-only; blank keeps the stored key).",
@@ -447,7 +447,7 @@ export function register(server: McpServer) {
 
 	server.tool(
 		"seo_redirects_audit",
-		"Check the stored redirect rules (cvrt-seo-manager 1.15.0+, feature redirect_audit). Runs the pending one-time rewrite of exact sources, then returns { normalised, rewrite, findings: [{ code, message, ids, ... }], known_hosts }. Codes: duplicate_source (winner + ids that never fire), normalise_failed, idn_target_host, target_host_from_capture, missing_leading_slash, foreign_source_host, external_target_host (one per host, host field; confirm an intended host with seo_redirects_known_hosts). The same findings show as an admin notice.",
+		"Check the stored redirect rules (cvrt-seo-manager 1.15.0+, feature redirect_audit). Runs the pending one-time rewrite of exact sources, then returns { normalised, rewrite, findings: [{ code, message, ids, ... }], known_hosts }. Codes: duplicate_source (winner + ids that never fire), normalise_failed, idn_target_host, target_host_from_capture, missing_leading_slash, foreign_source_host, external_target_host (one per host, host field; confirm an intended host with seo_redirects_known_hosts); from cvrt-seo-manager 1.17.0 also redirect_chain (an enabled rule whose target is redirected again) and redirect_loop (the chain comes back), one finding per rule with source, target, hops [{ id, url, target }], final (final target; '' for 410/451 or a truncated walk), loop and truncated (the walk hit its limit). Point a chained rule straight at final. The same findings show as an admin notice.",
 		{ site },
 		async ({ site }) => {
 			const wp = forSite(site);
@@ -617,6 +617,16 @@ export function register(server: McpServer) {
 		async ({ site }) => {
 			const wp = forSite(site);
 			return jsonResult(await wp.post<unknown>(`${NS}/sitemap/submit`, {}));
+		},
+	);
+
+	server.tool(
+		"seo_sitemap_flush",
+		"Flush the XML and HTML sitemap caches of cvrt-seo-manager (POST /sitemap/flush; the next request rebuilds them). Use it after bulk edits or when a sitemap shows stale URLs. Returns { flushed: true }. Does not notify search engines (seo_sitemap_ping does).",
+		{ site },
+		async ({ site }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.post<unknown>(`${NS}/sitemap/flush`, {}));
 		},
 	);
 

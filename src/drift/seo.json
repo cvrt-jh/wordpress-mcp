@@ -328,6 +328,12 @@
 		"source": "cvrt-seo-manager 1.13.0 includes/class-rest-api.php submit_sitemap (no params; /sitemap/ping is its deprecated alias)",
 		"server": []
 	},
+	"seo_sitemap_flush": {
+		"method": "POST",
+		"route": "/mcp/seo/v1/sitemap/flush",
+		"source": "cvrt-seo-manager 1.17.0 includes/class-rest-api.php flush_sitemap (no params; returns { flushed: true })",
+		"server": []
+	},
 	"seo_indexnow_ping": {
 		"method": "POST",
 		"route": "/mcp/seo/v1/indexnow/ping",
