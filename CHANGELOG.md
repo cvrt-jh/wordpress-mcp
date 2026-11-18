@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.16.0] - 2026-11-18
+
+### Added
+
+- `seo_sitemap_flush`: flush the XML and HTML sitemap caches (cvrt-seo-manager, POST `/sitemap/flush`).
+
+### Changed
+
+- `seo_redirects_audit` description documents the `redirect_chain` and `redirect_loop` findings (cvrt-seo-manager 1.17.0) with their fields.
+- `seo_update_settings` description lists the accepted `kg_logo` forms and the 400 `csm_kg_logo_format` (code and message reach the caller).
+
 ## [3.15.1] - 2026-11-18
 
 ### Changed
