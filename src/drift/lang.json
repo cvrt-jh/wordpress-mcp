@@ -2,46 +2,46 @@
 	"lang_mt_status": {
 		"method": "GET",
 		"route": "/mcp/lang/v1/mt/status",
-		"source": "cvrt-lang plan 5 (unreleased, commit 77ed2d7; name the version at release) includes/class-rest-api.php rest_mt_status -> class-mt-api.php status",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d; name the version at release) includes/class-rest-api.php rest_mt_status -> class-mt-api.php status",
 		"server": []
 	},
 	"lang_mt_estimate": {
 		"method": "POST",
 		"route": "/mcp/lang/v1/mt/estimate",
-		"source": "cvrt-lang 77ed2d7 includes/class-mt-api.php estimate -> bulk (SCOPE_KEYS)",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d; name the version at release) includes/class-mt-api.php estimate -> bulk (SCOPE_KEYS)",
 		"server": ["scope", "post_type", "ids", "lang", "unit_keys"],
 		"fields": ["scope", "post_type", "ids", "lang", "unit_keys"]
 	},
 	"lang_mt_enqueue": {
 		"method": "POST",
 		"route": "/mcp/lang/v1/mt/enqueue",
-		"source": "cvrt-lang 77ed2d7 includes/class-mt-api.php enqueue -> bulk (SCOPE_KEYS)",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d; name the version at release) includes/class-mt-api.php enqueue -> bulk (SCOPE_KEYS)",
 		"server": ["scope", "post_type", "ids", "lang", "unit_keys"],
 		"fields": ["scope", "post_type", "ids", "lang", "unit_keys"]
 	},
 	"lang_mt_pause": {
 		"method": "POST",
 		"route": "/mcp/lang/v1/mt/pause",
-		"source": "cvrt-lang 77ed2d7 includes/class-mt-api.php pause (no body)",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d; name the version at release) includes/class-mt-api.php pause (no body)",
 		"server": []
 	},
 	"lang_mt_resume": {
 		"method": "POST",
 		"route": "/mcp/lang/v1/mt/resume",
-		"source": "cvrt-lang 77ed2d7 includes/class-mt-api.php resume (no body)",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d; name the version at release) includes/class-mt-api.php resume (no body)",
 		"server": []
 	},
 	"lang_list_pending": {
 		"method": "POST",
 		"route": "/mcp/lang/v1/mt/jobs/claim",
-		"source": "cvrt-lang 77ed2d7 includes/class-mt-remote.php claim (body keys: limit, 1 to 20)",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d; name the version at release) includes/class-mt-remote.php claim (body keys: limit, 1 to 20)",
 		"server": ["limit"],
 		"fields": ["limit"]
 	},
 	"lang_submit_translations": {
 		"method": "POST",
 		"route": "/mcp/lang/v1/mt/jobs/{id}",
-		"source": "cvrt-lang 77ed2d7 includes/class-mt-remote.php submit (body keys: token, units { key: { text, hash } })",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d; name the version at release) includes/class-mt-remote.php submit (body keys: token, units { key: { text, hash } })",
 		"server": ["token", "units"],
 		"path": ["id"],
 		"fields": ["token", "units"]
@@ -49,7 +49,7 @@
 	"lang_fail_job": {
 		"method": "POST",
 		"route": "/mcp/lang/v1/mt/jobs/{id}/fail",
-		"source": "cvrt-lang 77ed2d7 includes/class-mt-remote.php fail (body keys: token, code, message; FAIL_CODES)",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d; name the version at release) includes/class-mt-remote.php fail (body keys: token, code, message; FAIL_CODES)",
 		"server": ["token", "code", "message"],
 		"path": ["id"],
 		"fields": ["token", "code", "message"]
@@ -57,20 +57,20 @@
 	"lang_mt_retry_job": {
 		"method": "POST",
 		"route": "/mcp/lang/v1/mt/jobs/{id}/retry",
-		"source": "cvrt-lang plan 5 (unreleased, commit 77ed2d7) includes/class-mt-api.php retry (no body)",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d) includes/class-mt-api.php retry (no body)",
 		"server": [],
 		"path": ["id"]
 	},
 	"lang_mt_get_settings": {
 		"method": "GET",
 		"route": "/mcp/lang/v1/mt/settings",
-		"source": "cvrt-lang plan 5 (unreleased, commit 77ed2d7) includes/class-mt-api.php settings_get -> class-mt-settings.php describe",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d) includes/class-mt-api.php settings_get -> class-mt-settings.php describe",
 		"server": []
 	},
 	"lang_mt_update_settings": {
 		"method": "PUT",
 		"route": "/mcp/lang/v1/mt/settings",
-		"source": "cvrt-lang plan 5 (unreleased, commit 77ed2d7) includes/class-mt-api.php settings_update -> class-mt-settings.php update (KEYS; key and the pause fields are refused server-side and have no argument here)",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d) includes/class-mt-api.php settings_update -> class-mt-settings.php update (KEYS; key and the pause fields are refused server-side and have no argument here)",
 		"server": [
 			"provider",
 			"auto",
@@ -99,7 +99,7 @@
 	"lang_translate_machine": {
 		"method": "POST",
 		"route": "/mcp/lang/v1/translate",
-		"source": "cvrt-lang plan 5 (unreleased, commit 77ed2d7) includes/class-mt-api.php machine_request (type post, ids, lang, method machine, unit_keys)",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d) includes/class-mt-api.php machine_request (type post, ids, lang, method machine, unit_keys)",
 		"server": ["type", "ids", "lang", "method", "unit_keys"],
 		"fields": ["ids", "lang", "unit_keys"],
 		"constants": ["type", "method"]
@@ -107,14 +107,14 @@
 	"lang_strings_machine": {
 		"method": "POST",
 		"route": "/mcp/lang/v1/strings/machine",
-		"source": "cvrt-lang plan 5 (unreleased, commit 77ed2d7) includes/class-mt-api.php strings_machine (ids, lang)",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d) includes/class-mt-api.php strings_machine (ids, lang)",
 		"server": ["ids", "lang"],
 		"fields": ["ids", "lang"]
 	},
 	"lang_string_machine": {
 		"method": "POST",
 		"route": "/mcp/lang/v1/strings/{id}/machine",
-		"source": "cvrt-lang plan 5 (unreleased, commit 77ed2d7) includes/class-mt-api.php string_machine (lang)",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d) includes/class-mt-api.php string_machine (lang)",
 		"server": ["lang"],
 		"path": ["id"],
 		"fields": ["lang"]
@@ -122,14 +122,14 @@
 	"lang_get_units": {
 		"method": "GET",
 		"route": "/mcp/lang/v1/units/post/{id}",
-		"source": "cvrt-lang 77ed2d7 includes/class-units-api.php get",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d; name the version at release) includes/class-units-api.php get",
 		"server": [],
 		"path": ["id"]
 	},
 	"lang_update_units": {
 		"method": "PUT",
 		"route": "/mcp/lang/v1/units/post/{id}",
-		"source": "cvrt-lang 77ed2d7 includes/class-units-api.php put (PUT_KEYS)",
+		"source": "cvrt-lang plan 5 (unreleased, commit b83de0d; name the version at release) includes/class-units-api.php put (PUT_KEYS)",
 		"server": ["units", "approve", "machine", "machine_now", "publish"],
 		"path": ["id"],
 		"fields": ["units", "approve", "machine", "machine_now", "publish"]

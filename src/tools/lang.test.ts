@@ -304,6 +304,99 @@ describe("lang tools", () => {
 	});
 });
 
+describe("lang tools: secret-looking argument names are refused at any depth", () => {
+	const SECRET = "0123456789abcdef0123456789abcdef";
+	beforeEach(() => {
+		for (const m of [get, put, post, del]) m.mockReset();
+	});
+
+	it.each([
+		["key"],
+		["api_key"],
+		["apiKey"],
+		["Ocp-Apim-Subscription-Key"],
+		["secret"],
+		["client_secret"],
+		["token"],
+		["password"],
+		["credential"],
+		["Authorization"],
+	])("lang_mt_update_settings refuses a nested %s before any request", async (name) => {
+		put.mockResolvedValue({});
+		await expect(
+			tool("lang_mt_update_settings").handler({
+				site: "a",
+				provider_options: { azure: { region: "westeurope", [name]: SECRET } },
+			}),
+		).rejects.toThrow(/looks like a secret/);
+		await expect(
+			tool("lang_mt_update_settings").handler({ site: "a", glossary_hints: [{ [name.toUpperCase()]: SECRET }] }),
+		).rejects.toThrow(/looks like a secret/);
+		expect(put).not.toHaveBeenCalled();
+	});
+
+	it("the refusal names the path, never the value", async () => {
+		const err = await tool("lang_mt_update_settings")
+			.handler({ site: "a", provider_options: { azure: { api_key: SECRET } } })
+			.catch((e: Error) => e);
+		expect((err as Error).message).toContain("provider_options.azure.api_key");
+		expect((err as Error).message).not.toContain(SECRET);
+	});
+
+	it("every tool guards its handler", async () => {
+		for (const [name, t] of tools()) {
+			await expect(t.handler({ site: "a", api_key: SECRET }), name).rejects.toThrow(/looks like a secret/);
+		}
+		for (const m of [get, put, post, del]) expect(m).not.toHaveBeenCalled();
+	});
+
+	it("the lease token is allowed only where the tool declares it", async () => {
+		post.mockResolvedValue({ job: 4 });
+		await tool("lang_fail_job").handler({ site: "a", id: 4, token: TOKEN, code: "external_error" });
+		expect(post).toHaveBeenCalled();
+		await expect(tool("lang_mt_pause").handler({ site: "a", token: TOKEN })).rejects.toThrow(/looks like a secret/);
+		await expect(
+			tool("lang_fail_job").handler({
+				site: "a",
+				id: 4,
+				token: TOKEN,
+				code: "external_error",
+				extra: { token: TOKEN },
+			}),
+		).rejects.toThrow(/extra\.token/);
+	});
+
+	it("data is not mistaken for names: unit_keys, unit keys named like secrets, nothing refused", async () => {
+		post.mockResolvedValue({});
+		put.mockResolvedValue({});
+		await tool("lang_mt_enqueue").handler({
+			site: "a",
+			scope: "object",
+			ids: [1],
+			lang: "en",
+			unit_keys: ["meta:api_key"],
+		});
+		await tool("lang_submit_translations").handler({
+			site: "a",
+			id: 4,
+			token: TOKEN,
+			units: { "meta:api_key": { text: "x", hash: "h" } },
+		});
+		await tool("lang_update_units").handler({ site: "a", id: 4, units: { secret: "Geheim" }, approve: ["secret"] });
+		expect(post).toHaveBeenCalledTimes(2);
+		expect(put).toHaveBeenCalledTimes(1);
+	});
+
+	it("provider_options takes only azure: { region } with a region the server knows", () => {
+		const options = tool("lang_mt_update_settings").schema.provider_options as z.ZodTypeAny;
+		expect(options.safeParse({ azure: { region: "francecentral" } }).success).toBe(true);
+		expect(options.safeParse({ azure: { region: "mars" } }).success).toBe(false);
+		expect(options.safeParse({ azure: { region: "global", key: "x" } }).success).toBe(false);
+		expect(options.safeParse({ azure: { api_key: "x" } }).success).toBe(false);
+		expect(options.safeParse({ deepl: { region: "global" } }).success).toBe(false);
+	});
+});
+
 describe("lang tools: retry, settings, machine requests", () => {
 	beforeEach(() => {
 		for (const m of [get, put, post, del]) m.mockReset();
