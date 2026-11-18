@@ -260,7 +260,11 @@ describe("other tools", () => {
 		expect(get).toHaveBeenLastCalledWith(`${NS}/sitemap/health`, { offset: 1, sitemaps: 1 });
 
 		let text = "";
-		register({ tool: (name: string, d: string) => (name === "seo_sitemap_health" ? (text = d) : undefined) } as never);
+		register({
+			tool: (name: string, d: string) => {
+				if (name === "seo_sitemap_health") text = d;
+			},
+		} as never);
 		expect(text).toMatch(/sitemaps_pending/);
 		expect(text).toMatch(/sitemap_timeout/);
 		expect(text).toMatch(/next_offset = total/);
@@ -344,7 +348,11 @@ describe("other tools", () => {
 		expect(post).toHaveBeenCalledWith(`${NS}/import/migrate`, { source: "rankmath", dry_run: true });
 
 		let text = "";
-		register({ tool: (name: string, d: string) => (name === "seo_import_migrate" ? (text = d) : undefined) } as never);
+		register({
+			tool: (name: string, d: string) => {
+				if (name === "seo_import_migrate") text = d;
+			},
+		} as never);
 		expect(text).not.toMatch(/not honoured|Ignored for the meta/);
 		expect(text).toMatch(/changes/);
 	});
@@ -390,7 +398,11 @@ describe("other tools", () => {
 
 	it("seo_import_migrate documents warnings and the disabled import", () => {
 		let text = "";
-		register({ tool: (name: string, d: string) => (name === "seo_import_migrate" ? (text = d) : undefined) } as never);
+		register({
+			tool: (name: string, d: string) => {
+				if (name === "seo_import_migrate") text = d;
+			},
+		} as never);
 		expect(text).toMatch(/warnings/);
 		expect(text).toMatch(/disabled/);
 		expect(text).toMatch(/allow_external_targets/);
@@ -421,7 +433,9 @@ describe("other tools", () => {
 
 		let text = "";
 		register({
-			tool: (name: string, d: string) => (name === "seo_redirects_known_hosts" ? (text = d) : undefined),
+			tool: (name: string, d: string) => {
+				if (name === "seo_redirects_known_hosts") text = d;
+			},
 		} as never);
 		expect(text).toMatch(/replaces/i);
 		expect(text).toMatch(/external_target_host/);
@@ -429,7 +443,11 @@ describe("other tools", () => {
 
 	it("seo_update_settings documents the 400 for unknown keys and ignored_removed", () => {
 		let text = "";
-		register({ tool: (name: string, d: string) => (name === "seo_update_settings" ? (text = d) : undefined) } as never);
+		register({
+			tool: (name: string, d: string) => {
+				if (name === "seo_update_settings") text = d;
+			},
+		} as never);
 		expect(text).toMatch(/csm_unknown_setting/);
 		expect(text).toMatch(/ignored_removed/);
 		expect(text).not.toMatch(/unknown keys are ignored\)/);
@@ -437,14 +455,22 @@ describe("other tools", () => {
 
 	it("seo_status documents features, which seo_import_migrate relies on", () => {
 		let text = "";
-		register({ tool: (name: string, d: string) => (name === "seo_status" ? (text = d) : undefined) } as never);
+		register({
+			tool: (name: string, d: string) => {
+				if (name === "seo_status") text = d;
+			},
+		} as never);
 		expect(text).toMatch(/features/);
 		expect(text).toMatch(/migrate_dry_run/);
 	});
 
 	it("seo_sitemap_health documents build_ms and the per-call progress", () => {
 		let text = "";
-		register({ tool: (name: string, d: string) => (name === "seo_sitemap_health" ? (text = d) : undefined) } as never);
+		register({
+			tool: (name: string, d: string) => {
+				if (name === "seo_sitemap_health") text = d;
+			},
+		} as never);
 		expect(text).toMatch(/build_ms/);
 		expect(text).toMatch(/at least one URL/);
 	});
@@ -457,7 +483,11 @@ describe("other tools", () => {
 
 	it("seo_import_settings documents the skipped-keys report", () => {
 		let text = "";
-		register({ tool: (name: string, d: string) => (name === "seo_import_settings" ? (text = d) : undefined) } as never);
+		register({
+			tool: (name: string, d: string) => {
+				if (name === "seo_import_settings") text = d;
+			},
+		} as never);
 		expect(text).toMatch(/skipped/);
 	});
 

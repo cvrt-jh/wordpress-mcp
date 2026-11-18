@@ -35,7 +35,6 @@ const call = (name: string, args: Record<string, unknown>) => {
 	const t = tool(name);
 	return t.handler(t.schema.parse(args));
 };
-const out = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 
 beforeEach(() => {
 	for (const f of [get, post, put, del]) f.mockReset();

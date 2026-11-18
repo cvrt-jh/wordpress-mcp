@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { isSecretName, looksSecret, MASK, maskSecrets } from "./mask.js";
 import { jsonResult } from "./types.js";
 
-const LIVE = "sk_live_" + "Ab1".repeat(30);
+const LIVE = `sk_live_${"Ab1".repeat(30)}`;
 
 // The waldfreunde shape (2026-10-08): a live Stripe key nested in webhook_data.secret.
 const stripeSettings = {
@@ -35,8 +35,8 @@ describe("maskSecrets", () => {
 	});
 
 	it("masks a credential shape under any name and leaves plain values", () => {
-		expect(maskSecrets({ note: "ghp_" + "a".repeat(36), city: "Bonn" })).toEqual({ note: MASK, city: "Bonn" });
-		expect(maskSecrets(["whsec_" + "z".repeat(24), "ok"])).toEqual([MASK, "ok"]);
+		expect(maskSecrets({ note: `ghp_${"a".repeat(36)}`, city: "Bonn" })).toEqual({ note: MASK, city: "Bonn" });
+		expect(maskSecrets([`whsec_${"z".repeat(24)}`, "ok"])).toEqual([MASK, "ok"]);
 	});
 
 	it("keeps flag-like values under secret names visible", () => {
@@ -77,7 +77,7 @@ describe("maskSecrets", () => {
 
 	it("recognises credential shapes", () => {
 		expect(looksSecret(LIVE)).toBe(true);
-		expect(looksSecret("rk_live_" + "x".repeat(20))).toBe(true);
+		expect(looksSecret(`rk_live_${"x".repeat(20)}`)).toBe(true);
 		expect(looksSecret("-----BEGIN OPENSSH PRIVATE KEY-----")).toBe(true);
 		expect(looksSecret("hello world")).toBe(false);
 	});

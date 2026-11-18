@@ -31,8 +31,8 @@ describe("forSite", () => {
 
 		const [calledUrl, init] = fetchSpy.mock.calls[0];
 		expect(String(calledUrl)).toBe("https://a.example/wp-json/mcp/v1/health");
-		const auth = (init?.headers as Record<string, string>).Authorization;
-		expect(auth).toBe("Basic " + Buffer.from("u:p").toString("base64"));
+		const auth = new Headers(init?.headers).get("Authorization");
+		expect(auth).toBe(`Basic ${Buffer.from("u:p").toString("base64")}`);
 	});
 
 	it("throws WordPress API error on non-ok response", async () => {
@@ -64,7 +64,7 @@ describe("forSite", () => {
 		const [url, init] = fetchSpy.mock.calls[0];
 		expect(String(url)).toBe("https://a.example/wp-json/mcp/v1/themes/install-zip?activate=true&overwrite=false");
 		expect(init?.body).toBe(bytes);
-		expect((init?.headers as Record<string, string>)["Content-Type"]).toBe("application/zip");
+		expect(new Headers(init?.headers).get("Content-Type")).toBe("application/zip");
 	});
 
 	it("delete sends a JSON body only when one is given", async () => {
@@ -82,7 +82,7 @@ describe("forSite", () => {
 
 describe("forSite error bodies", () => {
 	it("masks secrets in a WordPress error body", async () => {
-		const body = JSON.stringify({ code: "x", data: { secret: "sk_live_" + "Q".repeat(40) } });
+		const body = JSON.stringify({ code: "x", data: { secret: `sk_live_${"Q".repeat(40)}` } });
 		vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(body, { status: 500 }));
 		const err = await forSite("a")
 			.get("/x")

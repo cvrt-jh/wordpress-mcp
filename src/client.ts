@@ -23,7 +23,7 @@ export interface SiteClient {
 export function forSite(siteId: string): SiteClient {
 	const site = getSite(siteId); // throws (before any fetch) if unknown
 	const base = site.url.replace(/\/$/, "");
-	const auth = "Basic " + Buffer.from(`${site.username}:${site.password}`).toString("base64");
+	const auth = `Basic ${Buffer.from(`${site.username}:${site.password}`).toString("base64")}`;
 	const headers = { Authorization: auth, "Content-Type": "application/json" };
 
 	const buildUrl = (endpoint: string, params?: Record<string, string | number>): string => {

@@ -18,6 +18,7 @@
 		"start": "node build/index.js",
 		"test": "vitest run",
 		"test:watch": "vitest",
+		"lint": "biome check .",
 		"prepublishOnly": "npm run build"
 	},
 	"keywords": [

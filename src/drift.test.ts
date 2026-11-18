@@ -72,7 +72,7 @@ vi.mock("./bearfort.js", async (importOriginal) => {
 
 import { registerAll } from "./register.js";
 
-export interface DriftEntry {
+interface DriftEntry {
 	method: Call["method"];
 	route: string;
 	source: string;
@@ -111,7 +111,7 @@ function registeredTools(): Map<string, Tool> {
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtureDir = join(here, "drift");
-export function loadFixtures(dir = fixtureDir): Map<string, DriftEntry> {
+function loadFixtures(dir = fixtureDir): Map<string, DriftEntry> {
 	const out = new Map<string, DriftEntry>();
 	for (const file of readdirSync(dir)
 		.filter((f) => f.endsWith(".json"))
@@ -126,7 +126,7 @@ export function loadFixtures(dir = fixtureDir): Map<string, DriftEntry> {
 }
 
 // A value of the right shape for every zod type the tools use.
-export function sample(type: z.ZodTypeAny): unknown {
+function sample(type: z.ZodTypeAny): unknown {
 	const def = type._def as { typeName: string } & Record<string, unknown>;
 	switch (def.typeName) {
 		case "ZodOptional":
@@ -181,7 +181,7 @@ function sentKeys(call: Call): string[] {
 const sorted = (xs: Iterable<string>) => [...new Set(xs)].sort();
 
 /** Every problem with one tool, as human-readable lines (empty = no drift). */
-export async function checkTool(name: string, tool: Tool, entry: DriftEntry): Promise<string[]> {
+async function checkTool(tool: Tool, entry: DriftEntry): Promise<string[]> {
 	const problems: string[] = [];
 	const path = entry.path ?? [];
 	const fields = entry.fields ?? [];
@@ -344,7 +344,7 @@ describe("drift: tools vs endpoint fixtures", () => {
 		it(name, async () => {
 			const tool = tools.get(name);
 			expect(tool, `${name} is not registered`).toBeDefined();
-			expect(await checkTool(name, tool as Tool, entry)).toEqual([]);
+			expect(await checkTool(tool as Tool, entry)).toEqual([]);
 		});
 	}
 });
@@ -372,7 +372,6 @@ describe("drift: checkTool goes red on known drift", () => {
 	it("green for a tool that matches", async () => {
 		expect(
 			await checkTool(
-				"t",
 				make(full, ({ a, b }) => ({ a, b })),
 				entry,
 			),
@@ -382,7 +381,6 @@ describe("drift: checkTool goes red on known drift", () => {
 	it("red when the tool lost a field the endpoint accepts", async () => {
 		const { b: _b, ...lost } = full;
 		const problems = await checkTool(
-			"t",
 			make(lost, ({ a }) => ({ a })),
 			entry,
 		);
@@ -393,7 +391,6 @@ describe("drift: checkTool goes red on known drift", () => {
 	it("red when the fixture drops the field but the endpoint still accepts it", async () => {
 		const { b: _b, ...lost } = full;
 		const problems = await checkTool(
-			"t",
 			make(lost, ({ a }) => ({ a })),
 			{ ...entry, fields: ["a"] },
 		);
@@ -402,7 +399,6 @@ describe("drift: checkTool goes red on known drift", () => {
 
 	it("red when the tool sends a field the endpoint does not accept", async () => {
 		const problems = await checkTool(
-			"t",
 			make({ ...full, c: z.string() }, ({ a, b, c }) => ({ a, b, c })),
 			{ ...entry, fields: ["a", "b", "c"] },
 		);
@@ -411,7 +407,6 @@ describe("drift: checkTool goes red on known drift", () => {
 
 	it("red when the tool accepts a field but does not send it", async () => {
 		const problems = await checkTool(
-			"t",
 			make(full, ({ a }) => ({ a })),
 			entry,
 		);
@@ -420,7 +415,6 @@ describe("drift: checkTool goes red on known drift", () => {
 
 	it("red on the wrong method", async () => {
 		const problems = await checkTool(
-			"t",
 			make(full, ({ a, b }) => ({ a, b }), "POST"),
 			entry,
 		);

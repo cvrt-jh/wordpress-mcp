@@ -53,7 +53,7 @@ describe("forFort", () => {
 		expect(fetchSpy).toHaveBeenCalledTimes(1);
 		const [url, init] = fetchSpy.mock.calls[0];
 		expect(String(url)).toBe("https://api.bearfort.io/v1/admin/sites?limit=200&offset=0");
-		expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer bea_test");
+		expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer bea_test");
 	});
 
 	it("refuses a site that is not a Bearfort fort", async () => {
@@ -65,7 +65,7 @@ describe("forFort", () => {
 		const fetchSpy = vi
 			.spyOn(globalThis, "fetch")
 			.mockResolvedValue(
-				new Response(JSON.stringify({ error: "x", key: "sk_live_" + "A".repeat(30) }), { status: 500 }),
+				new Response(JSON.stringify({ error: "x", key: `sk_live_${"A".repeat(30)}` }), { status: 500 }),
 			);
 		const fort = await forFort("stg");
 		const err = await fort.post("/backup").catch((e: Error) => e);
@@ -80,7 +80,7 @@ describe("filterLog", () => {
 		'1.2.3.4 - - "GET /?wc-api=x&token=abc123def456 HTTP/1.1" 200',
 		"PHP Fatal error: Uncaught Exception in /x.php",
 		'5.6.7.8 - - "POST /checkout?key=wc_order_123&pass=hunter2 HTTP/1.1" 302',
-		"PHP Warning: secret sk_live_" + "B".repeat(30),
+		`PHP Warning: secret sk_live_${"B".repeat(30)}`,
 	].join("\n");
 
 	it("keeps the last N lines matching a case-insensitive literal", () => {

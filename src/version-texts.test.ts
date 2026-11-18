@@ -28,7 +28,7 @@ function files(): string[] {
 	return [...tools, ...drift, join(root, "README.md")];
 }
 
-export function placeholders(text: string): string[] {
+function placeholders(text: string): string[] {
 	return text
 		.split("\n")
 		.map((line, i) => ({ line, n: i + 1 }))

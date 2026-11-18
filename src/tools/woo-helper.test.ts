@@ -54,7 +54,7 @@ describe("woo-helper tools", () => {
 	});
 
 	it("woo_helper_stripe_status masks anything secret-looking on the way out", async () => {
-		get.mockResolvedValue({ mode: "live", webhook: { secret: "whsec_" + "a".repeat(30) } });
+		get.mockResolvedValue({ mode: "live", webhook: { secret: `whsec_${"a".repeat(30)}` } });
 		const out = await tool("woo_helper_stripe_status").handler({ site: "a" });
 		expect(out.content[0].text).not.toContain("whsec_");
 	});
@@ -96,7 +96,7 @@ describe("woo-helper tools", () => {
 	it("woo_helper_put_invoices sends api keys only as given and never echoes them", async () => {
 		put.mockResolvedValue({
 			keys: { sevdesk: { set: true, constant: false } },
-			echo: "token sk_live_" + "Q".repeat(30),
+			echo: `token sk_live_${"Q".repeat(30)}`,
 		});
 		const out = await tool("woo_helper_put_invoices").handler({
 			site: "a",

@@ -62,7 +62,7 @@ describe("stripe tools", () => {
 	});
 
 	it("results are masked even if the site leaked something", async () => {
-		get.mockResolvedValue({ mode: "live", settings: { secret_key: "sk_live_" + "Z".repeat(40) } });
+		get.mockResolvedValue({ mode: "live", settings: { secret_key: `sk_live_${"Z".repeat(40)}` } });
 		const out = await tool("stripe_get_settings").handler({ site: "a" });
 		expect(out.content[0].text).not.toContain("sk_live_");
 	});
