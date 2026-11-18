@@ -95,18 +95,39 @@ export const AZURE_REGIONS = [
 	"global",
 ] as const;
 
-const SECRET_NAME =
-	/(?:^|[_-])(?:key|api[_-]?key|secret|token|password|passwd|passphrase|credentials?|authorization)s?(?:$|[_-])|key$/i;
+/** Words that make a name secret-looking: matched per word after splitting camelCase, snake_case and kebab-case. */
+const SECRET_WORD = /^(?:keys?|apikeys?|secrets?|tokens?|passwords?|passwd|passphrase|credentials?|authorization)\d*$/;
+
+/** Whether an argument name looks like a secret: any word of it is secret-like (clientSecret, accessToken, Password1). */
+export function looksSecretName(name: string): boolean {
+	const words = name
+		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+		.split(/[^A-Za-z0-9]+/)
+		.map((w) => w.toLowerCase())
+		.filter((w) => w !== "");
+	// The long words anywhere (also in ALLCAPS compounds such as CLIENTSECRET); the short `key` only as a word or suffix.
+	return (
+		words.some((w) => SECRET_WORD.test(w)) ||
+		/secret|token|passw(?:or)?d|passphrase|credential|authorization|apikey/i.test(words.join("")) ||
+		/^key|key$/i.test(name)
+	);
+}
+
 /** Names that look secret but are not: a list of unit keys to translate. */
 const NOT_SECRET = new Set(["unit_keys"]);
-/** Argument values that are data keyed by user content (unit keys), never walked for names. */
+/** Names of the `units` data maps (keyed by unit keys, which are user content): not walked, top level only. */
 const DATA_MAPS = new Set(["units"]);
 
 /**
- * The first secret-looking argument name at any depth (path, never the value), or null. `allowed` names (the lease
- * `token` of a tool that declares it) pass at the top level only.
+ * The path of the first secret-looking argument name at any depth (names only, never a value), or null. `allowed`
+ * names (the lease `token` of a tool that declares it) and the `units` data map are exempt at the top level only.
  */
-export function secretName(value: unknown, allowed: ReadonlySet<string>, path = "", top = true): string | null {
+export function secretName(
+	value: unknown,
+	allowed: ReadonlySet<string>,
+	path: string[] = [],
+	top = true,
+): string[] | null {
 	if (Array.isArray(value)) {
 		for (const item of value) {
 			const hit = secretName(item, allowed, path, false);
@@ -116,17 +137,29 @@ export function secretName(value: unknown, allowed: ReadonlySet<string>, path = 
 	}
 	if (value === null || typeof value !== "object") return null;
 	for (const [name, inner] of Object.entries(value)) {
-		const here = path === "" ? name : `${path}.${name}`;
+		const here = [...path, name];
 		const exempt = NOT_SECRET.has(name) || (top && allowed.has(name));
-		if (!exempt && SECRET_NAME.test(name)) return here;
-		if (DATA_MAPS.has(name)) continue;
+		if (!exempt && looksSecretName(name)) return here;
+		if (top && DATA_MAPS.has(name)) continue;
 		const hit = secretName(inner, allowed, here, false);
 		if (hit !== null) return hit;
 	}
 	return null;
 }
 
-/** The server with every handler guarded: a secret-looking argument name is refused before any request. */
+/** Nested names the refusal may show; with the tool's own argument names. Any other name is shown as `<arg>`. */
+const SCHEMA_NAMES = new Set(["provider_options", "azure", "region", "units", "text", "hash"]);
+
+function safePath(path: string[], known: ReadonlySet<string>): string {
+	return path.map((p) => (known.has(p) || SCHEMA_NAMES.has(p) ? p : "<arg>")).join(".");
+}
+
+/**
+ * The server with every handler guarded: a secret-looking argument name is refused before any request. Through the
+ * MCP SDK this guard is not the gate: the SDK parses the args with the tool's zod schema, which strips unknown names,
+ * and provider_options is a strict schema. The guard matters for direct handler calls and for names a schema lets
+ * through (record keys); the refusal never echoes a caller-chosen name or a value.
+ */
 function guarded(server: McpServer): McpServer {
 	return {
 		tool: (name: string, description: string, schema: z.ZodRawShape, handler: (args: never) => Promise<unknown>) =>
@@ -135,7 +168,7 @@ function guarded(server: McpServer): McpServer {
 				const bad = secretName(args, allowed);
 				if (bad !== null) {
 					throw new Error(
-						`Refused: argument "${bad}" looks like a secret. No lang tool takes a key or credential (set the provider key on the fort or in the admin).`,
+						`Refused: argument "${safePath(bad, new Set(Object.keys(schema)))}" looks like a secret. No lang tool takes a key or credential (set the provider key on the fort or in the admin).`,
 					);
 				}
 				return handler(args as never);
@@ -291,8 +324,18 @@ export function register(rawServer: McpServer) {
 				.describe("review: machine output waits for approval; publish: it goes live"),
 			monthly_cap: z.number().int().min(0).optional().describe("Monthly character cap"),
 			user_daily_budget: z.number().int().min(0).optional().describe("Characters per user per day"),
-			formality: z.record(z.string(), z.string()).optional().describe("Language code -> formality"),
-			glossary_hints: z.array(z.string()).optional().describe("Glossary hints"),
+			formality: z
+				.record(z.string(), z.string())
+				.optional()
+				.describe(
+					"Language code -> formality. Free text stored as this setting (and shown by lang_mt_status); never put a key here: a value typed into formality or glossary_hints is only a setting and can never become the provider key",
+				),
+			glossary_hints: z
+				.array(z.string())
+				.optional()
+				.describe(
+					"Glossary hints. Free text stored as this setting, sent to the provider with texts and shown by lang_mt_status; never put a key here: it would only be stored as a hint and can never become the provider key",
+				),
 			provider_options: z
 				.object({
 					azure: z

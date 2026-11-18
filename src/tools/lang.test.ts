@@ -15,7 +15,7 @@ vi.mock("../client.js", () => ({
 }));
 
 import { MASK } from "../mask.js";
-import { register } from "./lang.js";
+import { register, secretName } from "./lang.js";
 
 type Handler = (args: Record<string, unknown>) => Promise<{ content: { type: string; text: string }[] }>;
 interface Tool {
@@ -321,6 +321,14 @@ describe("lang tools: secret-looking argument names are refused at any depth", (
 		["password"],
 		["credential"],
 		["Authorization"],
+		["clientSecret"],
+		["accessToken"],
+		["apiToken"],
+		["authToken"],
+		["secretValue"],
+		["keyValue"],
+		["Password1"],
+		["private-key-id"],
 	])("lang_mt_update_settings refuses a nested %s before any request", async (name) => {
 		put.mockResolvedValue({});
 		await expect(
@@ -339,8 +347,47 @@ describe("lang tools: secret-looking argument names are refused at any depth", (
 		const err = await tool("lang_mt_update_settings")
 			.handler({ site: "a", provider_options: { azure: { api_key: SECRET } } })
 			.catch((e: Error) => e);
-		expect((err as Error).message).toContain("provider_options.azure.api_key");
+		expect((err as Error).message).toContain('"provider_options.azure.<arg>"');
 		expect((err as Error).message).not.toContain(SECRET);
+		expect((err as Error).message).not.toContain("api_key");
+	});
+
+	it("a secret in a name position (record key) is never echoed", async () => {
+		const name = ["sk", "live", "abcdefghijklmnopqrstuvwxkey"].join("_");
+		const err = await tool("lang_mt_update_settings")
+			.handler({ site: "a", formality: { [name]: "more" } })
+			.catch((e: Error) => e);
+		expect((err as Error).message).toContain('"formality.<arg>"');
+		expect((err as Error).message).not.toContain("sk_live");
+	});
+
+	it("the units exemption holds at the top level only", async () => {
+		put.mockResolvedValue({});
+		await expect(
+			tool("lang_mt_update_settings").handler({ site: "a", glossary_hints: [{ units: { api_key: SECRET } }] }),
+		).rejects.toThrow(/looks like a secret/);
+		expect(put).not.toHaveBeenCalled();
+	});
+
+	it("the tools' own legitimate names are not secret-looking", () => {
+		const args = {
+			post_type: "page",
+			provider_options: { azure: { region: "global" } },
+			monthly_cap: 1,
+			review_mode: "review",
+			lease_until: "t",
+			unit_keys: ["a"],
+			machine_now: true,
+		};
+		expect(secretName(args, new Set())).toBeNull();
+	});
+
+	it("the formality and glossary_hints descriptions say a value is only a setting, never the provider key", () => {
+		const { schema } = tool("lang_mt_update_settings");
+		for (const field of ["formality", "glossary_hints"]) {
+			const description = (schema[field] as z.ZodTypeAny).description ?? "";
+			expect(description, field).toContain("can never become the provider key");
+		}
 	});
 
 	it("every tool guards its handler", async () => {
@@ -363,7 +410,7 @@ describe("lang tools: secret-looking argument names are refused at any depth", (
 				code: "external_error",
 				extra: { token: TOKEN },
 			}),
-		).rejects.toThrow(/extra\.token/);
+		).rejects.toThrow(/"<arg>\.token"/);
 	});
 
 	it("data is not mistaken for names: unit_keys, unit keys named like secrets, nothing refused", async () => {
