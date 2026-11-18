@@ -29,18 +29,19 @@ Plus a new **`list_sites`** tool and updated **config** + **docs**.
 
 ```ts
 export interface Site {
-  id: string;
-  url: string;       // http(s), trailing slash tolerated
-  username: string;
-  password: string;  // WordPress application password
+	id: string;
+	url: string; // http(s), trailing slash tolerated
+	username: string;
+	password: string; // WordPress application password
 }
 
 // Parsed once at module load from process.env.WORDPRESS_SITES.
-export function getSite(id: string): Site;      // throws if unknown
-export function listSites(): Array<{ id: string; url: string }>;  // no passwords
+export function getSite(id: string): Site; // throws if unknown
+export function listSites(): Array<{ id: string; url: string }>; // no passwords
 ```
 
 **Parsing + validation (at first access / startup):**
+
 - `WORDPRESS_SITES` must be present and parse as a JSON array. Missing or non-JSON → throw `WORDPRESS_SITES env var must be a JSON array of sites`.
 - Array must be non-empty.
 - Each entry must have non-empty string `id`, `url`, `username`, `password`. Missing field → throw naming the offending index/id.
@@ -76,6 +77,7 @@ export function forSite(siteId: string): SiteClient {
 ## Component 3: Tools (`src/tools/*.ts`, all ~25 files)
 
 Every tool:
+
 1. Adds `site: z.string().describe("Site id (see list_sites)")` as the first schema field.
 2. Starts its handler with `const wp = forSite(site);`.
 3. Replaces `wpGet(` → `wp.get(`, `wpPost(` → `wp.post(`, `wpPut(` → `wp.put(`, `wpDelete(` → `wp.delete(`.
@@ -106,6 +108,7 @@ These now take the plugin **file path** (e.g. `akismet/akismet.php`), matching t
 Add `vitest` + a `test` script (no framework today). Unit tests only — the parts with real logic:
 
 **`sites.test.ts`:**
+
 - Valid array → `getSite` returns the right site; `listSites` lists all ids/urls.
 - Missing `WORDPRESS_SITES` → throws.
 - Non-JSON / non-array → throws.
@@ -117,16 +120,19 @@ Add `vitest` + a `test` script (no framework today). Unit tests only — the par
 - `listSites()` output contains no `password` field.
 
 **`client.test.ts`:**
+
 - `forSite(validId)` builds base URL (trailing slash stripped) + correct Basic auth header (mock fetch, assert URL + Authorization).
 - `forSite(unknownId)` throws before fetch is called (assert fetch not invoked).
 
 ## Config migration
 
 Update the two existing `.claude.json` `wordpress-mcp` entries from:
+
 ```json
 "env": { "WORDPRESS_SITE_URL": "...", "WORDPRESS_USERNAME": "...", "WORDPRESS_PASSWORD": "..." }
 ```
 to a single site array:
+
 ```json
 "env": { "WORDPRESS_SITES": "[{\"id\":\"boardcouture\",\"url\":\"https://boardcouture.shop\",\"username\":\"cavortkonzepte\",\"password\":\"...\"}]" }
 ```
@@ -141,6 +147,7 @@ to a single site array:
 ## Standards Compliance
 
 Verified against `~/Git/cvrt-jh/standards/`:
+
 - **repo-checklist.md** — README + CHANGELOG updated; add a `test` script + CI test run (this repo has no CI workflow today; adding a minimal lint+test workflow is in scope for the plan).
 - **testing-fullstack.md** — Vitest unit tests for the registry + client factory (the logic-bearing units); tool-over-REST bridging stays manually verified as today.
 - **security.md** — passwords never logged or returned; no secrets in code (all via env); constant-time not applicable (no secret comparison here).

@@ -1,0 +1,9 @@
+{
+	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+	"files": { "includes": ["**", "!build", "!node_modules", "!pnpm-lock.yaml"] },
+	"formatter": { "enabled": true, "indentStyle": "tab", "lineWidth": 120 },
+	"javascript": { "formatter": { "quoteStyle": "double" } },
+	"linter": { "enabled": true, "rules": { "preset": "recommended" } },
+	"assist": { "enabled": true, "actions": { "source": { "organizeImports": "on" } } }
+}

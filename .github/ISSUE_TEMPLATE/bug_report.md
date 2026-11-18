@@ -1,4 +1,5 @@
 ---
+
 name: Bug Report
 about: Report a bug or unexpected behavior
 title: '[Bug] '
@@ -19,6 +20,7 @@ Steps to reproduce:
 What you expected to happen.
 
 **Environment**
+
 - OS: [e.g., macOS 14.0]
 - Node.js: [e.g., 20.x]
 - Package version: [e.g., 1.0.0]

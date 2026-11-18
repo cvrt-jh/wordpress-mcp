@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.15.0] - 2026-11-16
 
 ### Added
+
 - `seo_sitemap_health` for `GET mcp/seo/v1/sitemap/health` (cvrt-seo-manager 1.15.0+, feature
   `sitemap_health`): the site fetches every sitemap file and listed URL on its own host and reports `status`,
   `redirect`, `noindex`, `canonical`, `sitemap`, `sitemap_timeout` (a file that does not fit even a files-only
@@ -38,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sent) when the site's cvrt-fields lacks the key, because older versions ignore it and still answer 200.
 
 ### Changed
+
 - Tool texts, drift sources and README name the released versions (cvrt-seo-manager 1.15.0+, cvrt-fields 0.4.0)
   instead of "after 1.14.1" or a feature branch; `src/version-texts.test.ts` keeps such placeholders out.
 - README tool counts corrected to the registered tools (342 with the two new fields tools; Standard 48, Extended 98,
@@ -64,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.14.1] - 2026-11-14
 
 ### Added
+
 - `media_get_recovery` and `media_retry_recovery` for [cvrt] Media 0.1.1 (`GET mcp/media/v1/recovery`,
   `POST mcp/media/v1/recovery/retry`): list the unfinished records the runner backs off (counts of stuck and
   waiting, items with redacted errors) and make them due again. `media_retry_recovery` requires exactly one scope
@@ -72,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.14.0] - 2026-11-13
 
 ### Added
+
 - `media_*` (21 tools) for [cvrt] Media 0.1.0 (`mcp/media/v1`): status, settings (write-only GitHub token), stats,
   attachments and per-attachment actions, bulk control, backups, the Elementor Image Optimizer migration, SVG
   backfill and URL scan. `media_cleanup_backups` requires exactly one scope; `media_bulk_restore`,
@@ -80,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.13.0] - 2026-11-09
 
 ### Added
+
 - `mcp_install_theme_zip` takes `file_path` (absolute local path to a .zip) as an alternative to `url`: the file is
   uploaded as `application/zip` with `activate` and `overwrite` as query params (cvrt-mcp-endpoints 1.20.0+). Exactly one of `url` / `file_path` is required. The zip is checked
   locally first (real regular file, .zip, `PK\x03\x04` magic, max 64 MB); an older site answering `rest_no_route` or
@@ -91,6 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.12.0] - 2026-10-10
 
 ### Added
+
 - `legal_get_shop_withdrawal`, `legal_put_shop_withdrawal`, `legal_list_withdrawal_requests` for
   cvrt-legal 0.12.1's shop withdrawal function (`mcp/legal/v1/shop/withdrawal`), which replaces
   cvrt-woo-helper's withdrawal routes (removed in woo-helper 0.5.0).
@@ -98,6 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.11.0] - 2026-10-10
 
 ### Added
+
 - Invoice tools for cvrt-woo-helper 0.4.0 (sevDesk, Lexware Office): `woo_helper_get_invoices`,
   `woo_helper_put_invoices` (API keys write-only, never returned), `woo_helper_invoices_test_connection`,
   `woo_helper_invoices_refresh`, `woo_helper_list_invoice_orders`, `woo_helper_get_invoice_order`,
@@ -107,6 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.10.0] - 2026-10-09
 
 ### Added
+
 - `woo_helper_get_emails`, `woo_helper_update_emails` and `woo_helper_send_test_email` for
   cvrt-woo-helper 0.2.0 (`mcp/woo-helper/v1/emails`): the WooCommerce email look (logo,
   colours, footer text, product images, certificate link once). The test email is a real
@@ -115,6 +123,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.9.0] - 2026-10-09
 
 ### Added
+
 - `stripe_*` (cvrt-mcp-endpoints 1.17.0+): `stripe_get_settings` (masked), `stripe_get_account`,
   `stripe_list_webhooks`, `stripe_list_payment_method_configs`, `stripe_list_charges`,
   `stripe_list_refunds`, and the writes `stripe_recreate_webhook` and
@@ -128,6 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.8.0] - 2026-10-09
 
 ### Added
+
 - Fort tools through the Bearfort API (no SSH), for sites hosted on Bearfort. They need
   `BEARFORT_API_KEY` (admin key; optional `BEARFORT_API_URL`) and fail closed without it.
   A site's fort is found from its URL (`<hex>.bearfort.io`, or the fort's domain).
@@ -140,6 +150,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.7.1] - 2026-10-08
 
 ### Changed
+
 - `mcp_scan_uploads` describes `reason` and the known-plugin-file rule (cvrt-mcp-endpoints 1.16.1).
 
 ## [3.7.0] - 2026-10-08
@@ -147,6 +158,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Needs cvrt-mcp-endpoints 1.16.0 for the new tools.
 
 ### Added
+
 - `mcp_check_plugin_updates`: run Plugin Update Checker (GitHub-released plugins) and wp.org checks now; lists updates with source.
 - `mcp_update_plugin` takes `refresh` to check first, so a just-released GitHub update installs without SSH.
 - `mcp_get_action_scheduler` / `mcp_run_action_scheduler`: queue status (failures secret-masked) and on-demand run of due actions.
@@ -154,12 +166,14 @@ Needs cvrt-mcp-endpoints 1.16.0 for the new tools.
 - `mcp_get_audit_log`: the site's audit trail of state-changing MCP calls.
 
 ### Changed
+
 - `mcp_run_cron` describes the 1.16.0 behaviour (reschedule/unschedule like `wp cron event run`, `next_run_timestamp`).
 - `mcp_flush_cache` says it does not purge a page cache in front of WordPress.
 
 ## [3.6.0] - 2026-10-08
 
 ### Security
+
 - Every tool result is secret-masked on the way out (`src/mask.ts`, same rules as
   cvrt-mcp-endpoints 1.15.0 `Cvrt_MCPE_Secrets`): values under secret-looking keys
   (token, secret, password, api_key, whsec, signing_key, ...) and credential shapes
@@ -170,23 +184,27 @@ Needs cvrt-mcp-endpoints 1.16.0 for the new tools.
   the output, never on data a tool writes back.
 
 ### Added
+
 - Drift check (`src/drift.test.ts`, `src/drift/*.json`): every tool is verified
   against a fixture of the endpoint it calls (route, method, every accepted param).
 - Tools expose the filters and fields their endpoints accept; partial updates send
   only the fields set.
 
 ### Removed
+
 - `fulfillment_update_apply`: cvrt-order-fulfillment deliberately has no
   update-apply route (a plugin must not upgrade itself in-request).
 
 ## [3.5.0] - 2026-10-01
 
 ### Added
+
 - `fields_*` (12 tools) for cvrt-fields 0.1.2+ (`mcp/fields/v1`): `fields_status`, `fields_get_settings` / `fields_update_settings` (update token write-only, stored encrypted), `fields_list_types`, `fields_get_location_values`, `fields_get_schema`, and `fields_list_definitions` / `fields_get_definition` / `fields_create_definition` / `fields_update_definition` / `fields_delete_definition` / `fields_sync_definition` for field groups, post types, taxonomies and options pages. Keys are validated against `[a-z0-9_]+` before they reach the URL.
 
 ## [3.4.0] - 2026-09-29
 
 ### Added
+
 - `legal_get_accessibility_report` / `legal_reset_accessibility_report` for cvrt-legal 0.9.0's markup repair report.
 - `legal_put_accessibility` takes `repairs` (rule => on/off).
 - Document and generator tools accept `barrierefreiheit` (BFSG statement, cvrt-legal 0.9.0+).
@@ -194,6 +212,7 @@ Needs cvrt-mcp-endpoints 1.16.0 for the new tools.
 ## [3.3.0] - 2026-09-29
 
 ### Added
+
 - Every cvrt-legal admin route is now a tool, so a rollout never falls back to raw REST:
   - `legal_get_facts` / `legal_put_facts` - Impressum fields (cvrt-legal 0.7.0+)
   - `legal_get_generator` / `legal_put_generator` - tick Datenschutz modules and options, regenerate (0.7.0+)
@@ -207,21 +226,25 @@ Needs cvrt-mcp-endpoints 1.16.0 for the new tools.
 ## [3.2.1] - 2026-09-28
 
 ### Fixed
+
 - `wp_activate_theme` never switched a theme: it POSTed `stylesheet` to `/wp/v2/settings`, which WordPress ignores, and still answered `{"activated": ...}`. It now uses `POST /mcp/v1/themes/activate` and returns an error when the theme is not active afterwards.
 
 ### Added
+
 - `mcp_update_elementor_element` takes `widget_type` (replace a widget in place) and `settings_mode` (`merge` | `replace`), both supported by cvrt-mcp-endpoints since 1.13.0 but unreachable through the tool.
 - Tests for both tools (`themes.test.ts`, `mcp-elementor.test.ts`).
 
 ## [3.2.0] - 2026-09-24
 
 ### Added
+
 - `legal_consent_log_get` / `legal_consent_log_stats` / `legal_consent_log_export` for the cvrt-legal consent decision log (`mcp/legal/v1/consent/log*`, needs cvrt-legal 0.5.0+). Reads require `manage_options`; logging itself stays off on the plugin side until `legal_put_consent`'s new `log_enabled` is set, which should only happen after the Datenschutz document has an `einwilligungsnachweis` section describing it.
 - `legal_put_consent` takes optional `log_enabled: boolean`.
 
 ## [3.1.0] - 2026-09-24
 
 ### Added
+
 - `legal_get_page` / `legal_link_page`: link a cvrt-legal document to its page (needs cvrt-legal 0.4.2). Linking mirrors the rendered text into the page and fills the consent banner's imprint/privacy link while it is unset. `page_id: 0` unlinks.
 - `legal_*` tools (15) for the cvrt-legal plugin (`mcp/legal/v1`): documents, sections, render, consent banner, theme, settings, status.
 - `legal_put_consent` takes `ga4_id` and `ahrefs_key`; the loader defaults to googletagmanager.com.
@@ -231,21 +254,25 @@ Needs cvrt-mcp-endpoints 1.16.0 for the new tools.
 ## [3.0.0] - 2026-07-19
 
 ### Changed (BREAKING)
+
 - Multi-site: sites are now defined in a single `WORDPRESS_SITES` env var (JSON array of `{id, url, username, password}`). The old `WORDPRESS_SITE_URL` / `WORDPRESS_USERNAME` / `WORDPRESS_PASSWORD` vars are removed.
 - Every tool now requires a `site` argument naming the target site id. Use the new `list_sites` tool to discover configured ids.
 - `wp_activate_plugin` / `wp_deactivate_plugin` / `wp_delete_plugin` now use the `cvrt-mcp-endpoints` `mcp/v1` routes instead of the core `wp/v2/plugins` route (avoids hosts that block it). Their `plugin` argument is now the plugin file path (e.g. `akismet/akismet.php`).
 
 ### Added
+
 - `list_sites` tool.
 
 ## [2.1.0]
 
 ### Added
+
 - Order-fulfillment tools (`fulfillment_*`) wrapping the cvrt-order-fulfillment plugin's MCP admin API (`mcp/fulfillment/v1/admin/*`): get/update settings (secrets masked), status, queue, reprint job, force-fulfill order, and update-check/update-apply. Requires the plugin v0.2.0+ and manage_woocommerce (app-password auth).
 
 ## [1.0.0] - 2026-02-02
 
 ### Added
+
 - Initial release with 42 tools
 - Posts: CRUD, revisions, meta, terms
 - Pages, media, comments management

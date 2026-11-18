@@ -6,9 +6,10 @@
  * All routes require manage_options (satisfied by the app-password the MCP
  * server uses). Secret settings are returned masked as { set: boolean }.
  */
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
+
 import { readFile } from "node:fs/promises";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
 import { forSite } from "../client.js";
 import { defined, jsonResult } from "../types.js";
 
@@ -16,727 +17,789 @@ const NS = "/mcp/seo/v1";
 
 /** CSV text from exactly one of an inline string or a local .csv file. */
 export async function csvBody(csv: string | undefined, csvFile: string | undefined): Promise<string> {
-  if (csv !== undefined && csvFile !== undefined) throw new Error("Give csv or csv_file, not both");
-  if (csv === undefined && csvFile === undefined) throw new Error("Give csv or csv_file");
-  if (csvFile !== undefined && !csvFile.toLowerCase().endsWith(".csv")) {
-    throw new Error(`csv_file must be a .csv file: ${csvFile}`);
-  }
-  const text = csv ?? (await readFile(csvFile as string, "utf8"));
-  if (text.trim() === "") throw new Error("CSV is empty");
-  return text;
+	if (csv !== undefined && csvFile !== undefined) throw new Error("Give csv or csv_file, not both");
+	if (csv === undefined && csvFile === undefined) throw new Error("Give csv or csv_file");
+	if (csvFile !== undefined && !csvFile.toLowerCase().endsWith(".csv")) {
+		throw new Error(`csv_file must be a .csv file: ${csvFile}`);
+	}
+	const text = csv ?? (await readFile(csvFile as string, "utf8"));
+	if (text.trim() === "") throw new Error("CSV is empty");
+	return text;
 }
 
 const site = z.string().describe("Site id (see list_sites)");
 
 /** Redirect status codes the plugin accepts (Cvrt_CSM_Redirects::ALLOWED_TYPES). */
 const redirectType = z
-  .union([z.literal(301), z.literal(302), z.literal(307), z.literal(410), z.literal(451)])
-  .describe("HTTP status: 301 permanent, 302 found, 307 temporary, 410 gone, 451 unavailable for legal reasons (410/451 need no to_url)");
+	.union([z.literal(301), z.literal(302), z.literal(307), z.literal(410), z.literal(451)])
+	.describe(
+		"HTTP status: 301 permanent, 302 found, 307 temporary, 410 gone, 451 unavailable for legal reasons (410/451 need no to_url)",
+	);
 
 const NULL_CLEARS = "null deletes the stored value.";
 
 /** Per-post SEO fields (Cvrt_CSM_REST_API::POST_META_KEYS). Every one is optional; null deletes it. */
 const postSeoFields = {
-  title: z.string().nullable().optional().describe(`SEO title (template tokens like %title%, %sep%, %sitename% allowed). ${NULL_CLEARS}`),
-  description: z.string().nullable().optional().describe(`Meta description. ${NULL_CLEARS}`),
-  focus_keywords: z
-    .array(z.string())
-    .nullable()
-    .optional()
-    .describe(`Focus keywords, max 5 (extra ones are dropped). ${NULL_CLEARS}`),
-  robots: z
-    .string()
-    .nullable()
-    .optional()
-    .describe(`Robots directives, comma separated (e.g. "noindex,nofollow"). ${NULL_CLEARS}`),
-  advanced_robots: z
-    .object({
-      "max-snippet": z.union([z.string(), z.number()]).optional().describe("e.g. -1 or 160"),
-      "max-image-preview": z.string().optional().describe("none | standard | large"),
-      "max-video-preview": z.union([z.string(), z.number()]).optional().describe("e.g. -1 or 30"),
-    })
-    .nullable()
-    .optional()
-    .describe(`Advanced robots directives; other keys are dropped by the server. ${NULL_CLEARS}`),
-  canonical: z.string().nullable().optional().describe(`Canonical URL. ${NULL_CLEARS}`),
-  og_title: z.string().nullable().optional().describe(`Open Graph title. ${NULL_CLEARS}`),
-  og_description: z.string().nullable().optional().describe(`Open Graph description. ${NULL_CLEARS}`),
-  og_image: z.number().int().nullable().optional().describe(`Open Graph image attachment ID. ${NULL_CLEARS}`),
-  twitter_card: z
-    .enum(["summary", "summary_large_image"])
-    .nullable()
-    .optional()
-    .describe(`Twitter card type; unset falls back to the default_twitter_card setting. ${NULL_CLEARS}`),
-  twitter_title: z.string().nullable().optional().describe(`Twitter title. ${NULL_CLEARS}`),
-  twitter_description: z.string().nullable().optional().describe(`Twitter description. ${NULL_CLEARS}`),
-  twitter_image: z.number().int().nullable().optional().describe(`Twitter image attachment ID. ${NULL_CLEARS}`),
-  schema: z
-    .union([z.record(z.any()), z.array(z.any()), z.string()])
-    .nullable()
-    .optional()
-    .describe(`Custom JSON-LD (object, array or JSON string); overrides schema_type. Invalid JSON is stored as []. ${NULL_CLEARS}`),
-  schema_type: z
-    .string()
-    .nullable()
-    .optional()
-    .describe(`Schema type built from post data: BlogPosting, Article, NewsArticle, WebPage or Product. ${NULL_CLEARS}`),
-  software_app: z
-    .record(z.any())
-    .nullable()
-    .optional()
-    .describe(
-      `Per-post SoftwareApplication schema: { enabled, name, applicationCategory, operatingSystem, description, url, offers: [{ name, price, priceCurrency, url, unitText, unitCode }] (max 20), aggregateRating }. Omitted enabled = true. ${NULL_CLEARS}`
-    ),
-  breadcrumb_title: z.string().nullable().optional().describe(`Title used in breadcrumbs. ${NULL_CLEARS}`),
-  pillar_content: z.boolean().nullable().optional().describe(`Mark as pillar (cornerstone) content. ${NULL_CLEARS}`),
-  seo_score: z.number().int().nullable().optional().describe(`Stored SEO score (0-100). ${NULL_CLEARS}`),
-  sitemap_exclude: z
-    .boolean()
-    .nullable()
-    .optional()
-    .describe(`Leave the post out of the XML sitemap; robots unchanged (cvrt-seo-manager 1.15.0+). ${NULL_CLEARS}`),
+	title: z
+		.string()
+		.nullable()
+		.optional()
+		.describe(`SEO title (template tokens like %title%, %sep%, %sitename% allowed). ${NULL_CLEARS}`),
+	description: z.string().nullable().optional().describe(`Meta description. ${NULL_CLEARS}`),
+	focus_keywords: z
+		.array(z.string())
+		.nullable()
+		.optional()
+		.describe(`Focus keywords, max 5 (extra ones are dropped). ${NULL_CLEARS}`),
+	robots: z
+		.string()
+		.nullable()
+		.optional()
+		.describe(`Robots directives, comma separated (e.g. "noindex,nofollow"). ${NULL_CLEARS}`),
+	advanced_robots: z
+		.object({
+			"max-snippet": z.union([z.string(), z.number()]).optional().describe("e.g. -1 or 160"),
+			"max-image-preview": z.string().optional().describe("none | standard | large"),
+			"max-video-preview": z.union([z.string(), z.number()]).optional().describe("e.g. -1 or 30"),
+		})
+		.nullable()
+		.optional()
+		.describe(`Advanced robots directives; other keys are dropped by the server. ${NULL_CLEARS}`),
+	canonical: z.string().nullable().optional().describe(`Canonical URL. ${NULL_CLEARS}`),
+	og_title: z.string().nullable().optional().describe(`Open Graph title. ${NULL_CLEARS}`),
+	og_description: z.string().nullable().optional().describe(`Open Graph description. ${NULL_CLEARS}`),
+	og_image: z.number().int().nullable().optional().describe(`Open Graph image attachment ID. ${NULL_CLEARS}`),
+	twitter_card: z
+		.enum(["summary", "summary_large_image"])
+		.nullable()
+		.optional()
+		.describe(`Twitter card type; unset falls back to the default_twitter_card setting. ${NULL_CLEARS}`),
+	twitter_title: z.string().nullable().optional().describe(`Twitter title. ${NULL_CLEARS}`),
+	twitter_description: z.string().nullable().optional().describe(`Twitter description. ${NULL_CLEARS}`),
+	twitter_image: z.number().int().nullable().optional().describe(`Twitter image attachment ID. ${NULL_CLEARS}`),
+	schema: z
+		.union([z.record(z.any()), z.array(z.any()), z.string()])
+		.nullable()
+		.optional()
+		.describe(
+			`Custom JSON-LD (object, array or JSON string); overrides schema_type. Invalid JSON is stored as []. ${NULL_CLEARS}`,
+		),
+	schema_type: z
+		.string()
+		.nullable()
+		.optional()
+		.describe(
+			`Schema type built from post data: BlogPosting, Article, NewsArticle, WebPage or Product. ${NULL_CLEARS}`,
+		),
+	software_app: z
+		.record(z.any())
+		.nullable()
+		.optional()
+		.describe(
+			`Per-post SoftwareApplication schema: { enabled, name, applicationCategory, operatingSystem, description, url, offers: [{ name, price, priceCurrency, url, unitText, unitCode }] (max 20), aggregateRating }. Omitted enabled = true. ${NULL_CLEARS}`,
+		),
+	breadcrumb_title: z.string().nullable().optional().describe(`Title used in breadcrumbs. ${NULL_CLEARS}`),
+	pillar_content: z.boolean().nullable().optional().describe(`Mark as pillar (cornerstone) content. ${NULL_CLEARS}`),
+	seo_score: z.number().int().nullable().optional().describe(`Stored SEO score (0-100). ${NULL_CLEARS}`),
+	sitemap_exclude: z
+		.boolean()
+		.nullable()
+		.optional()
+		.describe(`Leave the post out of the XML sitemap; robots unchanged (cvrt-seo-manager 1.15.0+). ${NULL_CLEARS}`),
 };
 
 /** Per-term SEO fields (Cvrt_CSM_REST_API::TERM_META_KEYS). */
 const termSeoFields = {
-  title: postSeoFields.title,
-  description: postSeoFields.description,
-  robots: postSeoFields.robots,
-  og_image: postSeoFields.og_image,
-  schema: postSeoFields.schema,
+	title: postSeoFields.title,
+	description: postSeoFields.description,
+	robots: postSeoFields.robots,
+	og_image: postSeoFields.og_image,
+	schema: postSeoFields.schema,
 };
 
 const SETTINGS_DOC = [
-  "Update cvrt-seo-manager settings (partial: only the keys you send change). From cvrt-seo-manager 1.15.0 on, an unknown key answers 400 csm_unknown_setting (data.unknown lists them, an option name like csm_title_separator gets the right key suggested) and nothing is written; a removed key (sitemap_authors) is skipped and listed in ignored_removed; the masked IndexNow key from seo_get_settings can be sent back unchanged. Older versions ignored unknown keys.",
-  "Send keys flat ({ title_separator: '|' }) or grouped ({ titles: { title_separator: '|' } }); keys are the option names without the csm_ prefix. Returns the full settings (GET shape, secrets masked).",
-  "Groups and keys:",
-  "titles: title_separator, title_home, desc_home, title_post, desc_post, title_page, desc_page, title_product, desc_product, title_category, title_tag, title_author, title_search, title_404 (templates, tokens like %title% %sep% %sitename%).",
-  "robots: default_robots (text); booleans noindex_archives, noindex_tags, noindex_author, noindex_search, noindex_paginated, noindex_password_protected, noindex_empty_archives, robots_max_directives; 1.15.0+ also author_archives (enabled | redirect = 301 to home | disabled = 404), noindex_post_types, noindex_taxonomies (arrays of slugs: noindex and out of the sitemap unless an entry says index).",
-  "social: default_og_image (attachment ID), default_twitter_card (summary | summary_large_image), social_profiles (object network => URL, e.g. { facebook: 'https://...', twitter: '@handle' }), social_extra_profiles (1.12.0+: extra schema sameAs profile URLs as an array, a JSON array string or one URL per line; only absolute http(s) URLs are kept, duplicates removed), og_home_title, og_home_description, og_home_image (attachment ID).",
-  "knowledge_graph: kg_type, kg_name, kg_alternate_name (1.15.0+), kg_description (multi-line), kg_logo (attachment ID; 1.15.0+: a Google Images format of at least 112x112 px, else 400 csm_kg_logo_format and nothing is written), kg_url.",
-  "schema: schema_defaults (object post_type => BlogPosting | Article | NewsArticle | WebPage | Product), schema_article_type, software_app (site-wide SoftwareApplication object, same shape as the per-post field).",
-  "verification: verify_google, verify_bing, verify_pinterest, verify_yandex (public meta tokens).",
-  "indexnow: indexnow_enabled (bool), indexnow_key (SECRET, write-only; blank keeps the stored key).",
-  "search_console: gsc_service_account (SECRET, write-only: the service-account JSON key as a string; validated before anything is written; blank keeps it, null clears it), gsc_property, gsc_auto_submit (bool).",
-  "advanced: robots_txt_extra (multi-line), llms_txt.",
-  "sitemap: sitemap_post_types, sitemap_taxonomies, html_sitemap_post_types (arrays of slugs), sitemap_exclude_noindex, sitemap_images (bools), sitemap_max_per_page (int); sitemap_authors up to 1.14.1 only (never read, removed in 1.15.0).",
-  "breadcrumbs: breadcrumbs_enabled, breadcrumbs_show_home, breadcrumbs_show_post_title (bools), breadcrumbs_separator, breadcrumbs_home_label.",
-  "images: image_seo_enabled (bool), image_alt_template, image_title_template.",
-  "links: nofollow_external, external_new_tab, strip_category_base (bools).",
-  "local_seo: local_business_type, local_address (object), local_phone, local_email, local_hours (array), local_geo ({ latitude, longitude }), local_price_range.",
-  "monitor_404: 404_monitor_enabled (bool), 404_retention_days, 404_max_rows (ints), 404_exclude_patterns (array of patterns).",
-  "woocommerce: woo_remove_base_slug, woo_remove_category_base, woo_remove_generator (bools), woo_brand_taxonomy.",
+	"Update cvrt-seo-manager settings (partial: only the keys you send change). From cvrt-seo-manager 1.15.0 on, an unknown key answers 400 csm_unknown_setting (data.unknown lists them, an option name like csm_title_separator gets the right key suggested) and nothing is written; a removed key (sitemap_authors) is skipped and listed in ignored_removed; the masked IndexNow key from seo_get_settings can be sent back unchanged. Older versions ignored unknown keys.",
+	"Send keys flat ({ title_separator: '|' }) or grouped ({ titles: { title_separator: '|' } }); keys are the option names without the csm_ prefix. Returns the full settings (GET shape, secrets masked).",
+	"Groups and keys:",
+	"titles: title_separator, title_home, desc_home, title_post, desc_post, title_page, desc_page, title_product, desc_product, title_category, title_tag, title_author, title_search, title_404 (templates, tokens like %title% %sep% %sitename%).",
+	"robots: default_robots (text); booleans noindex_archives, noindex_tags, noindex_author, noindex_search, noindex_paginated, noindex_password_protected, noindex_empty_archives, robots_max_directives; 1.15.0+ also author_archives (enabled | redirect = 301 to home | disabled = 404), noindex_post_types, noindex_taxonomies (arrays of slugs: noindex and out of the sitemap unless an entry says index).",
+	"social: default_og_image (attachment ID), default_twitter_card (summary | summary_large_image), social_profiles (object network => URL, e.g. { facebook: 'https://...', twitter: '@handle' }), social_extra_profiles (1.12.0+: extra schema sameAs profile URLs as an array, a JSON array string or one URL per line; only absolute http(s) URLs are kept, duplicates removed), og_home_title, og_home_description, og_home_image (attachment ID).",
+	"knowledge_graph: kg_type, kg_name, kg_alternate_name (1.15.0+), kg_description (multi-line), kg_logo (attachment ID; 1.15.0+: a Google Images format of at least 112x112 px, else 400 csm_kg_logo_format and nothing is written), kg_url.",
+	"schema: schema_defaults (object post_type => BlogPosting | Article | NewsArticle | WebPage | Product), schema_article_type, software_app (site-wide SoftwareApplication object, same shape as the per-post field).",
+	"verification: verify_google, verify_bing, verify_pinterest, verify_yandex (public meta tokens).",
+	"indexnow: indexnow_enabled (bool), indexnow_key (SECRET, write-only; blank keeps the stored key).",
+	"search_console: gsc_service_account (SECRET, write-only: the service-account JSON key as a string; validated before anything is written; blank keeps it, null clears it), gsc_property, gsc_auto_submit (bool).",
+	"advanced: robots_txt_extra (multi-line), llms_txt.",
+	"sitemap: sitemap_post_types, sitemap_taxonomies, html_sitemap_post_types (arrays of slugs), sitemap_exclude_noindex, sitemap_images (bools), sitemap_max_per_page (int); sitemap_authors up to 1.14.1 only (never read, removed in 1.15.0).",
+	"breadcrumbs: breadcrumbs_enabled, breadcrumbs_show_home, breadcrumbs_show_post_title (bools), breadcrumbs_separator, breadcrumbs_home_label.",
+	"images: image_seo_enabled (bool), image_alt_template, image_title_template.",
+	"links: nofollow_external, external_new_tab, strip_category_base (bools).",
+	"local_seo: local_business_type, local_address (object), local_phone, local_email, local_hours (array), local_geo ({ latitude, longitude }), local_price_range.",
+	"monitor_404: 404_monitor_enabled (bool), 404_retention_days, 404_max_rows (ints), 404_exclude_patterns (array of patterns).",
+	"woocommerce: woo_remove_base_slug, woo_remove_category_base, woo_remove_generator (bools), woo_brand_taxonomy.",
 ].join(" ");
 
 export interface Redirect {
-  id: number;
-  from_url: string;
-  to_url: string;
-  type: number;
-  is_regex: boolean;
-  hits: number;
-  enabled: boolean;
-  created_at: string;
-  updated_at: string;
+	id: number;
+	from_url: string;
+	to_url: string;
+	type: number;
+	is_regex: boolean;
+	hits: number;
+	enabled: boolean;
+	created_at: string;
+	updated_at: string;
 }
 
 export interface IndexNowResult {
-  url: string;
-  ok: boolean;
-  error?: string;
+	url: string;
+	ok: boolean;
+	error?: string;
 }
 
 function requireFields(body: Record<string, unknown>, what: string): void {
-  if (Object.keys(body).length === 0) throw new Error(`Provide at least one ${what} to change`);
+	if (Object.keys(body).length === 0) throw new Error(`Provide at least one ${what} to change`);
 }
 
 export function register(server: McpServer) {
-  server.tool(
-    "seo_status",
-    "Get cvrt-seo-manager status: { version, configured, permalinks, dependencies: { php, wordpress }, features }. features (cvrt-seo-manager 1.15.0+) lists capabilities: migrate_dry_run (seo_import_migrate honours dry_run for the per-post pass; without it the tool refuses a per-post dry run), sitemap_health (seo_sitemap_health available), redirect_audit (GET /redirects/audit), migrate_external_targets (seo_import_migrate takes allow_external_targets; RankMath redirects to another host are imported disabled and listed in warnings). Older versions have no features field.",
-    { site },
-    async ({ site }) => {
-      const wp = forSite(site);
-      return jsonResult(
-        await wp.get<{
-          version: string;
-          configured: boolean;
-          dependencies: { php: string; wordpress: string };
-          features?: string[];
-        }>(`${NS}/status`)
-      );
-    }
-  );
+	server.tool(
+		"seo_status",
+		"Get cvrt-seo-manager status: { version, configured, permalinks, dependencies: { php, wordpress }, features }. features (cvrt-seo-manager 1.15.0+) lists capabilities: migrate_dry_run (seo_import_migrate honours dry_run for the per-post pass; without it the tool refuses a per-post dry run), sitemap_health (seo_sitemap_health available), redirect_audit (GET /redirects/audit), migrate_external_targets (seo_import_migrate takes allow_external_targets; RankMath redirects to another host are imported disabled and listed in warnings). Older versions have no features field.",
+		{ site },
+		async ({ site }) => {
+			const wp = forSite(site);
+			return jsonResult(
+				await wp.get<{
+					version: string;
+					configured: boolean;
+					dependencies: { php: string; wordpress: string };
+					features?: string[];
+				}>(`${NS}/status`),
+			);
+		},
+	);
 
-  server.tool(
-    "seo_get_settings",
-    "Get cvrt-seo-manager settings grouped by section (titles, robots, social, knowledge_graph, schema, verification, indexnow, search_console, advanced, sitemap, breadcrumbs, images, links, local_seo, monitor_404, woocommerce). Secret values are returned as { set: boolean }, never raw.",
-    { site },
-    async ({ site }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.get<Record<string, Record<string, unknown>>>(`${NS}/settings`));
-    }
-  );
+	server.tool(
+		"seo_get_settings",
+		"Get cvrt-seo-manager settings grouped by section (titles, robots, social, knowledge_graph, schema, verification, indexnow, search_console, advanced, sitemap, breadcrumbs, images, links, local_seo, monitor_404, woocommerce). Secret values are returned as { set: boolean }, never raw.",
+		{ site },
+		async ({ site }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.get<Record<string, Record<string, unknown>>>(`${NS}/settings`));
+		},
+	);
 
-  server.tool(
-    "seo_update_settings",
-    SETTINGS_DOC,
-    {
-      site,
-      settings: z
-        .record(z.any())
-        .describe("Partial settings, flat or grouped (see the tool description for every group and key)"),
-    },
-    async ({ site, settings }) => {
-      requireFields(settings, "setting");
-      const wp = forSite(site);
-      return jsonResult(await wp.put<Record<string, Record<string, unknown>>>(`${NS}/settings`, settings));
-    }
-  );
+	server.tool(
+		"seo_update_settings",
+		SETTINGS_DOC,
+		{
+			site,
+			settings: z
+				.record(z.any())
+				.describe("Partial settings, flat or grouped (see the tool description for every group and key)"),
+		},
+		async ({ site, settings }) => {
+			requireFields(settings, "setting");
+			const wp = forSite(site);
+			return jsonResult(await wp.put<Record<string, Record<string, unknown>>>(`${NS}/settings`, settings));
+		},
+	);
 
-  server.tool(
-    "seo_get_post_seo",
-    "Get the SEO meta for a post (every field, null when unset; plus language and translations when Polylang is active).",
-    {
-      site,
-      id: z.number().int().describe("Post ID"),
-    },
-    async ({ site, id }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/posts/${id}/seo`));
-    }
-  );
+	server.tool(
+		"seo_get_post_seo",
+		"Get the SEO meta for a post (every field, null when unset; plus language and translations when Polylang is active).",
+		{
+			site,
+			id: z.number().int().describe("Post ID"),
+		},
+		async ({ site, id }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/posts/${id}/seo`));
+		},
+	);
 
-  server.tool(
-    "seo_update_post_seo",
-    "Update the SEO meta for a post (partial: only the fields you give change; null deletes a field). Purges the post's page cache. Returns the post's full SEO meta.",
-    {
-      site,
-      id: z.number().int().describe("Post ID"),
-      ...postSeoFields,
-    },
-    async ({ site, id, ...fields }) => {
-      const body = defined(fields);
-      requireFields(body, "SEO field");
-      const wp = forSite(site);
-      return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/posts/${id}/seo`, body));
-    }
-  );
+	server.tool(
+		"seo_update_post_seo",
+		"Update the SEO meta for a post (partial: only the fields you give change; null deletes a field). Purges the post's page cache. Returns the post's full SEO meta.",
+		{
+			site,
+			id: z.number().int().describe("Post ID"),
+			...postSeoFields,
+		},
+		async ({ site, id, ...fields }) => {
+			const body = defined(fields);
+			requireFields(body, "SEO field");
+			const wp = forSite(site);
+			return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/posts/${id}/seo`, body));
+		},
+	);
 
-  server.tool(
-    "seo_delete_post_seo",
-    "Delete (reset) every SEO meta field of a post. Returns { deleted: true }.",
-    {
-      site,
-      id: z.number().int().describe("Post ID"),
-    },
-    async ({ site, id }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.delete<{ deleted: boolean }>(`${NS}/posts/${id}/seo`));
-    }
-  );
+	server.tool(
+		"seo_delete_post_seo",
+		"Delete (reset) every SEO meta field of a post. Returns { deleted: true }.",
+		{
+			site,
+			id: z.number().int().describe("Post ID"),
+		},
+		async ({ site, id }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.delete<{ deleted: boolean }>(`${NS}/posts/${id}/seo`));
+		},
+	);
 
-  server.tool(
-    "seo_get_post_analysis",
-    "Run the SEO content analysis for a post: { score, checks }.",
-    {
-      site,
-      id: z.number().int().describe("Post ID"),
-    },
-    async ({ site, id }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.get<{ score: number; checks: unknown }>(`${NS}/posts/${id}/analysis`));
-    }
-  );
+	server.tool(
+		"seo_get_post_analysis",
+		"Run the SEO content analysis for a post: { score, checks }.",
+		{
+			site,
+			id: z.number().int().describe("Post ID"),
+		},
+		async ({ site, id }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.get<{ score: number; checks: unknown }>(`${NS}/posts/${id}/analysis`));
+		},
+	);
 
-  server.tool(
-    "seo_list_posts_seo",
-    "List SEO meta of published posts, newest ID first: [{ id, title, url, seo, language?, translations? }].",
-    {
-      site,
-      post_type: z.string().optional().describe("Post type (default post)"),
-      per_page: z.number().int().min(1).max(100).optional().describe("Items per page, 1-100 (default 50)"),
-      page: z.number().int().min(1).optional().describe("Page number (default 1)"),
-      lang: z.string().optional().describe("Polylang language code (default: every language; ignored without Polylang)"),
-      has_seo: z
-        .boolean()
-        .optional()
-        .describe("true = only posts with an SEO title set, false = only posts without one (default: all)"),
-    },
-    async ({ site, post_type, per_page, page, lang, has_seo }) => {
-      const wp = forSite(site);
-      const params = defined({
-        post_type,
-        per_page,
-        page,
-        lang,
-        has_seo: has_seo === undefined ? undefined : String(has_seo),
-      }) as Record<string, string | number>;
-      return jsonResult(await wp.get<unknown[]>(`${NS}/posts/seo`, params));
-    }
-  );
+	server.tool(
+		"seo_list_posts_seo",
+		"List SEO meta of published posts, newest ID first: [{ id, title, url, seo, language?, translations? }].",
+		{
+			site,
+			post_type: z.string().optional().describe("Post type (default post)"),
+			per_page: z.number().int().min(1).max(100).optional().describe("Items per page, 1-100 (default 50)"),
+			page: z.number().int().min(1).optional().describe("Page number (default 1)"),
+			lang: z
+				.string()
+				.optional()
+				.describe("Polylang language code (default: every language; ignored without Polylang)"),
+			has_seo: z
+				.boolean()
+				.optional()
+				.describe("true = only posts with an SEO title set, false = only posts without one (default: all)"),
+		},
+		async ({ site, post_type, per_page, page, lang, has_seo }) => {
+			const wp = forSite(site);
+			const params = defined({
+				post_type,
+				per_page,
+				page,
+				lang,
+				has_seo: has_seo === undefined ? undefined : String(has_seo),
+			}) as Record<string, string | number>;
+			return jsonResult(await wp.get<unknown[]>(`${NS}/posts/seo`, params));
+		},
+	);
 
-  server.tool(
-    "seo_bulk_update_posts_seo",
-    "Bulk update SEO meta of up to 100 posts. Each item is { id, ...fields } with the same fields as seo_update_post_seo (null deletes a field, omitted fields are kept). Returns { updated, errors: [{ index, id?, message }] }.",
-    {
-      site,
-      items: z
-        .array(z.object({ id: z.number().int().describe("Post ID"), ...postSeoFields }))
-        .min(1)
-        .max(100)
-        .describe("Posts to update (max 100)"),
-    },
-    async ({ site, items }) => {
-      const wp = forSite(site);
-      const body = { items: items.map((item) => defined(item)) };
-      return jsonResult(
-        await wp.put<{ updated: number; errors: Array<{ index: number; id?: number; message: string }> }>(`${NS}/posts/seo/bulk`, body)
-      );
-    }
-  );
+	server.tool(
+		"seo_bulk_update_posts_seo",
+		"Bulk update SEO meta of up to 100 posts. Each item is { id, ...fields } with the same fields as seo_update_post_seo (null deletes a field, omitted fields are kept). Returns { updated, errors: [{ index, id?, message }] }.",
+		{
+			site,
+			items: z
+				.array(z.object({ id: z.number().int().describe("Post ID"), ...postSeoFields }))
+				.min(1)
+				.max(100)
+				.describe("Posts to update (max 100)"),
+		},
+		async ({ site, items }) => {
+			const wp = forSite(site);
+			const body = { items: items.map((item) => defined(item)) };
+			return jsonResult(
+				await wp.put<{ updated: number; errors: Array<{ index: number; id?: number; message: string }> }>(
+					`${NS}/posts/seo/bulk`,
+					body,
+				),
+			);
+		},
+	);
 
-  server.tool(
-    "seo_get_term_seo",
-    "Get the SEO meta for a taxonomy term: { title, description, robots, og_image, schema } (null when unset).",
-    {
-      site,
-      id: z.number().int().describe("Term ID"),
-    },
-    async ({ site, id }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/terms/${id}/seo`));
-    }
-  );
+	server.tool(
+		"seo_get_term_seo",
+		"Get the SEO meta for a taxonomy term: { title, description, robots, og_image, schema } (null when unset).",
+		{
+			site,
+			id: z.number().int().describe("Term ID"),
+		},
+		async ({ site, id }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/terms/${id}/seo`));
+		},
+	);
 
-  server.tool(
-    "seo_update_term_seo",
-    "Update the SEO meta for a taxonomy term (partial; null deletes a field). Returns the term's full SEO meta.",
-    {
-      site,
-      id: z.number().int().describe("Term ID"),
-      ...termSeoFields,
-    },
-    async ({ site, id, ...fields }) => {
-      const body = defined(fields);
-      requireFields(body, "SEO field");
-      const wp = forSite(site);
-      return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/terms/${id}/seo`, body));
-    }
-  );
+	server.tool(
+		"seo_update_term_seo",
+		"Update the SEO meta for a taxonomy term (partial; null deletes a field). Returns the term's full SEO meta.",
+		{
+			site,
+			id: z.number().int().describe("Term ID"),
+			...termSeoFields,
+		},
+		async ({ site, id, ...fields }) => {
+			const body = defined(fields);
+			requireFields(body, "SEO field");
+			const wp = forSite(site);
+			return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/terms/${id}/seo`, body));
+		},
+	);
 
-  server.tool(
-    "seo_delete_term_seo",
-    "Delete (reset) every SEO meta field of a taxonomy term. Returns { deleted: true }.",
-    {
-      site,
-      id: z.number().int().describe("Term ID"),
-    },
-    async ({ site, id }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.delete<{ deleted: boolean }>(`${NS}/terms/${id}/seo`));
-    }
-  );
+	server.tool(
+		"seo_delete_term_seo",
+		"Delete (reset) every SEO meta field of a taxonomy term. Returns { deleted: true }.",
+		{
+			site,
+			id: z.number().int().describe("Term ID"),
+		},
+		async ({ site, id }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.delete<{ deleted: boolean }>(`${NS}/terms/${id}/seo`));
+		},
+	);
 
-  server.tool(
-    "seo_keyword_check",
-    "Check whether a focus keyword is already used by another post (case-insensitive). Returns { unique, posts: [{ id, title }] }.",
-    {
-      site,
-      keyword: z.string().min(1).describe("Focus keyword to check"),
-      exclude_post_id: z.number().int().optional().describe("Post ID to ignore (the post being edited)"),
-    },
-    async ({ site, keyword, exclude_post_id }) => {
-      const wp = forSite(site);
-      return jsonResult(
-        await wp.post<{ unique: boolean; posts: Array<{ id: number; title: string }> }>(
-          `${NS}/analysis/keyword-check`,
-          defined({ keyword, exclude_post_id })
-        )
-      );
-    }
-  );
+	server.tool(
+		"seo_keyword_check",
+		"Check whether a focus keyword is already used by another post (case-insensitive). Returns { unique, posts: [{ id, title }] }.",
+		{
+			site,
+			keyword: z.string().min(1).describe("Focus keyword to check"),
+			exclude_post_id: z.number().int().optional().describe("Post ID to ignore (the post being edited)"),
+		},
+		async ({ site, keyword, exclude_post_id }) => {
+			const wp = forSite(site);
+			return jsonResult(
+				await wp.post<{ unique: boolean; posts: Array<{ id: number; title: string }> }>(
+					`${NS}/analysis/keyword-check`,
+					defined({ keyword, exclude_post_id }),
+				),
+			);
+		},
+	);
 
-  server.tool(
-    "seo_list_redirects",
-    "List redirects, newest first: { items: [{ id, from_url, to_url, type, is_regex, hits, enabled, created_at, updated_at }], total, pages }.",
-    {
-      site,
-      page: z.number().int().min(1).optional().describe("Page number (default 1)"),
-      per_page: z.number().int().min(1).max(100).optional().describe("Items per page, 1-100 (default 50)"),
-      search: z.string().optional().describe("Substring of from_url or to_url"),
-      type: redirectType.optional().describe("Only redirects with this status code"),
-      enabled: z.boolean().optional().describe("Only enabled (true) or disabled (false) redirects (default: all)"),
-    },
-    async ({ site, page, per_page, search, type, enabled }) => {
-      const wp = forSite(site);
-      const params = defined({
-        page,
-        per_page,
-        search,
-        type,
-        // The server casts the raw query value to bool, so "false" would read as true; send 1/0.
-        enabled: enabled === undefined ? undefined : enabled ? 1 : 0,
-      }) as Record<string, string | number>;
-      return jsonResult(await wp.get<{ items: Redirect[]; total: number; pages: number }>(`${NS}/redirects`, params));
-    }
-  );
+	server.tool(
+		"seo_list_redirects",
+		"List redirects, newest first: { items: [{ id, from_url, to_url, type, is_regex, hits, enabled, created_at, updated_at }], total, pages }.",
+		{
+			site,
+			page: z.number().int().min(1).optional().describe("Page number (default 1)"),
+			per_page: z.number().int().min(1).max(100).optional().describe("Items per page, 1-100 (default 50)"),
+			search: z.string().optional().describe("Substring of from_url or to_url"),
+			type: redirectType.optional().describe("Only redirects with this status code"),
+			enabled: z.boolean().optional().describe("Only enabled (true) or disabled (false) redirects (default: all)"),
+		},
+		async ({ site, page, per_page, search, type, enabled }) => {
+			const wp = forSite(site);
+			const params = defined({
+				page,
+				per_page,
+				search,
+				type,
+				// The server casts the raw query value to bool, so "false" would read as true; send 1/0.
+				enabled: enabled === undefined ? undefined : enabled ? 1 : 0,
+			}) as Record<string, string | number>;
+			return jsonResult(await wp.get<{ items: Redirect[]; total: number; pages: number }>(`${NS}/redirects`, params));
+		},
+	);
 
-  server.tool(
-    "seo_create_redirect",
-    "Create a redirect. Rejects invalid regex, unknown status codes and redirect loops/chains deeper than 5. Returns the redirect.",
-    {
-      site,
-      from_url: z.string().describe("Source path or URL (a regex pattern without delimiters when is_regex)"),
-      to_url: z.string().optional().describe("Target path or URL (required unless type is 410 or 451)"),
-      type: redirectType.optional().describe("HTTP status (default 301): 301, 302, 307, 410, 451"),
-      is_regex: z.boolean().optional().describe("Treat from_url as a regex (default false)"),
-      enabled: z.boolean().optional().describe("Redirect is active (default true)"),
-    },
-    async ({ site, from_url, to_url, type, is_regex, enabled }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.post<Redirect>(`${NS}/redirects`, defined({ from_url, to_url, type, is_regex, enabled })));
-    }
-  );
+	server.tool(
+		"seo_create_redirect",
+		"Create a redirect. Rejects invalid regex, unknown status codes and redirect loops/chains deeper than 5. Returns the redirect.",
+		{
+			site,
+			from_url: z.string().describe("Source path or URL (a regex pattern without delimiters when is_regex)"),
+			to_url: z.string().optional().describe("Target path or URL (required unless type is 410 or 451)"),
+			type: redirectType.optional().describe("HTTP status (default 301): 301, 302, 307, 410, 451"),
+			is_regex: z.boolean().optional().describe("Treat from_url as a regex (default false)"),
+			enabled: z.boolean().optional().describe("Redirect is active (default true)"),
+		},
+		async ({ site, from_url, to_url, type, is_regex, enabled }) => {
+			const wp = forSite(site);
+			return jsonResult(
+				await wp.post<Redirect>(`${NS}/redirects`, defined({ from_url, to_url, type, is_regex, enabled })),
+			);
+		},
+	);
 
-  server.tool(
-    "seo_get_redirect",
-    "Get a redirect by id.",
-    {
-      site,
-      id: z.number().int().describe("Redirect ID"),
-    },
-    async ({ site, id }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.get<Redirect>(`${NS}/redirects/${id}`));
-    }
-  );
+	server.tool(
+		"seo_get_redirect",
+		"Get a redirect by id.",
+		{
+			site,
+			id: z.number().int().describe("Redirect ID"),
+		},
+		async ({ site, id }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.get<Redirect>(`${NS}/redirects/${id}`));
+		},
+	);
 
-  // Routes added in cvrt-seo-manager 1.15.0 announce themselves in /status features;
-  // on an older plugin they would answer a bare rest_no_route 404, so say why instead.
-  const requireFeature = async (wp: ReturnType<typeof forSite>, feature: string, what: string): Promise<void> => {
-    const status = await wp.get<{ version?: string; features?: unknown }>(`${NS}/status`);
-    const features = Array.isArray(status.features) ? status.features : [];
-    if (!features.includes(feature)) {
-      throw new Error(
-        `cvrt-seo-manager ${status.version ?? "(unknown version)"} on this site has no ${what} (feature ${feature}). Update the plugin; nothing was sent.`
-      );
-    }
-  };
-  const requireAudit = (wp: ReturnType<typeof forSite>): Promise<void> =>
-    requireFeature(wp, "redirect_audit", "redirect audit");
+	// Routes added in cvrt-seo-manager 1.15.0 announce themselves in /status features;
+	// on an older plugin they would answer a bare rest_no_route 404, so say why instead.
+	const requireFeature = async (wp: ReturnType<typeof forSite>, feature: string, what: string): Promise<void> => {
+		const status = await wp.get<{ version?: string; features?: unknown }>(`${NS}/status`);
+		const features = Array.isArray(status.features) ? status.features : [];
+		if (!features.includes(feature)) {
+			throw new Error(
+				`cvrt-seo-manager ${status.version ?? "(unknown version)"} on this site has no ${what} (feature ${feature}). Update the plugin; nothing was sent.`,
+			);
+		}
+	};
+	const requireAudit = (wp: ReturnType<typeof forSite>): Promise<void> =>
+		requireFeature(wp, "redirect_audit", "redirect audit");
 
-  server.tool(
-    "seo_redirects_audit",
-    "Check the stored redirect rules (cvrt-seo-manager 1.15.0+, feature redirect_audit). Runs the pending one-time rewrite of exact sources, then returns { normalised, rewrite, findings: [{ code, message, ids, ... }], known_hosts }. Codes: duplicate_source (winner + ids that never fire), normalise_failed, idn_target_host, target_host_from_capture, missing_leading_slash, foreign_source_host, external_target_host (one per host, host field; confirm an intended host with seo_redirects_known_hosts). The same findings show as an admin notice.",
-    { site },
-    async ({ site }) => {
-      const wp = forSite(site);
-      await requireAudit(wp);
-      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/redirects/audit`));
-    }
-  );
+	server.tool(
+		"seo_redirects_audit",
+		"Check the stored redirect rules (cvrt-seo-manager 1.15.0+, feature redirect_audit). Runs the pending one-time rewrite of exact sources, then returns { normalised, rewrite, findings: [{ code, message, ids, ... }], known_hosts }. Codes: duplicate_source (winner + ids that never fire), normalise_failed, idn_target_host, target_host_from_capture, missing_leading_slash, foreign_source_host, external_target_host (one per host, host field; confirm an intended host with seo_redirects_known_hosts). The same findings show as an admin notice.",
+		{ site },
+		async ({ site }) => {
+			const wp = forSite(site);
+			await requireAudit(wp);
+			return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/redirects/audit`));
+		},
+	);
 
-  server.tool(
-    "seo_redirects_known_hosts",
-    "Confirm redirect target hosts as intended (cvrt-seo-manager 1.15.0+, feature redirect_audit): REPLACES the stored list (pass every host to keep; [] clears it), so external_target_host stops flagging targets on them. Returns the audit as seo_redirects_audit does, with known_hosts. Only confirm a host you checked; an old staging host is a dead target, fix or delete those rules instead.",
-    {
-      site,
-      known_hosts: z.array(z.string()).describe("Every host confirmed as an intended redirect target (www. and case are ignored)"),
-    },
-    async ({ site, known_hosts }) => {
-      const wp = forSite(site);
-      await requireAudit(wp);
-      return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/redirects/audit`, { known_hosts }));
-    }
-  );
+	server.tool(
+		"seo_redirects_known_hosts",
+		"Confirm redirect target hosts as intended (cvrt-seo-manager 1.15.0+, feature redirect_audit): REPLACES the stored list (pass every host to keep; [] clears it), so external_target_host stops flagging targets on them. Returns the audit as seo_redirects_audit does, with known_hosts. Only confirm a host you checked; an old staging host is a dead target, fix or delete those rules instead.",
+		{
+			site,
+			known_hosts: z
+				.array(z.string())
+				.describe("Every host confirmed as an intended redirect target (www. and case are ignored)"),
+		},
+		async ({ site, known_hosts }) => {
+			const wp = forSite(site);
+			await requireAudit(wp);
+			return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/redirects/audit`, { known_hosts }));
+		},
+	);
 
-  server.tool(
-    "seo_update_redirect",
-    "Update a redirect (partial: omitted fields keep their stored value). Returns the redirect.",
-    {
-      site,
-      id: z.number().int().describe("Redirect ID"),
-      from_url: z.string().optional().describe("Source path or URL (regex when is_regex)"),
-      to_url: z.string().optional().describe("Target path or URL"),
-      type: redirectType.optional().describe("HTTP status: 301, 302, 307, 410, 451"),
-      is_regex: z.boolean().optional().describe("Treat from_url as a regex"),
-      enabled: z.boolean().optional().describe("Redirect is active"),
-    },
-    async ({ site, id, from_url, to_url, type, is_regex, enabled }) => {
-      const body = defined({ from_url, to_url, type, is_regex, enabled });
-      requireFields(body, "redirect field");
-      const wp = forSite(site);
-      return jsonResult(await wp.put<Redirect>(`${NS}/redirects/${id}`, body));
-    }
-  );
+	server.tool(
+		"seo_update_redirect",
+		"Update a redirect (partial: omitted fields keep their stored value). Returns the redirect.",
+		{
+			site,
+			id: z.number().int().describe("Redirect ID"),
+			from_url: z.string().optional().describe("Source path or URL (regex when is_regex)"),
+			to_url: z.string().optional().describe("Target path or URL"),
+			type: redirectType.optional().describe("HTTP status: 301, 302, 307, 410, 451"),
+			is_regex: z.boolean().optional().describe("Treat from_url as a regex"),
+			enabled: z.boolean().optional().describe("Redirect is active"),
+		},
+		async ({ site, id, from_url, to_url, type, is_regex, enabled }) => {
+			const body = defined({ from_url, to_url, type, is_regex, enabled });
+			requireFields(body, "redirect field");
+			const wp = forSite(site);
+			return jsonResult(await wp.put<Redirect>(`${NS}/redirects/${id}`, body));
+		},
+	);
 
-  server.tool(
-    "seo_delete_redirect",
-    "Delete a redirect by id. Returns { deleted: true }.",
-    {
-      site,
-      id: z.number().int().describe("Redirect ID"),
-    },
-    async ({ site, id }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.delete<{ deleted: boolean }>(`${NS}/redirects/${id}`));
-    }
-  );
+	server.tool(
+		"seo_delete_redirect",
+		"Delete a redirect by id. Returns { deleted: true }.",
+		{
+			site,
+			id: z.number().int().describe("Redirect ID"),
+		},
+		async ({ site, id }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.delete<{ deleted: boolean }>(`${NS}/redirects/${id}`));
+		},
+	);
 
-  server.tool(
-    "seo_list_monitor_log",
-    "List the 404 monitor log: { items: [{ id, url, hits, first_seen, last_seen, ... }], total, pages }.",
-    {
-      site,
-      page: z.number().int().min(1).optional().describe("Page number (default 1)"),
-      per_page: z.number().int().min(1).max(100).optional().describe("Items per page, 1-100 (default 50)"),
-      search: z.string().optional().describe("Substring of the 404 URL"),
-      order_by: z.enum(["id", "url", "hits", "first_seen", "last_seen"]).optional().describe("Sort column (default last_seen)"),
-      order: z.enum(["ASC", "DESC"]).optional().describe("Sort direction (default DESC)"),
-    },
-    async ({ site, page, per_page, search, order_by, order }) => {
-      const wp = forSite(site);
-      const params = defined({ page, per_page, search, order_by, order }) as Record<string, string | number>;
-      return jsonResult(await wp.get<{ items: unknown[]; total: number; pages: number }>(`${NS}/monitor/log`, params));
-    }
-  );
+	server.tool(
+		"seo_list_monitor_log",
+		"List the 404 monitor log: { items: [{ id, url, hits, first_seen, last_seen, ... }], total, pages }.",
+		{
+			site,
+			page: z.number().int().min(1).optional().describe("Page number (default 1)"),
+			per_page: z.number().int().min(1).max(100).optional().describe("Items per page, 1-100 (default 50)"),
+			search: z.string().optional().describe("Substring of the 404 URL"),
+			order_by: z
+				.enum(["id", "url", "hits", "first_seen", "last_seen"])
+				.optional()
+				.describe("Sort column (default last_seen)"),
+			order: z.enum(["ASC", "DESC"]).optional().describe("Sort direction (default DESC)"),
+		},
+		async ({ site, page, per_page, search, order_by, order }) => {
+			const wp = forSite(site);
+			const params = defined({ page, per_page, search, order_by, order }) as Record<string, string | number>;
+			return jsonResult(await wp.get<{ items: unknown[]; total: number; pages: number }>(`${NS}/monitor/log`, params));
+		},
+	);
 
-  server.tool(
-    "seo_clear_monitor_log",
-    "Delete 404 monitor log entries: one entry by id, or every entry last seen within from..to (inclusive dates, either bound optional). With no argument the WHOLE log is cleared. Returns { deleted, success }.",
-    {
-      site,
-      id: z.number().int().positive().optional().describe("Delete only this log entry"),
-      from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Delete entries last seen on or after this date (YYYY-MM-DD)"),
-      to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Delete entries last seen on or before this date (YYYY-MM-DD)"),
-    },
-    async ({ site, id, from, to }) => {
-      const wp = forSite(site);
-      // The endpoint reads get_json_params(), so the selection goes in the DELETE body.
-      const body = defined({ id, from, to });
-      return jsonResult(
-        await wp.delete<{ deleted: number; success: boolean }>(`${NS}/monitor/log`, undefined, Object.keys(body).length ? body : undefined)
-      );
-    }
-  );
+	server.tool(
+		"seo_clear_monitor_log",
+		"Delete 404 monitor log entries: one entry by id, or every entry last seen within from..to (inclusive dates, either bound optional). With no argument the WHOLE log is cleared. Returns { deleted, success }.",
+		{
+			site,
+			id: z.number().int().positive().optional().describe("Delete only this log entry"),
+			from: z
+				.string()
+				.regex(/^\d{4}-\d{2}-\d{2}$/)
+				.optional()
+				.describe("Delete entries last seen on or after this date (YYYY-MM-DD)"),
+			to: z
+				.string()
+				.regex(/^\d{4}-\d{2}-\d{2}$/)
+				.optional()
+				.describe("Delete entries last seen on or before this date (YYYY-MM-DD)"),
+		},
+		async ({ site, id, from, to }) => {
+			const wp = forSite(site);
+			// The endpoint reads get_json_params(), so the selection goes in the DELETE body.
+			const body = defined({ id, from, to });
+			return jsonResult(
+				await wp.delete<{ deleted: number; success: boolean }>(
+					`${NS}/monitor/log`,
+					undefined,
+					Object.keys(body).length ? body : undefined,
+				),
+			);
+		},
+	);
 
-  server.tool(
-    "seo_create_redirect_from_log",
-    "Create a 301 redirect from a 404 monitor log entry's URL to to_url. Fails with 409 when a redirect from that URL already exists.",
-    {
-      site,
-      id: z.number().int().describe("404 monitor log entry ID"),
-      to_url: z.string().describe("Redirect target URL"),
-    },
-    async ({ site, id, to_url }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.post<unknown>(`${NS}/monitor/log/${id}/redirect`, { to_url }));
-    }
-  );
+	server.tool(
+		"seo_create_redirect_from_log",
+		"Create a 301 redirect from a 404 monitor log entry's URL to to_url. Fails with 409 when a redirect from that URL already exists.",
+		{
+			site,
+			id: z.number().int().describe("404 monitor log entry ID"),
+			to_url: z.string().describe("Redirect target URL"),
+		},
+		async ({ site, id, to_url }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.post<unknown>(`${NS}/monitor/log/${id}/redirect`, { to_url }));
+		},
+	);
 
-  server.tool(
-    "seo_sitemap_status",
-    "Get sitemap status: { sitemap_url, post_types, taxonomies, total_urls, search_console? }.",
-    { site },
-    async ({ site }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/sitemap/status`));
-    }
-  );
+	server.tool(
+		"seo_sitemap_status",
+		"Get sitemap status: { sitemap_url, post_types, taxonomies, total_urls, search_console? }.",
+		{ site },
+		async ({ site }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/sitemap/status`));
+		},
+	);
 
-  server.tool(
-    "seo_sitemap_health",
-    "Check the sitemap (cvrt-seo-manager 1.15.0+, feature sitemap_health; refused with a clear message on an older plugin): the site fetches every sitemap file and every listed URL on its own host (redirects not followed) and returns { total, offset, checked, truncated, next_offset, sitemaps_checked, sitemaps_pending, findings: [{ url, type, detail }], limits, duration_ms, build_ms }. Finding types: status (not 200), redirect, noindex (robots meta or X-Robots-Tag), canonical (another URL), sitemap (a sitemap file not 200), sitemap_timeout (a sitemap file that does not fit the budget even on a call that only checks the files), offsite (not on the site's host, never fetched). One request at a time, 8 s timeout each, a request starts only when it can end within 25 s (the sitemap build, reported as build_ms, counts against it), and every call checks at least one URL, so a call lasts about max(build + 8 s, 25 s); page with offset = next_offset while truncated. Sitemap files are checked at offset 0 or when sitemaps=true; if a call answers sitemaps_pending: true (a slow cold build left no budget for them), pass sitemaps=true with the next offset; on the last page next_offset = total (that call only checks the files).",
-    {
-      site,
-      limit: z.number().int().min(1).max(500).optional().describe("URLs to check in this call (1-500, default 100)"),
-      offset: z.number().int().min(0).optional().describe("Index of the first URL to check (default 0; use next_offset to continue)"),
-      sitemaps: z
-        .boolean()
-        .optional()
-        .describe("Check the sitemap files on this call (default: only at offset 0); send true after a response with sitemaps_pending"),
-    },
-    async ({ site, limit, offset, sitemaps }) => {
-      const wp = forSite(site);
-      await requireFeature(wp, "sitemap_health", "sitemap health check");
-      const flag = sitemaps === undefined ? undefined : sitemaps ? 1 : 0;
-      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/sitemap/health`, defined({ limit, offset, sitemaps: flag })));
-    }
-  );
+	server.tool(
+		"seo_sitemap_health",
+		"Check the sitemap (cvrt-seo-manager 1.15.0+, feature sitemap_health; refused with a clear message on an older plugin): the site fetches every sitemap file and every listed URL on its own host (redirects not followed) and returns { total, offset, checked, truncated, next_offset, sitemaps_checked, sitemaps_pending, findings: [{ url, type, detail }], limits, duration_ms, build_ms }. Finding types: status (not 200), redirect, noindex (robots meta or X-Robots-Tag), canonical (another URL), sitemap (a sitemap file not 200), sitemap_timeout (a sitemap file that does not fit the budget even on a call that only checks the files), offsite (not on the site's host, never fetched). One request at a time, 8 s timeout each, a request starts only when it can end within 25 s (the sitemap build, reported as build_ms, counts against it), and every call checks at least one URL, so a call lasts about max(build + 8 s, 25 s); page with offset = next_offset while truncated. Sitemap files are checked at offset 0 or when sitemaps=true; if a call answers sitemaps_pending: true (a slow cold build left no budget for them), pass sitemaps=true with the next offset; on the last page next_offset = total (that call only checks the files).",
+		{
+			site,
+			limit: z.number().int().min(1).max(500).optional().describe("URLs to check in this call (1-500, default 100)"),
+			offset: z
+				.number()
+				.int()
+				.min(0)
+				.optional()
+				.describe("Index of the first URL to check (default 0; use next_offset to continue)"),
+			sitemaps: z
+				.boolean()
+				.optional()
+				.describe(
+					"Check the sitemap files on this call (default: only at offset 0); send true after a response with sitemaps_pending",
+				),
+		},
+		async ({ site, limit, offset, sitemaps }) => {
+			const wp = forSite(site);
+			await requireFeature(wp, "sitemap_health", "sitemap health check");
+			const flag = sitemaps === undefined ? undefined : sitemaps ? 1 : 0;
+			return jsonResult(
+				await wp.get<Record<string, unknown>>(`${NS}/sitemap/health`, defined({ limit, offset, sitemaps: flag })),
+			);
+		},
+	);
 
-  server.tool(
-    "seo_sitemap_ping",
-    "Submit the sitemap to Google Search Console (needs the search_console settings) and return the status Search Console reports. The old Google/Bing ping URLs are switched off.",
-    { site },
-    async ({ site }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.post<unknown>(`${NS}/sitemap/submit`, {}));
-    }
-  );
+	server.tool(
+		"seo_sitemap_ping",
+		"Submit the sitemap to Google Search Console (needs the search_console settings) and return the status Search Console reports. The old Google/Bing ping URLs are switched off.",
+		{ site },
+		async ({ site }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.post<unknown>(`${NS}/sitemap/submit`, {}));
+		},
+	);
 
-  server.tool(
-    "seo_indexnow_ping",
-    "Submit URLs to IndexNow (one request per URL). Returns [{ url, ok, error? }]; ok means the site dispatched the ping (non-blocking), a failing URL does not stop the others.",
-    {
-      site,
-      url: z.string().optional().describe("A URL to submit"),
-      urls: z.array(z.string()).optional().describe("URLs to submit (combined with url, duplicates removed)"),
-    },
-    async ({ site, url, urls }) => {
-      const list = [...new Set([...(url ? [url] : []), ...(urls ?? [])])];
-      if (list.length === 0) throw new Error("Provide url or urls");
-      const wp = forSite(site);
-      const results: IndexNowResult[] = [];
-      for (const u of list) {
-        try {
-          const dispatched = await wp.post<boolean>(`${NS}/indexnow/ping`, { url: u });
-          results.push(dispatched === true ? { url: u, ok: true } : { url: u, ok: false, error: "not dispatched (empty URL or no IndexNow key)" });
-        } catch (e) {
-          results.push({ url: u, ok: false, error: (e as Error).message });
-        }
-      }
-      return jsonResult(results);
-    }
-  );
+	server.tool(
+		"seo_indexnow_ping",
+		"Submit URLs to IndexNow (one request per URL). Returns [{ url, ok, error? }]; ok means the site dispatched the ping (non-blocking), a failing URL does not stop the others.",
+		{
+			site,
+			url: z.string().optional().describe("A URL to submit"),
+			urls: z.array(z.string()).optional().describe("URLs to submit (combined with url, duplicates removed)"),
+		},
+		async ({ site, url, urls }) => {
+			const list = [...new Set([...(url ? [url] : []), ...(urls ?? [])])];
+			if (list.length === 0) throw new Error("Provide url or urls");
+			const wp = forSite(site);
+			const results: IndexNowResult[] = [];
+			for (const u of list) {
+				try {
+					const dispatched = await wp.post<boolean>(`${NS}/indexnow/ping`, { url: u });
+					results.push(
+						dispatched === true
+							? { url: u, ok: true }
+							: { url: u, ok: false, error: "not dispatched (empty URL or no IndexNow key)" },
+					);
+				} catch (e) {
+					results.push({ url: u, ok: false, error: (e as Error).message });
+				}
+			}
+			return jsonResult(results);
+		},
+	);
 
-  server.tool(
-    "seo_export_settings",
-    "Export every csm_* option as a flat { csm_name: value } map. Secrets are masked as { set: boolean }.",
-    { site },
-    async ({ site }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/export/settings`));
-    }
-  );
+	server.tool(
+		"seo_export_settings",
+		"Export every csm_* option as a flat { csm_name: value } map. Secrets are masked as { set: boolean }.",
+		{ site },
+		async ({ site }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/export/settings`));
+		},
+	);
 
-  server.tool(
-    "seo_import_settings",
-    "Import settings from a flat { csm_name: value } map (the seo_export_settings shape). Only csm_* keys are written; secrets (csm_indexnow_key, csm_gsc_service_account, csm_github_token) are never imported. Returns { imported, skipped: { key: reason } } (cvrt-seo-manager 1.15.0+: a refused logo, a secret or a non-csm_ key is listed in skipped); older versions return the bare number of options written.",
-    {
-      site,
-      data: z.record(z.any()).describe("Flat map of csm_* option names to values, e.g. { csm_title_separator: '|' }"),
-    },
-    async ({ site, data }) => {
-      requireFields(data, "setting");
-      const wp = forSite(site);
-      // { imported, skipped } since 1.15.0; a bare count before.
-      return jsonResult(await wp.post<{ imported: number; skipped: Record<string, string> } | number>(`${NS}/import/settings`, data));
-    }
-  );
+	server.tool(
+		"seo_import_settings",
+		"Import settings from a flat { csm_name: value } map (the seo_export_settings shape). Only csm_* keys are written; secrets (csm_indexnow_key, csm_gsc_service_account, csm_github_token) are never imported. Returns { imported, skipped: { key: reason } } (cvrt-seo-manager 1.15.0+: a refused logo, a secret or a non-csm_ key is listed in skipped); older versions return the bare number of options written.",
+		{
+			site,
+			data: z.record(z.any()).describe("Flat map of csm_* option names to values, e.g. { csm_title_separator: '|' }"),
+		},
+		async ({ site, data }) => {
+			requireFields(data, "setting");
+			const wp = forSite(site);
+			// { imported, skipped } since 1.15.0; a bare count before.
+			return jsonResult(
+				await wp.post<{ imported: number; skipped: Record<string, string> } | number>(`${NS}/import/settings`, data),
+			);
+		},
+	);
 
-  server.tool(
-    "seo_export_csv",
-    "Export post SEO meta as a CSV string (post_id, post_title, url, seo_title, seo_description, focus_keywords, seo_score).",
-    { site },
-    async ({ site }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.get<string>(`${NS}/export/csv`));
-    }
-  );
+	server.tool(
+		"seo_export_csv",
+		"Export post SEO meta as a CSV string (post_id, post_title, url, seo_title, seo_description, focus_keywords, seo_score).",
+		{ site },
+		async ({ site }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.get<string>(`${NS}/export/csv`));
+		},
+	);
 
-  server.tool(
-    "seo_import_csv",
-    "Import post SEO meta from CSV in the seo_export_csv format (header row, then one row per post with at least 7 columns; export first and edit that). Give the CSV inline (csv) or as a local .csv path (csv_file). It is sent as the raw text/csv request body. Returns { success, errors } row counts.",
-    {
-      site,
-      csv: z.string().optional().describe("CSV text including the header row"),
-      csv_file: z.string().optional().describe("Absolute path to a local .csv file"),
-    },
-    async ({ site, csv, csv_file }) => {
-      const body = await csvBody(csv, csv_file);
-      const wp = forSite(site);
-      return jsonResult(await wp.postRaw<{ success: number; errors: number }>(`${NS}/import/csv`, body, "text/csv; charset=utf-8"));
-    }
-  );
+	server.tool(
+		"seo_import_csv",
+		"Import post SEO meta from CSV in the seo_export_csv format (header row, then one row per post with at least 7 columns; export first and edit that). Give the CSV inline (csv) or as a local .csv path (csv_file). It is sent as the raw text/csv request body. Returns { success, errors } row counts.",
+		{
+			site,
+			csv: z.string().optional().describe("CSV text including the header row"),
+			csv_file: z.string().optional().describe("Absolute path to a local .csv file"),
+		},
+		async ({ site, csv, csv_file }) => {
+			const body = await csvBody(csv, csv_file);
+			const wp = forSite(site);
+			return jsonResult(
+				await wp.postRaw<{ success: number; errors: number }>(`${NS}/import/csv`, body, "text/csv; charset=utf-8"),
+			);
+		},
+	);
 
-  server.tool(
-    "seo_export_redirects",
-    "Export every redirect as a CSV string (source, target, type, is_regex, enabled).",
-    { site },
-    async ({ site }) => {
-      const wp = forSite(site);
-      return jsonResult(await wp.get<string>(`${NS}/export/redirects`));
-    }
-  );
+	server.tool(
+		"seo_export_redirects",
+		"Export every redirect as a CSV string (source, target, type, is_regex, enabled).",
+		{ site },
+		async ({ site }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.get<string>(`${NS}/export/redirects`));
+		},
+	);
 
-  server.tool(
-    "seo_import_redirects",
-    "Import redirects from CSV in the seo_export_redirects format (header row source,target,type[,is_regex],enabled; the is_regex column is detected from the header). Give the CSV inline (csv) or as a local .csv path (csv_file). It is sent as the raw text/csv request body.",
-    {
-      site,
-      csv: z.string().optional().describe("CSV text including the header row"),
-      csv_file: z.string().optional().describe("Absolute path to a local .csv file"),
-    },
-    async ({ site, csv, csv_file }) => {
-      const body = await csvBody(csv, csv_file);
-      const wp = forSite(site);
-      return jsonResult(await wp.postRaw<Record<string, unknown>>(`${NS}/import/redirects`, body, "text/csv; charset=utf-8"));
-    }
-  );
+	server.tool(
+		"seo_import_redirects",
+		"Import redirects from CSV in the seo_export_redirects format (header row source,target,type[,is_regex],enabled; the is_regex column is detected from the header). Give the CSV inline (csv) or as a local .csv path (csv_file). It is sent as the raw text/csv request body.",
+		{
+			site,
+			csv: z.string().optional().describe("CSV text including the header row"),
+			csv_file: z.string().optional().describe("Absolute path to a local .csv file"),
+		},
+		async ({ site, csv, csv_file }) => {
+			const body = await csvBody(csv, csv_file);
+			const wp = forSite(site);
+			return jsonResult(
+				await wp.postRaw<Record<string, unknown>>(`${NS}/import/redirects`, body, "text/csv; charset=utf-8"),
+			);
+		},
+	);
 
-  server.tool(
-    "seo_import_migrate",
-    "Migrate from RankMath or Yoast. RUN dry_run=true FIRST for RankMath and read warnings. A real (non-dry-run) RankMath import is refused unless seo_status lists migrate_external_targets (older plugins import redirects to old staging hosts enabled); update the plugin first. Default: per-post/term meta, schema and redirects are migrated and { posts_migrated, terms_migrated, redirects_migrated, errors, dry_run, changes: [{ object, id, key, value }], unsupported: [{ object, id, title, reason }] } is returned; with dry_run=true nothing is written and changes lists what would be. A per-post dry run is only sent when seo_status lists the feature migrate_dry_run (cvrt-seo-manager 1.15.0+); on an older plugin, which would WRITE, the tool refuses and sends nothing. With settings=true (RankMath only) ONLY the global titles/meta/sitemap/robots settings are ported instead, and dry_run=true reports { written, skipped, dry_run } without writing. RankMath redirects (feature migrate_external_targets): a target on the site's own host is imported relative; a target on any other host is listed in warnings: [{ object, code, source, target, host, enabled, imported, message }] (code external_target) and imported disabled unless allow_external_targets=true (run the dry run first and check those hosts; an old staging host is the usual case). Only home and siteurl count as the site's own: a host seen in an absolute RankMath source is reported (code source_host, with rankmath_ids; its sources as foreign_source, not imported) and counts as own only when passed in own_hosts.",
-    {
-      site,
-      source: z.enum(["rankmath", "yoast"]).describe("Plugin to migrate from"),
-      settings: z.boolean().optional().describe("Port the global settings instead of the meta (RankMath only, default false)"),
-      dry_run: z.boolean().optional().describe("Compute and list every change, write nothing (default false). Honoured by the meta migration from cvrt-seo-manager 1.15.0+; older versions write anyway."),
-      allow_external_targets: z
-        .boolean()
-        .optional()
-        .describe(
-          "Import RankMath redirects whose target is on another host ENABLED (default false: imported disabled, listed in warnings either way). Needs the feature migrate_external_targets; the tool refuses it on an older plugin, which would ignore it."
-        ),
-      own_hosts: z
-        .array(z.string())
-        .optional()
-        .describe(
-          "Hosts that ARE this site besides home and siteurl (an old staging or live domain named in the dry run's source_host warnings). Sources and targets on them are imported as paths. Needs the feature migrate_external_targets."
-        ),
-    },
-    async ({ site, source, settings, dry_run, allow_external_targets, own_hosts }) => {
-      const wp = forSite(site);
-      const perPostDryRun = dry_run === true && settings !== true;
-      // A real RankMath per-post import also imports the redirects; up to
-      // cvrt-seo-manager 1.14.1 that stored sources without slash and targets on
-      // other hosts enabled (cavort-it.systems: 8 rules to a gone staging host).
-      const realRankMathImport = source === "rankmath" && settings !== true && dry_run !== true;
-      const needsHostFeature = realRankMathImport || allow_external_targets === true || (own_hosts?.length ?? 0) > 0;
-      if (perPostDryRun || needsHostFeature) {
-        const status = await wp.get<{ version?: string; features?: unknown }>(`${NS}/status`);
-        const features = Array.isArray(status.features) ? status.features : [];
-        const version = status.version ?? "(unknown version)";
-        // Up to cvrt-seo-manager 1.14.1 the per-post pass ignored dry_run and WROTE.
-        // Only a site that announces migrate_dry_run in /status gets the request.
-        if (perPostDryRun && !features.includes("migrate_dry_run")) {
-          throw new Error(
-            `cvrt-seo-manager ${version} on this site ignores dry_run for the per-post migration and would WRITE. Update the plugin (it must list migrate_dry_run in seo_status features); nothing was sent.`
-          );
-        }
-        if (realRankMathImport && !features.includes("migrate_external_targets")) {
-          // Released plugins up to 1.14.1 lack migrate_dry_run as well, so the
-          // per-post dry run is refused there too; only say what really works.
-          const whatWorks = features.includes("migrate_dry_run")
-            ? "A dry run (dry_run=true) is still allowed to look at the data."
-            : "On this version only a settings dry run (settings=true, dry_run=true) is possible; the per-post dry run would write too.";
-          throw new Error(
-            `Update cvrt-seo-manager first: ${version} on this site lacks the feature migrate_external_targets, and its RankMath import would store redirect sources without leading slash and import targets on other hosts (old staging domains) ENABLED, without warnings. Nothing was sent. ${whatWorks}`
-          );
-        }
-        if (needsHostFeature && !features.includes("migrate_external_targets")) {
-          throw new Error(
-            `cvrt-seo-manager ${version} on this site does not know allow_external_targets / own_hosts (feature migrate_external_targets): it would import every RankMath redirect as it is, without warnings. Update the plugin; nothing was sent.`
-          );
-        }
-      }
-      return jsonResult(
-        await wp.post<Record<string, unknown>>(
-          `${NS}/import/migrate`,
-          defined({ source, settings, dry_run, allow_external_targets, own_hosts })
-        )
-      );
-    }
-  );
+	server.tool(
+		"seo_import_migrate",
+		"Migrate from RankMath or Yoast. RUN dry_run=true FIRST for RankMath and read warnings. A real (non-dry-run) RankMath import is refused unless seo_status lists migrate_external_targets (older plugins import redirects to old staging hosts enabled); update the plugin first. Default: per-post/term meta, schema and redirects are migrated and { posts_migrated, terms_migrated, redirects_migrated, errors, dry_run, changes: [{ object, id, key, value }], unsupported: [{ object, id, title, reason }] } is returned; with dry_run=true nothing is written and changes lists what would be. A per-post dry run is only sent when seo_status lists the feature migrate_dry_run (cvrt-seo-manager 1.15.0+); on an older plugin, which would WRITE, the tool refuses and sends nothing. With settings=true (RankMath only) ONLY the global titles/meta/sitemap/robots settings are ported instead, and dry_run=true reports { written, skipped, dry_run } without writing. RankMath redirects (feature migrate_external_targets): a target on the site's own host is imported relative; a target on any other host is listed in warnings: [{ object, code, source, target, host, enabled, imported, message }] (code external_target) and imported disabled unless allow_external_targets=true (run the dry run first and check those hosts; an old staging host is the usual case). Only home and siteurl count as the site's own: a host seen in an absolute RankMath source is reported (code source_host, with rankmath_ids; its sources as foreign_source, not imported) and counts as own only when passed in own_hosts.",
+		{
+			site,
+			source: z.enum(["rankmath", "yoast"]).describe("Plugin to migrate from"),
+			settings: z
+				.boolean()
+				.optional()
+				.describe("Port the global settings instead of the meta (RankMath only, default false)"),
+			dry_run: z
+				.boolean()
+				.optional()
+				.describe(
+					"Compute and list every change, write nothing (default false). Honoured by the meta migration from cvrt-seo-manager 1.15.0+; older versions write anyway.",
+				),
+			allow_external_targets: z
+				.boolean()
+				.optional()
+				.describe(
+					"Import RankMath redirects whose target is on another host ENABLED (default false: imported disabled, listed in warnings either way). Needs the feature migrate_external_targets; the tool refuses it on an older plugin, which would ignore it.",
+				),
+			own_hosts: z
+				.array(z.string())
+				.optional()
+				.describe(
+					"Hosts that ARE this site besides home and siteurl (an old staging or live domain named in the dry run's source_host warnings). Sources and targets on them are imported as paths. Needs the feature migrate_external_targets.",
+				),
+		},
+		async ({ site, source, settings, dry_run, allow_external_targets, own_hosts }) => {
+			const wp = forSite(site);
+			const perPostDryRun = dry_run === true && settings !== true;
+			// A real RankMath per-post import also imports the redirects; up to
+			// cvrt-seo-manager 1.14.1 that stored sources without slash and targets on
+			// other hosts enabled (cavort-it.systems: 8 rules to a gone staging host).
+			const realRankMathImport = source === "rankmath" && settings !== true && dry_run !== true;
+			const needsHostFeature = realRankMathImport || allow_external_targets === true || (own_hosts?.length ?? 0) > 0;
+			if (perPostDryRun || needsHostFeature) {
+				const status = await wp.get<{ version?: string; features?: unknown }>(`${NS}/status`);
+				const features = Array.isArray(status.features) ? status.features : [];
+				const version = status.version ?? "(unknown version)";
+				// Up to cvrt-seo-manager 1.14.1 the per-post pass ignored dry_run and WROTE.
+				// Only a site that announces migrate_dry_run in /status gets the request.
+				if (perPostDryRun && !features.includes("migrate_dry_run")) {
+					throw new Error(
+						`cvrt-seo-manager ${version} on this site ignores dry_run for the per-post migration and would WRITE. Update the plugin (it must list migrate_dry_run in seo_status features); nothing was sent.`,
+					);
+				}
+				if (realRankMathImport && !features.includes("migrate_external_targets")) {
+					// Released plugins up to 1.14.1 lack migrate_dry_run as well, so the
+					// per-post dry run is refused there too; only say what really works.
+					const whatWorks = features.includes("migrate_dry_run")
+						? "A dry run (dry_run=true) is still allowed to look at the data."
+						: "On this version only a settings dry run (settings=true, dry_run=true) is possible; the per-post dry run would write too.";
+					throw new Error(
+						`Update cvrt-seo-manager first: ${version} on this site lacks the feature migrate_external_targets, and its RankMath import would store redirect sources without leading slash and import targets on other hosts (old staging domains) ENABLED, without warnings. Nothing was sent. ${whatWorks}`,
+					);
+				}
+				if (needsHostFeature && !features.includes("migrate_external_targets")) {
+					throw new Error(
+						`cvrt-seo-manager ${version} on this site does not know allow_external_targets / own_hosts (feature migrate_external_targets): it would import every RankMath redirect as it is, without warnings. Update the plugin; nothing was sent.`,
+					);
+				}
+			}
+			return jsonResult(
+				await wp.post<Record<string, unknown>>(
+					`${NS}/import/migrate`,
+					defined({ source, settings, dry_run, allow_external_targets, own_hosts }),
+				),
+			);
+		},
+	);
 }
