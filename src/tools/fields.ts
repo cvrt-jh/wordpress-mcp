@@ -97,7 +97,7 @@ export function register(server: McpServer) {
 
 	server.tool(
 		"fields_get_values",
-		"Read every field value of one object (post, term, user or options page) that the field groups located on it define: name, key, type, group, the raw stored value and an escaped HTML rendering. 404 for an unknown object, 403 when the user may not edit it (cvrt-fields 0.2.1+).",
+		"Read every field value of one object (post, term, user or options page) that the field groups located on it define: name, key, type, group, the raw stored value and an escaped HTML rendering. 404 for an unknown object, 403 when the user may not edit it. Row fields (group, repeater; cvrt-fields 0.7.0+) return value as the raw nested value keyed by sub-field key (repeater: list of rows, group: object) and text as an empty string (cvrt-fields 0.2.1+).",
 		{ site: z.string().describe("Site id (see list_sites)"), object: valuesObject },
 		async ({ site, object }) => {
 			const wp = forSite(site);
@@ -107,14 +107,16 @@ export function register(server: McpServer) {
 
 	server.tool(
 		"fields_update_values",
-		"Write field values of one object by field name, validated by the field types and all-or-nothing: when any value is invalid nothing is saved (400 cvrt_fields_invalid_values with per-field errors). Only fields of active groups located on the object can be written. Values are given as a form would submit them (gallery: array of image ids, select: value or array, true/false: 1/0). Returns the object's values as fields_get_values does (cvrt-fields 0.2.1+).",
+		"Write field values of one object by field name, validated by the field types and all-or-nothing: when any value is invalid nothing is saved (400 cvrt_fields_invalid_values with per-field errors). Only fields of active groups located on the object can be written. Values are given as a form would submit them (gallery: array of image ids, select: value or array, true/false: 1/0). Row fields take nested values (cvrt-fields 0.7.0+): repeater: list of rows, each row an object keyed by sub-field name or key (the key wins); group: object keyed by sub-field name or key. A sub value left out of a row or group is left unchanged. Validation errors are keyed name.row.sub (e.g. gallery.1.caption, box.mail). Oversized bodies are refused with 400 cvrt_fields_values_too_large (max nesting depth 10, 5000 leaf values, 1000 rows per repeater). Fields hidden by conditional logic are not written and are listed in skipped: top-level fields by name, hidden sub fields by their path in the error-key format (e.g. links.1.url). Returns the object's values as fields_get_values does (cvrt-fields 0.2.1+; row values and skipped need 0.7.0+).",
 		{
 			site: z.string().describe("Site id (see list_sites)"),
 			object: valuesObject,
 			values: z
 				.record(z.string(), z.unknown())
 				.refine((v) => Object.keys(v).length > 0, "send at least one field value")
-				.describe('Field name => value, e.g. { telephone: "06101 123456", open: 1 }'),
+				.describe(
+					'Field name => value, e.g. { telephone: "06101 123456", open: 1 }; row fields nest: { gallery: [{ image: 7, caption: "a" }], box: { mail: "x@example.com" } }',
+				),
 		},
 		async ({ site, object, values }) => {
 			const wp = forSite(site);
@@ -124,7 +126,7 @@ export function register(server: McpServer) {
 
 	server.tool(
 		"fields_list_types",
-		"List the available field types (text, date_picker, image, relationship, ...) with their settings.",
+		"List the available field types (text, date_picker, image, relationship, ...) with their settings. Includes the row types group and repeater (cvrt-fields 0.7.0+); repeater settings: min, max, layout, button_label, sub_fields.",
 		{ site: z.string().describe("Site id (see list_sites)") },
 		async ({ site }) => {
 			const wp = forSite(site);

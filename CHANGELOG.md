@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `fields_update_values`, `fields_get_values`, `fields_list_types` descriptions document cvrt-fields 0.7.0 row values (repeater: list of rows, group: object, sub-field name or key, `name.row.sub` errors, size guard) and the `skipped` list for fields hidden by conditional logic.
+
 ## [3.16.0] - 2026-11-18
 
 ### Added

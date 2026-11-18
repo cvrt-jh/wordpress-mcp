@@ -175,6 +175,43 @@ describe("fields tools", () => {
 		}
 	});
 
+	it("row values: nested values pass through unchanged and the descriptions document them", async () => {
+		const descriptions = new Map<string, string>();
+		register({
+			tool: (name: string, description: string) => {
+				descriptions.set(name, description);
+			},
+		} as never);
+		const update = descriptions.get("fields_update_values") ?? "";
+		for (const phrase of [
+			"repeater: list of rows",
+			"group: object",
+			"sub-field name or key",
+			"skipped",
+			"hidden by conditional logic",
+			"cvrt-fields 0.7.0+",
+			"gallery.1.caption",
+			"cvrt_fields_values_too_large",
+		]) {
+			expect(update, phrase).toContain(phrase);
+		}
+		expect(descriptions.get("fields_get_values")).toContain("keyed by sub-field key");
+		expect(descriptions.get("fields_list_types")).toContain("repeater");
+		expect(descriptions.get("fields_list_types")).toContain("sub_fields");
+
+		put.mockResolvedValue({ object: "42", fields: [], skipped: ["links.1.url"] });
+		const values = {
+			gallery: [
+				{ image: 7, caption: "a" },
+				{ image: 8, caption: "b" },
+			],
+			box: { mail: "x@example.com" },
+		};
+		const result = await tool("fields_update_values").handler({ site: "a", object: "42", values });
+		expect(put).toHaveBeenCalledWith("/mcp/fields/v1/values/42", { values });
+		expect(result.content[0]?.text).toContain("links.1.url");
+	});
+
 	it("fields_update_values needs at least one value", () => {
 		const schema = z.object(tool("fields_update_values").schema);
 		expect(schema.safeParse({ site: "a", object: "42", values: {} }).success).toBe(false);
