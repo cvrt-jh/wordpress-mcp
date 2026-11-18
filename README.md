@@ -608,9 +608,9 @@ Requires [cvrt-seo-manager](https://github.com/cvrt-gmbh/cvrt-seo-manager).
 
 ### Language (machine translation) (16)
 
-Requires [cvrt-lang](https://github.com/cvrt-gmbh/cvrt-lang) with machine translation (Azure AI Translator); `lang_list_pending` / `lang_submit_translations` / `lang_fail_job` are the external queue for manual or agent use (no recurring job). No tool sets the provider key: use the fort constant or the admin.
+Requires [cvrt-lang](https://github.com/cvrt-gmbh/cvrt-lang) 0.9.0 or later (machine translation, Azure AI Translator); `lang_list_pending` / `lang_submit_translations` / `lang_fail_job` are the external queue for manual or agent use (no recurring job). No tool sets the provider key: use the fort constant or the admin.
 
-- `lang_mt_status` - cvrt-lang machine translation status: provider and readiness, pause state, settings, queue counts, month usage and cap, the last 50 failed jobs with codes, the last worker run (with its `lost` and ...
+- `lang_mt_status` - cvrt-lang machine translation status (cvrt-lang 0.9.0+): provider and readiness, pause state, settings, queue counts (pending, leased, failed, `retrying` = pending again after a failed attempt, ...
 - `lang_mt_estimate` - Estimate what lang_mt_enqueue would queue for the same arguments: jobs, units and characters
 - `lang_mt_enqueue` - Queue bulk machine translation jobs (published default-language originals only; manual translations stay)
 - `lang_mt_pause` - Pause machine translation (reason admin): the worker sends nothing until lang_mt_resume

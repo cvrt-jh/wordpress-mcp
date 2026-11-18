@@ -19,6 +19,7 @@ import { register, secretName } from "./lang.js";
 
 type Handler = (args: Record<string, unknown>) => Promise<{ content: { type: string; text: string }[] }>;
 interface Tool {
+	description: string;
 	schema: z.ZodRawShape;
 	handler: Handler;
 }
@@ -26,8 +27,8 @@ interface Tool {
 function tools(): Map<string, Tool> {
 	const out = new Map<string, Tool>();
 	const server = {
-		tool: (name: string, _description: string, schema: z.ZodRawShape, handler: Handler) => {
-			out.set(name, { schema, handler });
+		tool: (name: string, description: string, schema: z.ZodRawShape, handler: Handler) => {
+			out.set(name, { description, schema, handler });
 		},
 	};
 	register(server as never);
@@ -87,6 +88,13 @@ describe("lang tools", () => {
 		const out = await tool("lang_mt_status").handler({ site: "a" });
 		expect(get).toHaveBeenCalledWith(`${NS}/mt/status`);
 		expect(JSON.parse(out.content[0].text).last_run).toEqual({ lost: 2, busy: 1 });
+	});
+
+	it("lang_mt_status names the retrying list and the expired count (cvrt-lang 0.9.0)", () => {
+		const { description } = tool("lang_mt_status");
+		expect(description).toMatch(/`retrying`/);
+		expect(description).toMatch(/`expired`/);
+		expect(description).toMatch(/cvrt-lang 0\.9\.0/);
 	});
 
 	it("lang_mt_status never prints a provider key, even a string one under key", async () => {

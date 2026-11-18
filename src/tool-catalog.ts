@@ -118,7 +118,7 @@ export const SECTIONS: Section[] = [
 	{
 		title: "Language (machine translation)",
 		requires:
-			"[cvrt-lang](https://github.com/cvrt-gmbh/cvrt-lang) with machine translation (Azure AI Translator); `lang_list_pending` / `lang_submit_translations` / `lang_fail_job` are the external queue for manual or agent use (no recurring job). No tool sets the provider key: use the fort constant or the admin",
+			"[cvrt-lang](https://github.com/cvrt-gmbh/cvrt-lang) 0.9.0 or later (machine translation, Azure AI Translator); `lang_list_pending` / `lang_submit_translations` / `lang_fail_job` are the external queue for manual or agent use (no recurring job). No tool sets the provider key: use the fort constant or the admin",
 		register: registerLang,
 	},
 	{ title: "Fort (Bearfort)", requires: "`BEARFORT_API_KEY` (Bearfort API, not the site)", register: registerFort },

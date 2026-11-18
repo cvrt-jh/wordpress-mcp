@@ -180,7 +180,7 @@ export function register(rawServer: McpServer) {
 	const server = guarded(rawServer);
 	server.tool(
 		"lang_mt_status",
-		"cvrt-lang machine translation status: provider and readiness, pause state, settings, queue counts, month usage and cap, the last 50 failed jobs with codes, the last worker run (with its `lost` and `busy` counts) and the registered providers. A pure read: no outbound call. The provider key is never shown (`settings.key` is { set, source }).",
+		"cvrt-lang machine translation status (cvrt-lang 0.9.0+): provider and readiness, pause state, settings, queue counts (pending, leased, failed, `retrying` = pending again after a failed attempt, `expired` = pending again after an expired worker lease, not a provider error; both also in pending; done this month), month usage and cap, the `retrying` list (up to 50 jobs: ids, attempts, the current reason code and the next try), the last 50 failed jobs with codes, the last worker run (with its `lost` and `busy` counts) and the registered providers. A pure read: no outbound call. The provider key is never shown (`settings.key` is { set, source }).",
 		{ site },
 		async ({ site }) => {
 			const wp = forSite(site);
