@@ -1,7 +1,7 @@
 {
 	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
 	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-	"files": { "includes": ["**", "!build", "!node_modules", "!pnpm-lock.yaml"] },
+	"files": { "includes": ["**", "!build", "!node_modules", "!pnpm-lock.yaml", "!CLAUDE.md", "!memory", "!.superpowers"] },
 	"formatter": { "enabled": true, "indentStyle": "tab", "lineWidth": 120 },
 	"javascript": { "formatter": { "quoteStyle": "double" } },
 	"linter": { "enabled": true, "rules": { "preset": "recommended" } },
