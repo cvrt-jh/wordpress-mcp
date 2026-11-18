@@ -1,225 +1,185 @@
 {
-  "woo_helper_status": {
-    "method": "GET",
-    "route": "/mcp/woo-helper/v1/status",
-    "source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php get_status (no args)",
-    "server": []
-  },
-  "woo_helper_get_settings": {
-    "method": "GET",
-    "route": "/mcp/woo-helper/v1/settings",
-    "source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php get_settings (no args)",
-    "server": []
-  },
-  "woo_helper_update_settings": {
-    "method": "PUT",
-    "route": "/mcp/woo-helper/v1/settings",
-    "source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php update_settings -> Settings::update (github_token, clear_github_token)",
-    "server": [
-      "github_token",
-      "clear_github_token"
-    ],
-    "fields": [
-      "github_token",
-      "clear_github_token"
-    ]
-  },
-  "woo_helper_get_stripe": {
-    "method": "GET",
-    "route": "/mcp/woo-helper/v1/stripe",
-    "source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php get_stripe (no args)",
-    "server": []
-  },
-  "woo_helper_update_stripe": {
-    "method": "PUT",
-    "route": "/mcp/woo-helper/v1/stripe",
-    "source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php update_stripe (express_checkout, locations, scripts_checkout_only)",
-    "server": [
-      "express_checkout",
-      "locations",
-      "scripts_checkout_only"
-    ],
-    "fields": [
-      "express_checkout",
-      "locations",
-      "scripts_checkout_only"
-    ]
-  },
-  "woo_helper_stripe_status": {
-    "method": "GET",
-    "route": "/mcp/woo-helper/v1/stripe/status",
-    "source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php get_stripe_status (no args)",
-    "server": []
-  },
-  "woo_helper_get_emails": {
-    "method": "GET",
-    "route": "/mcp/woo-helper/v1/emails",
-    "source": "cvrt-woo-helper 0.2.0 includes/class-rest-api.php get_emails (no args)",
-    "server": []
-  },
-  "woo_helper_update_emails": {
-    "method": "PUT",
-    "route": "/mcp/woo-helper/v1/emails",
-    "source": "cvrt-woo-helper 0.2.0 includes/class-rest-api.php update_emails -> email_input (logo_id, logo_width, link_color, footer_text, product_images, certificate_link_once + Emails::COLORS)",
-    "server": [
-      "logo_id",
-      "logo_width",
-      "base_color",
-      "background_color",
-      "body_background_color",
-      "text_color",
-      "footer_text_color",
-      "link_color",
-      "footer_text",
-      "product_images",
-      "certificate_link_once"
-    ],
-    "fields": [
-      "logo_id",
-      "logo_width",
-      "base_color",
-      "background_color",
-      "body_background_color",
-      "text_color",
-      "footer_text_color",
-      "link_color",
-      "footer_text",
-      "product_images",
-      "certificate_link_once"
-    ]
-  },
-  "woo_helper_send_test_email": {
-    "method": "POST",
-    "route": "/mcp/woo-helper/v1/emails/test",
-    "source": "cvrt-woo-helper 0.2.0 includes/class-rest-api.php test_email (args to, settings)",
-    "server": [
-      "to",
-      "settings"
-    ],
-    "fields": [
-      "to",
-      "settings"
-    ]
-  },
-  "woo_helper_get_invoices": {
-    "method": "GET",
-    "route": "/mcp/woo-helper/v1/invoices",
-    "source": "cvrt-woo-helper 0.4.0 includes/class-rest-api.php get_invoices (no args)",
-    "server": []
-  },
-  "woo_helper_put_invoices": {
-    "method": "PUT",
-    "route": "/mcp/woo-helper/v1/invoices",
-    "source": "cvrt-woo-helper 0.4.0 includes/class-rest-api.php update_invoices (Invoices::fields() + api_keys, clear_api_keys)",
-    "server": [
-      "enabled",
-      "provider",
-      "dry_run",
-      "trigger_statuses",
-      "attach_emails",
-      "own_email",
-      "refunds",
-      "einvoice",
-      "price_mode",
-      "reference",
-      "title",
-      "introduction",
-      "remark",
-      "vat_id_meta",
-      "create_contacts",
-      "sevdesk_contact_person",
-      "sevdesk_template",
-      "sevdesk_letterpaper",
-      "sevdesk_payment_method",
-      "sevdesk_unity",
-      "lexware_print_layout",
-      "lexware_payment_condition",
-      "lexware_unit_name",
-      "api_keys",
-      "clear_api_keys"
-    ],
-    "fields": [
-      "enabled",
-      "provider",
-      "dry_run",
-      "trigger_statuses",
-      "attach_emails",
-      "own_email",
-      "refunds",
-      "einvoice",
-      "price_mode",
-      "reference",
-      "title",
-      "introduction",
-      "remark",
-      "vat_id_meta",
-      "create_contacts",
-      "sevdesk_contact_person",
-      "sevdesk_template",
-      "sevdesk_letterpaper",
-      "sevdesk_payment_method",
-      "sevdesk_unity",
-      "lexware_print_layout",
-      "lexware_payment_condition",
-      "lexware_unit_name",
-      "api_keys",
-      "clear_api_keys"
-    ]
-  },
-  "woo_helper_invoices_test_connection": {
-    "method": "POST",
-    "route": "/mcp/woo-helper/v1/invoices/test-connection",
-    "source": "cvrt-woo-helper 0.4.0 includes/class-rest-api.php invoices_test_connection (args provider)",
-    "server": [
-      "provider"
-    ],
-    "fields": [
-      "provider"
-    ]
-  },
-  "woo_helper_invoices_refresh": {
-    "method": "POST",
-    "route": "/mcp/woo-helper/v1/invoices/refresh",
-    "source": "cvrt-woo-helper 0.4.0 includes/class-rest-api.php invoices_refresh (args provider)",
-    "server": [
-      "provider"
-    ],
-    "fields": [
-      "provider"
-    ]
-  },
-  "woo_helper_list_invoice_orders": {
-    "method": "GET",
-    "route": "/mcp/woo-helper/v1/invoices/orders",
-    "source": "cvrt-woo-helper 0.4.0 includes/class-rest-api.php get_invoice_orders (args status)",
-    "server": [
-      "status"
-    ],
-    "fields": [
-      "status"
-    ]
-  },
-  "woo_helper_get_invoice_order": {
-    "method": "GET",
-    "route": "/mcp/woo-helper/v1/invoices/orders/{id}",
-    "source": "cvrt-woo-helper 0.4.0 includes/class-rest-api.php get_invoice_order (path id)",
-    "server": [],
-    "path": [
-      "order_id"
-    ]
-  },
-  "woo_helper_create_invoice": {
-    "method": "POST",
-    "route": "/mcp/woo-helper/v1/invoices/orders/{id}",
-    "source": "cvrt-woo-helper 0.4.0 includes/class-rest-api.php create_invoice_order (path id; args confirm)",
-    "server": [
-      "confirm"
-    ],
-    "path": [
-      "order_id"
-    ],
-    "fields": [
-      "confirm"
-    ]
-  }
+	"woo_helper_status": {
+		"method": "GET",
+		"route": "/mcp/woo-helper/v1/status",
+		"source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php get_status (no args)",
+		"server": []
+	},
+	"woo_helper_get_settings": {
+		"method": "GET",
+		"route": "/mcp/woo-helper/v1/settings",
+		"source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php get_settings (no args)",
+		"server": []
+	},
+	"woo_helper_update_settings": {
+		"method": "PUT",
+		"route": "/mcp/woo-helper/v1/settings",
+		"source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php update_settings -> Settings::update (github_token, clear_github_token)",
+		"server": ["github_token", "clear_github_token"],
+		"fields": ["github_token", "clear_github_token"]
+	},
+	"woo_helper_get_stripe": {
+		"method": "GET",
+		"route": "/mcp/woo-helper/v1/stripe",
+		"source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php get_stripe (no args)",
+		"server": []
+	},
+	"woo_helper_update_stripe": {
+		"method": "PUT",
+		"route": "/mcp/woo-helper/v1/stripe",
+		"source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php update_stripe (express_checkout, locations, scripts_checkout_only)",
+		"server": ["express_checkout", "locations", "scripts_checkout_only"],
+		"fields": ["express_checkout", "locations", "scripts_checkout_only"]
+	},
+	"woo_helper_stripe_status": {
+		"method": "GET",
+		"route": "/mcp/woo-helper/v1/stripe/status",
+		"source": "cvrt-woo-helper 0.1.0 includes/class-rest-api.php get_stripe_status (no args)",
+		"server": []
+	},
+	"woo_helper_get_emails": {
+		"method": "GET",
+		"route": "/mcp/woo-helper/v1/emails",
+		"source": "cvrt-woo-helper 0.2.0 includes/class-rest-api.php get_emails (no args)",
+		"server": []
+	},
+	"woo_helper_update_emails": {
+		"method": "PUT",
+		"route": "/mcp/woo-helper/v1/emails",
+		"source": "cvrt-woo-helper 0.2.0 includes/class-rest-api.php update_emails -> email_input (logo_id, logo_width, link_color, footer_text, product_images, certificate_link_once + Emails::COLORS)",
+		"server": [
+			"logo_id",
+			"logo_width",
+			"base_color",
+			"background_color",
+			"body_background_color",
+			"text_color",
+			"footer_text_color",
+			"link_color",
+			"footer_text",
+			"product_images",
+			"certificate_link_once"
+		],
+		"fields": [
+			"logo_id",
+			"logo_width",
+			"base_color",
+			"background_color",
+			"body_background_color",
+			"text_color",
+			"footer_text_color",
+			"link_color",
+			"footer_text",
+			"product_images",
+			"certificate_link_once"
+		]
+	},
+	"woo_helper_send_test_email": {
+		"method": "POST",
+		"route": "/mcp/woo-helper/v1/emails/test",
+		"source": "cvrt-woo-helper 0.2.0 includes/class-rest-api.php test_email (args to, settings)",
+		"server": ["to", "settings"],
+		"fields": ["to", "settings"]
+	},
+	"woo_helper_get_invoices": {
+		"method": "GET",
+		"route": "/mcp/woo-helper/v1/invoices",
+		"source": "cvrt-woo-helper 0.4.0 includes/class-rest-api.php get_invoices (no args)",
+		"server": []
+	},
+	"woo_helper_put_invoices": {
+		"method": "PUT",
+		"route": "/mcp/woo-helper/v1/invoices",
+		"source": "cvrt-woo-helper 0.4.0 includes/class-rest-api.php update_invoices (Invoices::fields() + api_keys, clear_api_keys)",
+		"server": [
+			"enabled",
+			"provider",
+			"dry_run",
+			"trigger_statuses",
+			"attach_emails",
+			"own_email",
+			"refunds",
+			"einvoice",
+			"price_mode",
+			"reference",
+			"title",
+			"introduction",
+			"remark",
+			"vat_id_meta",
+			"create_contacts",
+			"sevdesk_contact_person",
+			"sevdesk_template",
+			"sevdesk_letterpaper",
+			"sevdesk_payment_method",
+			"sevdesk_unity",
+			"lexware_print_layout",
+			"lexware_payment_condition",
+			"lexware_unit_name",
+			"api_keys",
+			"clear_api_keys"
+		],
+		"fields": [
+			"enabled",
+			"provider",
+			"dry_run",
+			"trigger_statuses",
+			"attach_emails",
+			"own_email",
+			"refunds",
+			"einvoice",
+			"price_mode",
+			"reference",
+			"title",
+			"introduction",
+			"remark",
+			"vat_id_meta",
+			"create_contacts",
+			"sevdesk_contact_person",
+			"sevdesk_template",
+			"sevdesk_letterpaper",
+			"sevdesk_payment_method",
+			"sevdesk_unity",
+			"lexware_print_layout",
+			"lexware_payment_condition",
+			"lexware_unit_name",
+			"api_keys",
+			"clear_api_keys"
+		]
+	},
+	"woo_helper_invoices_test_connection": {
+		"method": "POST",
+		"route": "/mcp/woo-helper/v1/invoices/test-connection",
+		"source": "cvrt-woo-helper 0.4.0 includes/class-rest-api.php invoices_test_connection (args provider)",
+		"server": ["provider"],
+		"fields": ["provider"]
+	},
+	"woo_helper_invoices_refresh": {
+		"method": "POST",
+		"route": "/mcp/woo-helper/v1/invoices/refresh",
+		"source": "cvrt-woo-helper 0.4.0 includes/class-rest-api.php invoices_refresh (args provider)",
+		"server": ["provider"],
+		"fields": ["provider"]
+	},
+	"woo_helper_list_invoice_orders": {
+		"method": "GET",
+		"route": "/mcp/woo-helper/v1/invoices/orders",
+		"source": "cvrt-woo-helper 0.4.0 includes/class-rest-api.php get_invoice_orders (args status)",
+		"server": ["status"],
+		"fields": ["status"]
+	},
+	"woo_helper_get_invoice_order": {
+		"method": "GET",
+		"route": "/mcp/woo-helper/v1/invoices/orders/{id}",
+		"source": "cvrt-woo-helper 0.4.0 includes/class-rest-api.php get_invoice_order (path id)",
+		"server": [],
+		"path": ["order_id"]
+	},
+	"woo_helper_create_invoice": {
+		"method": "POST",
+		"route": "/mcp/woo-helper/v1/invoices/orders/{id}",
+		"source": "cvrt-woo-helper 0.4.0 includes/class-rest-api.php create_invoice_order (path id; args confirm)",
+		"server": ["confirm"],
+		"path": ["order_id"],
+		"fields": ["confirm"]
+	}
 }

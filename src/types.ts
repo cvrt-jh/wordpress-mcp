@@ -10,9 +10,9 @@ export const PostStatusSchema = z.enum(["publish", "future", "draft", "pending",
 
 // Helper for JSON results. Every tool result passes here, so secrets are masked here (src/mask.ts).
 export function jsonResult(data: unknown): { content: { type: "text"; text: string }[] } {
-  return {
-    content: [{ type: "text", text: JSON.stringify(maskSecrets(data)) }],
-  };
+	return {
+		content: [{ type: "text", text: JSON.stringify(maskSecrets(data)) }],
+	};
 }
 
 /**
@@ -20,5 +20,5 @@ export function jsonResult(data: unknown): { content: { type: "text"; text: stri
  * only the fields the caller set (endpoints merge them into the stored data).
  */
 export function defined<T extends Record<string, unknown>>(obj: T): Partial<T> {
-  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>;
+	return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>;
 }

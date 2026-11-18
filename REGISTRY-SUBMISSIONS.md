@@ -6,12 +6,12 @@ Status of wordpress-mcp registry submissions.
 
 ## Submission Status
 
-| Registry | Status | Link |
-|----------|--------|------|
-| npm | **Published** | [@cavort-it-systems/wordpress-mcp](https://www.npmjs.com/package/@cavort-it-systems/wordpress-mcp) |
-| GitHub Releases | **Published** | [v1.0.0](https://github.com/cvrt-jh/wordpress-mcp/releases/tag/v1.0.0) |
-| Official MCP Registry | **Published** | io.github.cvrt-jh/wordpress-mcp |
-| mcpservers.org | Pending | Submit below |
+| Registry              | Status        | Link                                                                                               |
+| --------------------- | ------------- | -------------------------------------------------------------------------------------------------- |
+| npm                   | **Published** | [@cavort-it-systems/wordpress-mcp](https://www.npmjs.com/package/@cavort-it-systems/wordpress-mcp) |
+| GitHub Releases       | **Published** | [v1.0.0](https://github.com/cvrt-jh/wordpress-mcp/releases/tag/v1.0.0)                             |
+| Official MCP Registry | **Published** | io.github.cvrt-jh/wordpress-mcp                                                                    |
+| mcpservers.org        | Pending       | Submit below                                                                                       |
 
 ---
 
@@ -21,13 +21,13 @@ Submit at: https://mcpservers.org/submit
 
 **Form values:**
 
-| Field | Value |
-|-------|-------|
-| Server Name | wordpress-mcp |
+| Field             | Value                                                                                                                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Server Name       | wordpress-mcp                                                                                                                                                                   |
 | Short Description | Lightweight WordPress MCP server with 42 tools. Token-optimized responses reduce REST API verbosity by 95%+. Posts, pages, users, plugins, themes, media, taxonomies, comments. |
-| Link | https://github.com/cvrt-jh/wordpress-mcp |
-| Category | productivity |
-| Contact Email | jh@cavort.de |
+| Link              | https://github.com/cvrt-jh/wordpress-mcp                                                                                                                                        |
+| Category          | productivity                                                                                                                                                                    |
+| Contact Email     | jh@cavort.de                                                                                                                                                                    |
 
 ---
 

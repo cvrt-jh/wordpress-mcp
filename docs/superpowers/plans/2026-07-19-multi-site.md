@@ -25,11 +25,13 @@
 ### Task 1: Site registry (`src/sites.ts`)
 
 **Files:**
+
 - Create: `src/sites.ts`
 - Test: `src/sites.test.ts`
 - Modify: `package.json` (add vitest + `test` script)
 
 **Interfaces:**
+
 - Consumes: `process.env.WORDPRESS_SITES` (JSON string).
 - Produces:
   - `interface Site { id: string; url: string; username: string; password: string }`
@@ -40,6 +42,7 @@
 - [ ] **Step 1: Add vitest to the project**
 
 Run:
+
 ```bash
 cd /Users/jh/Git/cvrt-jh/mcp/wordpress-mcp
 npm install -D vitest
@@ -53,51 +56,51 @@ import { describe, it, expect } from "vitest";
 import { loadSites } from "./sites.js";
 
 const valid = JSON.stringify([
-  { id: "a", url: "https://a.example", username: "ua", password: "pa" },
-  { id: "b", url: "https://b.example/", username: "ub", password: "pb" },
+	{ id: "a", url: "https://a.example", username: "ua", password: "pa" },
+	{ id: "b", url: "https://b.example/", username: "ub", password: "pb" },
 ]);
 
 describe("loadSites", () => {
-  it("parses a valid array into a map keyed by id", () => {
-    const m = loadSites(valid);
-    expect(m.get("a")?.url).toBe("https://a.example");
-    expect(m.get("b")?.username).toBe("ub");
-    expect(m.size).toBe(2);
-  });
+	it("parses a valid array into a map keyed by id", () => {
+		const m = loadSites(valid);
+		expect(m.get("a")?.url).toBe("https://a.example");
+		expect(m.get("b")?.username).toBe("ub");
+		expect(m.size).toBe(2);
+	});
 
-  it("throws when WORDPRESS_SITES is missing", () => {
-    expect(() => loadSites(undefined)).toThrow(/WORDPRESS_SITES/);
-  });
+	it("throws when WORDPRESS_SITES is missing", () => {
+		expect(() => loadSites(undefined)).toThrow(/WORDPRESS_SITES/);
+	});
 
-  it("throws on non-JSON", () => {
-    expect(() => loadSites("not json")).toThrow(/WORDPRESS_SITES/);
-  });
+	it("throws on non-JSON", () => {
+		expect(() => loadSites("not json")).toThrow(/WORDPRESS_SITES/);
+	});
 
-  it("throws when the JSON is not an array", () => {
-    expect(() => loadSites('{"id":"a"}')).toThrow(/array/);
-  });
+	it("throws when the JSON is not an array", () => {
+		expect(() => loadSites('{"id":"a"}')).toThrow(/array/);
+	});
 
-  it("throws on an empty array", () => {
-    expect(() => loadSites("[]")).toThrow(/at least one/);
-  });
+	it("throws on an empty array", () => {
+		expect(() => loadSites("[]")).toThrow(/at least one/);
+	});
 
-  it("throws when an entry is missing a field", () => {
-    const bad = JSON.stringify([{ id: "a", url: "https://a.example", username: "ua" }]);
-    expect(() => loadSites(bad)).toThrow(/password/);
-  });
+	it("throws when an entry is missing a field", () => {
+		const bad = JSON.stringify([{ id: "a", url: "https://a.example", username: "ua" }]);
+		expect(() => loadSites(bad)).toThrow(/password/);
+	});
 
-  it("throws on a non-http url", () => {
-    const bad = JSON.stringify([{ id: "a", url: "ftp://a.example", username: "ua", password: "pa" }]);
-    expect(() => loadSites(bad)).toThrow(/http/);
-  });
+	it("throws on a non-http url", () => {
+		const bad = JSON.stringify([{ id: "a", url: "ftp://a.example", username: "ua", password: "pa" }]);
+		expect(() => loadSites(bad)).toThrow(/http/);
+	});
 
-  it("throws on duplicate ids", () => {
-    const dup = JSON.stringify([
-      { id: "a", url: "https://a.example", username: "u", password: "p" },
-      { id: "a", url: "https://b.example", username: "u", password: "p" },
-    ]);
-    expect(() => loadSites(dup)).toThrow(/duplicate/i);
-  });
+	it("throws on duplicate ids", () => {
+		const dup = JSON.stringify([
+			{ id: "a", url: "https://a.example", username: "u", password: "p" },
+			{ id: "a", url: "https://b.example", username: "u", password: "p" },
+		]);
+		expect(() => loadSites(dup)).toThrow(/duplicate/i);
+	});
 });
 ```
 
@@ -116,10 +119,10 @@ Expected: FAIL — `Cannot find module './sites.js'` / `loadSites is not a funct
  */
 
 export interface Site {
-  id: string;
-  url: string;
-  username: string;
-  password: string;
+	id: string;
+	url: string;
+	username: string;
+	password: string;
 }
 
 /**
@@ -127,50 +130,50 @@ export interface Site {
  * Pure (takes the raw string) so it is unit-testable without touching env.
  */
 export function loadSites(raw: string | undefined): Map<string, Site> {
-  if (!raw || raw.trim() === "") {
-    throw new Error("WORDPRESS_SITES env var must be a JSON array of sites");
-  }
+	if (!raw || raw.trim() === "") {
+		throw new Error("WORDPRESS_SITES env var must be a JSON array of sites");
+	}
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error("WORDPRESS_SITES env var must be valid JSON");
-  }
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(raw);
+	} catch {
+		throw new Error("WORDPRESS_SITES env var must be valid JSON");
+	}
 
-  if (!Array.isArray(parsed)) {
-    throw new Error("WORDPRESS_SITES must be a JSON array");
-  }
-  if (parsed.length === 0) {
-    throw new Error("WORDPRESS_SITES must contain at least one site");
-  }
+	if (!Array.isArray(parsed)) {
+		throw new Error("WORDPRESS_SITES must be a JSON array");
+	}
+	if (parsed.length === 0) {
+		throw new Error("WORDPRESS_SITES must contain at least one site");
+	}
 
-  const map = new Map<string, Site>();
-  parsed.forEach((entry, i) => {
-    const e = entry as Record<string, unknown>;
-    for (const field of ["id", "url", "username", "password"] as const) {
-      if (typeof e[field] !== "string" || (e[field] as string).trim() === "") {
-        const label = typeof e.id === "string" ? `"${e.id}"` : `index ${i}`;
-        throw new Error(`WORDPRESS_SITES entry ${label} is missing a valid "${field}"`);
-      }
-    }
-    const url = e.url as string;
-    if (!/^https?:\/\//i.test(url)) {
-      throw new Error(`WORDPRESS_SITES entry "${e.id}" url must start with http:// or https://`);
-    }
-    const id = e.id as string;
-    if (map.has(id)) {
-      throw new Error(`WORDPRESS_SITES has a duplicate site id "${id}"`);
-    }
-    map.set(id, {
-      id,
-      url,
-      username: e.username as string,
-      password: e.password as string,
-    });
-  });
+	const map = new Map<string, Site>();
+	parsed.forEach((entry, i) => {
+		const e = entry as Record<string, unknown>;
+		for (const field of ["id", "url", "username", "password"] as const) {
+			if (typeof e[field] !== "string" || (e[field] as string).trim() === "") {
+				const label = typeof e.id === "string" ? `"${e.id}"` : `index ${i}`;
+				throw new Error(`WORDPRESS_SITES entry ${label} is missing a valid "${field}"`);
+			}
+		}
+		const url = e.url as string;
+		if (!/^https?:\/\//i.test(url)) {
+			throw new Error(`WORDPRESS_SITES entry "${e.id}" url must start with http:// or https://`);
+		}
+		const id = e.id as string;
+		if (map.has(id)) {
+			throw new Error(`WORDPRESS_SITES has a duplicate site id "${id}"`);
+		}
+		map.set(id, {
+			id,
+			url,
+			username: e.username as string,
+			password: e.password as string,
+		});
+	});
 
-  return map;
+	return map;
 }
 
 // Parsed once at module load. Throws here if WORDPRESS_SITES is bad, which
@@ -178,16 +181,16 @@ export function loadSites(raw: string | undefined): Map<string, Site> {
 const sites = loadSites(process.env.WORDPRESS_SITES);
 
 export function getSite(id: string): Site {
-  const site = sites.get(id);
-  if (!site) {
-    const available = [...sites.keys()].join(", ");
-    throw new Error(`Unknown site "${id}". Available: ${available}`);
-  }
-  return site;
+	const site = sites.get(id);
+	if (!site) {
+		const available = [...sites.keys()].join(", ");
+		throw new Error(`Unknown site "${id}". Available: ${available}`);
+	}
+	return site;
 }
 
 export function listSites(): Array<{ id: string; url: string }> {
-  return [...sites.values()].map((s) => ({ id: s.id, url: s.url }));
+	return [...sites.values()].map((s) => ({ id: s.id, url: s.url }));
 }
 ```
 
@@ -199,8 +202,8 @@ Expected: PASS (8 tests in sites.test.ts). Note: `loadSites` is exercised direct
 ```ts
 let _sites: Map<string, Site> | null = null;
 function sitesMap(): Map<string, Site> {
-  if (_sites === null) _sites = loadSites(process.env.WORDPRESS_SITES);
-  return _sites;
+	if (_sites === null) _sites = loadSites(process.env.WORDPRESS_SITES);
+	return _sites;
 }
 // getSite/listSites call sitesMap() instead of the module-level const.
 ```
@@ -218,10 +221,12 @@ git commit -m "feat: WORDPRESS_SITES registry (src/sites.ts) + vitest"
 ### Task 2: `forSite()` client factory (`src/client.ts`)
 
 **Files:**
+
 - Modify: `src/client.ts` (replace entire file)
 - Test: `src/client.test.ts`
 
 **Interfaces:**
+
 - Consumes: `getSite(id)` from Task 1.
 - Produces:
   - `interface SiteClient { get<T>(endpoint, params?): Promise<T>; post<T>(endpoint, body): Promise<T>; put<T>(endpoint, body): Promise<T>; delete<T>(endpoint, params?): Promise<T> }`
@@ -236,44 +241,44 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // forSite reads sites via getSite; stub the registry so no env is needed.
 vi.mock("./sites.js", () => ({
-  getSite: (id: string) => {
-    if (id === "a") return { id: "a", url: "https://a.example/", username: "u", password: "p" };
-    const err = new Error(`Unknown site "${id}". Available: a`);
-    throw err;
-  },
+	getSite: (id: string) => {
+		if (id === "a") return { id: "a", url: "https://a.example/", username: "u", password: "p" };
+		const err = new Error(`Unknown site "${id}". Available: a`);
+		throw err;
+	},
 }));
 
 import { forSite } from "./client.js";
 
 describe("forSite", () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-  });
+	beforeEach(() => {
+		vi.restoreAllMocks();
+	});
 
-  it("throws (before any fetch) for an unknown site", () => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch");
-    expect(() => forSite("nope")).toThrow(/Unknown site "nope"/);
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
+	it("throws (before any fetch) for an unknown site", () => {
+		const fetchSpy = vi.spyOn(globalThis, "fetch");
+		expect(() => forSite("nope")).toThrow(/Unknown site "nope"/);
+		expect(fetchSpy).not.toHaveBeenCalled();
+	});
 
-  it("builds the base URL (trailing slash stripped) and Basic auth header on GET", async () => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ ok: true }), { status: 200 }),
-    );
-    const wp = forSite("a");
-    await wp.get("/mcp/v1/health");
+	it("builds the base URL (trailing slash stripped) and Basic auth header on GET", async () => {
+		const fetchSpy = vi
+			.spyOn(globalThis, "fetch")
+			.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+		const wp = forSite("a");
+		await wp.get("/mcp/v1/health");
 
-    const [calledUrl, init] = fetchSpy.mock.calls[0];
-    expect(String(calledUrl)).toBe("https://a.example/wp-json/mcp/v1/health");
-    const auth = (init?.headers as Record<string, string>).Authorization;
-    expect(auth).toBe("Basic " + Buffer.from("u:p").toString("base64"));
-  });
+		const [calledUrl, init] = fetchSpy.mock.calls[0];
+		expect(String(calledUrl)).toBe("https://a.example/wp-json/mcp/v1/health");
+		const auth = (init?.headers as Record<string, string>).Authorization;
+		expect(auth).toBe("Basic " + Buffer.from("u:p").toString("base64"));
+	});
 
-  it("throws WordPress API error on non-ok response", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("boom", { status: 500 }));
-    const wp = forSite("a");
-    await expect(wp.get("/x")).rejects.toThrow(/WordPress API error 500: boom/);
-  });
+	it("throws WordPress API error on non-ok response", async () => {
+		vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("boom", { status: 500 }));
+		const wp = forSite("a");
+		await expect(wp.get("/x")).rejects.toThrow(/WordPress API error 500: boom/);
+	});
 });
 ```
 
@@ -292,50 +297,50 @@ Expected: FAIL — `forSite is not a function` (client.ts still exports old func
 import { getSite } from "./sites.js";
 
 export interface SiteClient {
-  get<T>(endpoint: string, params?: Record<string, string | number>): Promise<T>;
-  post<T>(endpoint: string, body: Record<string, unknown>): Promise<T>;
-  put<T>(endpoint: string, body: Record<string, unknown>): Promise<T>;
-  delete<T>(endpoint: string, params?: Record<string, string | number>): Promise<T>;
+	get<T>(endpoint: string, params?: Record<string, string | number>): Promise<T>;
+	post<T>(endpoint: string, body: Record<string, unknown>): Promise<T>;
+	put<T>(endpoint: string, body: Record<string, unknown>): Promise<T>;
+	delete<T>(endpoint: string, params?: Record<string, string | number>): Promise<T>;
 }
 
 export function forSite(siteId: string): SiteClient {
-  const site = getSite(siteId); // throws (before any fetch) if unknown
-  const base = site.url.replace(/\/$/, "");
-  const auth = "Basic " + Buffer.from(`${site.username}:${site.password}`).toString("base64");
-  const headers = { Authorization: auth, "Content-Type": "application/json" };
+	const site = getSite(siteId); // throws (before any fetch) if unknown
+	const base = site.url.replace(/\/$/, "");
+	const auth = "Basic " + Buffer.from(`${site.username}:${site.password}`).toString("base64");
+	const headers = { Authorization: auth, "Content-Type": "application/json" };
 
-  const buildUrl = (endpoint: string, params?: Record<string, string | number>): string => {
-    const url = new URL(`${base}/wp-json${endpoint}`);
-    if (params) {
-      for (const [k, v] of Object.entries(params)) {
-        if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
-      }
-    }
-    return url.toString();
-  };
+	const buildUrl = (endpoint: string, params?: Record<string, string | number>): string => {
+		const url = new URL(`${base}/wp-json${endpoint}`);
+		if (params) {
+			for (const [k, v] of Object.entries(params)) {
+				if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
+			}
+		}
+		return url.toString();
+	};
 
-  async function handle<T>(res: Response): Promise<T> {
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`WordPress API error ${res.status}: ${text}`);
-    }
-    return res.json() as Promise<T>;
-  }
+	async function handle<T>(res: Response): Promise<T> {
+		if (!res.ok) {
+			const text = await res.text();
+			throw new Error(`WordPress API error ${res.status}: ${text}`);
+		}
+		return res.json() as Promise<T>;
+	}
 
-  return {
-    async get<T>(endpoint, params) {
-      return handle<T>(await fetch(buildUrl(endpoint, params), { headers }));
-    },
-    async post<T>(endpoint, body) {
-      return handle<T>(await fetch(buildUrl(endpoint), { method: "POST", headers, body: JSON.stringify(body) }));
-    },
-    async put<T>(endpoint, body) {
-      return handle<T>(await fetch(buildUrl(endpoint), { method: "PUT", headers, body: JSON.stringify(body) }));
-    },
-    async delete<T>(endpoint, params) {
-      return handle<T>(await fetch(buildUrl(endpoint, params), { method: "DELETE", headers }));
-    },
-  };
+	return {
+		async get<T>(endpoint, params) {
+			return handle<T>(await fetch(buildUrl(endpoint, params), { headers }));
+		},
+		async post<T>(endpoint, body) {
+			return handle<T>(await fetch(buildUrl(endpoint), { method: "POST", headers, body: JSON.stringify(body) }));
+		},
+		async put<T>(endpoint, body) {
+			return handle<T>(await fetch(buildUrl(endpoint), { method: "PUT", headers, body: JSON.stringify(body) }));
+		},
+		async delete<T>(endpoint, params) {
+			return handle<T>(await fetch(buildUrl(endpoint, params), { method: "DELETE", headers }));
+		},
+	};
 }
 ```
 
@@ -361,10 +366,12 @@ git commit -m "feat: forSite() client factory (replaces global wp* functions)"
 ### Task 3: `list_sites` tool + site param helper
 
 **Files:**
+
 - Create: `src/tools/sites.ts`
 - Modify: `src/index.ts` (import + register `registerSites`)
 
 **Interfaces:**
+
 - Consumes: `listSites()` (Task 1), `forSite` (Task 2), `jsonResult` from `src/types.ts`.
 - Produces: `export function register(server: McpServer): void` registering the `list_sites` tool.
 
@@ -381,22 +388,24 @@ import { listSites } from "../sites.js";
 import { jsonResult } from "../types.js";
 
 export function register(server: McpServer) {
-  server.tool(
-    "list_sites",
-    "List the WordPress sites this server can manage. Every other tool requires a `site` argument set to one of these ids.",
-    {},
-    async () => jsonResult({ sites: listSites() }),
-  );
+	server.tool(
+		"list_sites",
+		"List the WordPress sites this server can manage. Every other tool requires a `site` argument set to one of these ids.",
+		{},
+		async () => jsonResult({ sites: listSites() }),
+	);
 }
 ```
 
 - [ ] **Step 2: Register it in `src/index.ts`**
 
 Add with the other imports near the top:
+
 ```ts
 import { register as registerSites } from "./tools/sites.js";
 ```
 And call it FIRST in the registration block (before `registerSite(server)`):
+
 ```ts
 // Multi-site: list_sites has no `site` param; every other tool requires one.
 registerSites(server);
@@ -418,9 +427,11 @@ git commit -m "feat: list_sites tool"
 ### Task 4: Convert core WP tool files to `forSite` (batch 1)
 
 **Files (modify each):**
+
 - `src/tools/site.ts`, `src/tools/posts.ts`, `src/tools/pages.ts`, `src/tools/users.ts`, `src/tools/plugins.ts`, `src/tools/themes.ts`, `src/tools/media.ts`, `src/tools/taxonomies.ts`, `src/tools/comments.ts`
 
 **Interfaces:**
+
 - Consumes: `forSite` (Task 2).
 
 **The uniform conversion recipe (apply to EVERY tool in EVERY file in this task):**
@@ -434,28 +445,25 @@ git commit -m "feat: list_sites tool"
 3. For `site.ts` specifically: replace any `getSiteUrl()` call with `getSite(site).url`.
 
 Example — before:
+
 ```ts
-server.tool(
-  "wp_list_posts",
-  "List posts",
-  { per_page: z.number().optional() },
-  async ({ per_page }) => {
-    const posts = await wpGet<unknown[]>("/wp/v2/posts", { per_page });
-    return jsonResult(posts);
-  },
-);
+server.tool("wp_list_posts", "List posts", { per_page: z.number().optional() }, async ({ per_page }) => {
+	const posts = await wpGet<unknown[]>("/wp/v2/posts", { per_page });
+	return jsonResult(posts);
+});
 ```
 After:
+
 ```ts
 server.tool(
-  "wp_list_posts",
-  "List posts",
-  { site: z.string().describe("Site id (see list_sites)"), per_page: z.number().optional() },
-  async ({ site, per_page }) => {
-    const wp = forSite(site);
-    const posts = await wp.get<unknown[]>("/wp/v2/posts", { per_page });
-    return jsonResult(posts);
-  },
+	"wp_list_posts",
+	"List posts",
+	{ site: z.string().describe("Site id (see list_sites)"), per_page: z.number().optional() },
+	async ({ site, per_page }) => {
+		const wp = forSite(site);
+		const posts = await wp.get<unknown[]>("/wp/v2/posts", { per_page });
+		return jsonResult(posts);
+	},
 );
 ```
 
@@ -464,6 +472,7 @@ server.tool(
 - [ ] **Step 2: Grep to confirm no stray old calls remain in these files**
 
 Run:
+
 ```bash
 grep -nE "wpGet|wpPost|wpPut|wpDelete|getSiteUrl" src/tools/{site,posts,pages,users,plugins,themes,media,taxonomies,comments}.ts
 ```
@@ -472,6 +481,7 @@ Expected: no output.
 - [ ] **Step 3: Confirm each converted handler has a `site` param and a `forSite` call**
 
 Run:
+
 ```bash
 for f in site posts pages users plugins themes media taxonomies comments; do
   echo "$f: tools=$(grep -c 'server.tool' src/tools/$f.ts) forSite=$(grep -c 'forSite(site)' src/tools/$f.ts)";
@@ -491,6 +501,7 @@ git commit -m "feat: multi-site core WP tools (batch 1)"
 ### Task 5: Convert mcp/v1 tool files to `forSite` (batch 2)
 
 **Files (modify each):**
+
 - `src/tools/mcp-plugins.ts`, `src/tools/mcp-themes.ts`, `src/tools/mcp-core.ts`, `src/tools/mcp-database.ts`, `src/tools/mcp-options.ts`, `src/tools/mcp-menus.ts`, `src/tools/mcp-widgets.ts`, `src/tools/mcp-health.ts`
 
 **Interfaces:** Consumes `forSite` (Task 2).
@@ -500,6 +511,7 @@ git commit -m "feat: multi-site core WP tools (batch 1)"
 - [ ] **Step 2: Grep to confirm no stray old calls**
 
 Run:
+
 ```bash
 grep -nE "wpGet|wpPost|wpPut|wpDelete|getSiteUrl" src/tools/{mcp-plugins,mcp-themes,mcp-core,mcp-database,mcp-options,mcp-menus,mcp-widgets,mcp-health}.ts
 ```
@@ -508,6 +520,7 @@ Expected: no output.
 - [ ] **Step 3: Confirm forSite count == server.tool count per file**
 
 Run:
+
 ```bash
 for f in mcp-plugins mcp-themes mcp-core mcp-database mcp-options mcp-menus mcp-widgets mcp-health; do
   echo "$f: tools=$(grep -c 'server.tool' src/tools/$f.ts) forSite=$(grep -c 'forSite(site)' src/tools/$f.ts)";
@@ -527,6 +540,7 @@ git commit -m "feat: multi-site mcp/v1 tools (batch 2)"
 ### Task 6: Convert remaining mcp/v1 + integration tool files (batch 3)
 
 **Files (modify each):**
+
 - `src/tools/mcp-cpt.ts`, `src/tools/mcp-taxonomies.ts`, `src/tools/mcp-users.ts`, `src/tools/mcp-media.ts`, `src/tools/mcp-acf.ts`, `src/tools/mcp-elementor.ts`, `src/tools/mcp-woo.ts`, `src/tools/fulfillment.ts`
 
 **Interfaces:** Consumes `forSite` (Task 2).
@@ -536,6 +550,7 @@ git commit -m "feat: multi-site mcp/v1 tools (batch 2)"
 - [ ] **Step 2: Grep to confirm no stray old calls**
 
 Run:
+
 ```bash
 grep -nE "wpGet|wpPost|wpPut|wpDelete|getSiteUrl" src/tools/{mcp-cpt,mcp-taxonomies,mcp-users,mcp-media,mcp-acf,mcp-elementor,mcp-woo,fulfillment}.ts
 ```
@@ -544,6 +559,7 @@ Expected: no output.
 - [ ] **Step 3: Global grep — NO file anywhere still uses the old client API**
 
 Run:
+
 ```bash
 grep -rnE "wpGet|wpPost|wpPut|wpDelete|getSiteUrl" src/
 ```
@@ -552,6 +568,7 @@ Expected: no output (all tools converted).
 - [ ] **Step 4: Confirm forSite count == server.tool count per file**
 
 Run:
+
 ```bash
 for f in mcp-cpt mcp-taxonomies mcp-users mcp-media mcp-acf mcp-elementor mcp-woo fulfillment; do
   echo "$f: tools=$(grep -c 'server.tool' src/tools/$f.ts) forSite=$(grep -c 'forSite(site)' src/tools/$f.ts)";
@@ -571,6 +588,7 @@ git commit -m "feat: multi-site remaining tools (batch 3)"
 ### Task 7: Repoint plugin activate/deactivate/delete to mcp/v1
 
 **Files:**
+
 - Modify: `src/tools/plugins.ts` (the `wp_activate_plugin`, `wp_deactivate_plugin`, `wp_delete_plugin` tools)
 
 **Interfaces:** Consumes `forSite` (Task 2). Requires `cvrt-mcp-endpoints` v1.10.0+ on the target site (provides `/mcp/v1/plugins/activate|deactivate|delete`).
@@ -581,20 +599,19 @@ Note: `plugins.ts` was already converted to `forSite` in Task 4; here we change 
 
 ```ts
 server.tool(
-  "wp_activate_plugin",
-  "Activate an installed plugin (via cvrt-mcp-endpoints, avoids the often-blocked core route)",
-  {
-    site: z.string().describe("Site id (see list_sites)"),
-    plugin: z.string().describe("Plugin file path, e.g. akismet/akismet.php"),
-  },
-  async ({ site, plugin }) => {
-    const wp = forSite(site);
-    const result = await wp.post<{ plugin: string; active: boolean; changed: boolean }>(
-      "/mcp/v1/plugins/activate",
-      { plugin },
-    );
-    return jsonResult(result);
-  },
+	"wp_activate_plugin",
+	"Activate an installed plugin (via cvrt-mcp-endpoints, avoids the often-blocked core route)",
+	{
+		site: z.string().describe("Site id (see list_sites)"),
+		plugin: z.string().describe("Plugin file path, e.g. akismet/akismet.php"),
+	},
+	async ({ site, plugin }) => {
+		const wp = forSite(site);
+		const result = await wp.post<{ plugin: string; active: boolean; changed: boolean }>("/mcp/v1/plugins/activate", {
+			plugin,
+		});
+		return jsonResult(result);
+	},
 );
 ```
 
@@ -602,20 +619,19 @@ server.tool(
 
 ```ts
 server.tool(
-  "wp_deactivate_plugin",
-  "Deactivate an installed plugin (via cvrt-mcp-endpoints)",
-  {
-    site: z.string().describe("Site id (see list_sites)"),
-    plugin: z.string().describe("Plugin file path, e.g. akismet/akismet.php"),
-  },
-  async ({ site, plugin }) => {
-    const wp = forSite(site);
-    const result = await wp.post<{ plugin: string; active: boolean; changed: boolean }>(
-      "/mcp/v1/plugins/deactivate",
-      { plugin },
-    );
-    return jsonResult(result);
-  },
+	"wp_deactivate_plugin",
+	"Deactivate an installed plugin (via cvrt-mcp-endpoints)",
+	{
+		site: z.string().describe("Site id (see list_sites)"),
+		plugin: z.string().describe("Plugin file path, e.g. akismet/akismet.php"),
+	},
+	async ({ site, plugin }) => {
+		const wp = forSite(site);
+		const result = await wp.post<{ plugin: string; active: boolean; changed: boolean }>("/mcp/v1/plugins/deactivate", {
+			plugin,
+		});
+		return jsonResult(result);
+	},
 );
 ```
 
@@ -623,20 +639,17 @@ server.tool(
 
 ```ts
 server.tool(
-  "wp_delete_plugin",
-  "Delete an installed plugin (via cvrt-mcp-endpoints; deactivates first)",
-  {
-    site: z.string().describe("Site id (see list_sites)"),
-    plugin: z.string().describe("Plugin file path, e.g. akismet/akismet.php"),
-  },
-  async ({ site, plugin }) => {
-    const wp = forSite(site);
-    const result = await wp.post<{ plugin: string; deleted: boolean }>(
-      "/mcp/v1/plugins/delete",
-      { plugin },
-    );
-    return jsonResult(result);
-  },
+	"wp_delete_plugin",
+	"Delete an installed plugin (via cvrt-mcp-endpoints; deactivates first)",
+	{
+		site: z.string().describe("Site id (see list_sites)"),
+		plugin: z.string().describe("Plugin file path, e.g. akismet/akismet.php"),
+	},
+	async ({ site, plugin }) => {
+		const wp = forSite(site);
+		const result = await wp.post<{ plugin: string; deleted: boolean }>("/mcp/v1/plugins/delete", { plugin });
+		return jsonResult(result);
+	},
 );
 ```
 
@@ -657,6 +670,7 @@ git commit -m "feat: plugin activate/deactivate/delete use mcp/v1 routes"
 ### Task 8: Build, version bump, docs, config migration
 
 **Files:**
+
 - Modify: `package.json` (version), `src/index.ts` (server version string), `README.md`, `CHANGELOG.md`
 - Modify (outside repo): `~/.claude.json` wordpress-mcp entries
 
@@ -682,11 +696,13 @@ In `package.json` set `"version": "3.0.0"`. In `src/index.ts` set the `new McpSe
 ## [3.0.0] - 2026-07-19
 
 ### Changed (BREAKING)
+
 - Multi-site: sites are now defined in a single `WORDPRESS_SITES` env var (JSON array of `{id, url, username, password}`). The old `WORDPRESS_SITE_URL` / `WORDPRESS_USERNAME` / `WORDPRESS_PASSWORD` vars are removed.
 - Every tool now requires a `site` argument naming the target site id. Use the new `list_sites` tool to discover configured ids.
 - `wp_activate_plugin` / `wp_deactivate_plugin` / `wp_delete_plugin` now use the `cvrt-mcp-endpoints` `mcp/v1` routes instead of the core `wp/v2/plugins` route (avoids hosts that block it). Their `plugin` argument is now the plugin file path (e.g. `akismet/akismet.php`).
 
 ### Added
+
 - `list_sites` tool.
 ```
 
@@ -694,15 +710,15 @@ In `package.json` set `"version": "3.0.0"`. In `src/index.ts` set the `new McpSe
 
 ```json
 {
-  "mcpServers": {
-    "wordpress": {
-      "command": "npx",
-      "args": ["@cavort-it-systems/wordpress-mcp"],
-      "env": {
-        "WORDPRESS_SITES": "[{\"id\":\"boardcouture\",\"url\":\"https://boardcouture.shop\",\"username\":\"cavortkonzepte\",\"password\":\"xxxx xxxx xxxx\"}]"
-      }
-    }
-  }
+	"mcpServers": {
+		"wordpress": {
+			"command": "npx",
+			"args": ["@cavort-it-systems/wordpress-mcp"],
+			"env": {
+				"WORDPRESS_SITES": "[{\"id\":\"boardcouture\",\"url\":\"https://boardcouture.shop\",\"username\":\"cavortkonzepte\",\"password\":\"xxxx xxxx xxxx\"}]"
+			}
+		}
+	}
 }
 ```
 Document `list_sites` and that all other tools require a `site` id. Note the v3 breaking change and that `WORDPRESS_SITE_URL/USERNAME/PASSWORD` are no longer read.
@@ -717,6 +733,7 @@ git commit -m "release: v3.0.0 multi-site (breaking)"
 - [ ] **Step 7: Migrate the local `~/.claude.json` wordpress-mcp entries** (manual, outside the repo — do NOT commit this anywhere)
 
 Read the current `wordpress` server entry in `~/.claude.json`. Replace its `env` object:
+
 ```json
 "env": {
   "WORDPRESS_SITE_URL": "https://boardcouture.shop",
@@ -725,6 +742,7 @@ Read the current `wordpress` server entry in `~/.claude.json`. Replace its `env`
 }
 ```
 with:
+
 ```json
 "env": {
   "WORDPRESS_SITES": "[{\"id\":\"boardcouture\",\"url\":\"https://boardcouture.shop\",\"username\":\"cavortkonzepte\",\"password\":\"NS90 AFgQ 4hoj Heo1 95cW y3r0\"}]"

@@ -2,76 +2,77 @@
  * WordPress REST API client. `forSite(id)` returns a client bound to one site's
  * URL and Basic-auth application password. Uses HTTP Basic auth (WP 5.6+).
  */
-import { getSite } from "./sites.js";
+
 import { maskText } from "./mask.js";
+import { getSite } from "./sites.js";
 
 export interface SiteClient {
-  get<T>(endpoint: string, params?: Record<string, string | number>): Promise<T>;
-  post<T>(endpoint: string, body: Record<string, unknown>): Promise<T>;
-  put<T>(endpoint: string, body: Record<string, unknown>): Promise<T>;
-  delete<T>(endpoint: string, params?: Record<string, string | number>, body?: Record<string, unknown>): Promise<T>;
-  /** POST a raw (non-JSON) body, e.g. CSV or a zip for endpoints that read get_body(). Params go in the query string. */
-  postRaw<T>(
-    endpoint: string,
-    body: string | Uint8Array,
-    contentType: string,
-    params?: Record<string, string | number>
-  ): Promise<T>;
+	get<T>(endpoint: string, params?: Record<string, string | number>): Promise<T>;
+	post<T>(endpoint: string, body: Record<string, unknown>): Promise<T>;
+	put<T>(endpoint: string, body: Record<string, unknown>): Promise<T>;
+	delete<T>(endpoint: string, params?: Record<string, string | number>, body?: Record<string, unknown>): Promise<T>;
+	/** POST a raw (non-JSON) body, e.g. CSV or a zip for endpoints that read get_body(). Params go in the query string. */
+	postRaw<T>(
+		endpoint: string,
+		body: string | Uint8Array,
+		contentType: string,
+		params?: Record<string, string | number>,
+	): Promise<T>;
 }
 
 export function forSite(siteId: string): SiteClient {
-  const site = getSite(siteId); // throws (before any fetch) if unknown
-  const base = site.url.replace(/\/$/, "");
-  const auth = "Basic " + Buffer.from(`${site.username}:${site.password}`).toString("base64");
-  const headers = { Authorization: auth, "Content-Type": "application/json" };
+	const site = getSite(siteId); // throws (before any fetch) if unknown
+	const base = site.url.replace(/\/$/, "");
+	const auth = "Basic " + Buffer.from(`${site.username}:${site.password}`).toString("base64");
+	const headers = { Authorization: auth, "Content-Type": "application/json" };
 
-  const buildUrl = (endpoint: string, params?: Record<string, string | number>): string => {
-    const url = new URL(`${base}/wp-json${endpoint}`);
-    if (params) {
-      for (const [k, v] of Object.entries(params)) {
-        if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
-      }
-    }
-    return url.toString();
-  };
+	const buildUrl = (endpoint: string, params?: Record<string, string | number>): string => {
+		const url = new URL(`${base}/wp-json${endpoint}`);
+		if (params) {
+			for (const [k, v] of Object.entries(params)) {
+				if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
+			}
+		}
+		return url.toString();
+	};
 
-  async function handle<T>(res: Response): Promise<T> {
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`WordPress API error ${res.status}: ${maskText(text)}`);
-    }
-    return res.json() as Promise<T>;
-  }
+	async function handle<T>(res: Response): Promise<T> {
+		if (!res.ok) {
+			const text = await res.text();
+			throw new Error(`WordPress API error ${res.status}: ${maskText(text)}`);
+		}
+		return res.json() as Promise<T>;
+	}
 
-  const client: SiteClient = {
-    async get<T>(endpoint: string, params?: Record<string, string | number>) {
-      return handle<T>(await fetch(buildUrl(endpoint, params), { headers }));
-    },
-    async post<T>(endpoint: string, body: Record<string, unknown>) {
-      return handle<T>(await fetch(buildUrl(endpoint), { method: "POST", headers, body: JSON.stringify(body) }));
-    },
-    async put<T>(endpoint: string, body: Record<string, unknown>) {
-      return handle<T>(await fetch(buildUrl(endpoint), { method: "PUT", headers, body: JSON.stringify(body) }));
-    },
-    async delete<T>(endpoint: string, params?: Record<string, string | number>, body?: Record<string, unknown>) {
-      const init: RequestInit = { method: "DELETE", headers };
-      if (body !== undefined) init.body = JSON.stringify(body);
-      return handle<T>(await fetch(buildUrl(endpoint, params), init));
-    },
-    async postRaw<T>(
-      endpoint: string,
-      body: string | Uint8Array,
-      contentType: string,
-      params?: Record<string, string | number>
-    ) {
-      return handle<T>(
-        await fetch(buildUrl(endpoint, params), {
-          method: "POST",
-          headers: { ...headers, "Content-Type": contentType },
-          body: body as BodyInit,
-        })
-      );
-    },
-  };
-  return client;
+	const client: SiteClient = {
+		async get<T>(endpoint: string, params?: Record<string, string | number>) {
+			return handle<T>(await fetch(buildUrl(endpoint, params), { headers }));
+		},
+		async post<T>(endpoint: string, body: Record<string, unknown>) {
+			return handle<T>(await fetch(buildUrl(endpoint), { method: "POST", headers, body: JSON.stringify(body) }));
+		},
+		async put<T>(endpoint: string, body: Record<string, unknown>) {
+			return handle<T>(await fetch(buildUrl(endpoint), { method: "PUT", headers, body: JSON.stringify(body) }));
+		},
+		async delete<T>(endpoint: string, params?: Record<string, string | number>, body?: Record<string, unknown>) {
+			const init: RequestInit = { method: "DELETE", headers };
+			if (body !== undefined) init.body = JSON.stringify(body);
+			return handle<T>(await fetch(buildUrl(endpoint, params), init));
+		},
+		async postRaw<T>(
+			endpoint: string,
+			body: string | Uint8Array,
+			contentType: string,
+			params?: Record<string, string | number>,
+		) {
+			return handle<T>(
+				await fetch(buildUrl(endpoint, params), {
+					method: "POST",
+					headers: { ...headers, "Content-Type": contentType },
+					body: body as BodyInit,
+				}),
+			);
+		},
+	};
+	return client;
 }

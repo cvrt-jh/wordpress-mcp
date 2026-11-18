@@ -26,11 +26,11 @@ Lightweight WordPress MCP server for site management. **342 tools** with **token
 
 WordPress REST API returns extremely verbose JSON (~5-10KB per post). This server strips it down:
 
-| Response | Before | After | Reduction |
-|----------|--------|-------|-----------|
-| `wp_list_posts` (10 posts) | ~50KB | ~2KB | **96%** |
-| `wp_get_post` | ~5KB | ~200 bytes | **96%** |
-| `wp_list_plugins` | ~15KB | ~800 bytes | **95%** |
+| Response                   | Before | After      | Reduction |
+| -------------------------- | ------ | ---------- | --------- |
+| `wp_list_posts` (10 posts) | ~50KB  | ~2KB       | **96%**   |
+| `wp_get_post`              | ~5KB   | ~200 bytes | **96%**   |
+| `wp_list_plugins`          | ~15KB  | ~800 bytes | **95%**   |
 
 Less tokens = faster responses, lower costs, more context for your AI.
 
@@ -58,15 +58,15 @@ Add to your MCP config (`~/.claude.json` or Claude Desktop settings):
 
 ```json
 {
-  "mcpServers": {
-    "wordpress": {
-      "command": "npx",
-      "args": ["@cavort-it-systems/wordpress-mcp"],
-      "env": {
-        "WORDPRESS_SITES": "[{\"id\":\"boardcouture\",\"url\":\"https://boardcouture.shop\",\"username\":\"cavortkonzepte\",\"password\":\"xxxx xxxx xxxx\"}]"
-      }
-    }
-  }
+	"mcpServers": {
+		"wordpress": {
+			"command": "npx",
+			"args": ["@cavort-it-systems/wordpress-mcp"],
+			"env": {
+				"WORDPRESS_SITES": "[{\"id\":\"boardcouture\",\"url\":\"https://boardcouture.shop\",\"username\":\"cavortkonzepte\",\"password\":\"xxxx xxxx xxxx\"}]"
+			}
+		}
+	}
 }
 ```
 
@@ -102,6 +102,7 @@ Uses **Application Passwords** (WordPress 5.6+):
 All responses are automatically trimmed. Example:
 
 **`wp_get_post`** - from ~5KB to ~200 bytes:
+
 ```json
 // Before (WordPress REST API raw)
 {"id":123,"date":"2026-01-15T10:30:00","date_gmt":"2026-01-15T09:30:00",
@@ -124,21 +125,22 @@ All responses are automatically trimmed. Example:
 
 **What gets stripped:**
 
-| Field | Where | Why |
-|-------|-------|-----|
-| `guid`, `_links` | everywhere | Internal WordPress data |
-| `content.rendered` | lists | Only included when explicitly requested |
-| `meta`, `class_list` | posts/pages | Theme/plugin metadata |
-| `ping_status`, `comment_status` | posts | Rarely needed |
-| `template`, `format`, `sticky` | posts | Theme-specific |
-| HTML tags | excerpts | Clean text output |
-| Pretty-print JSON | all | Compact single-line output |
+| Field                           | Where       | Why                                     |
+| ------------------------------- | ----------- | --------------------------------------- |
+| `guid`, `_links`                | everywhere  | Internal WordPress data                 |
+| `content.rendered`              | lists       | Only included when explicitly requested |
+| `meta`, `class_list`            | posts/pages | Theme/plugin metadata                   |
+| `ping_status`, `comment_status` | posts       | Rarely needed                           |
+| `template`, `format`, `sticky`  | posts       | Theme-specific                          |
+| HTML tags                       | excerpts    | Clean text output                       |
+| Pretty-print JSON               | all         | Compact single-line output              |
 
 ## Tools (342)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself.
 
 ### Sites (1)
+
 - `list_sites` - List configured site ids and URLs (no `site` argument; passwords never returned)
 
 ### Standard WordPress REST API (48 tools)
@@ -146,12 +148,14 @@ Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` 
 These work with any WordPress site:
 
 ### Site (4)
+
 - `wp_site_info` - Get site name, description, URL
 - `wp_get_settings` - Get site settings
 - `wp_update_settings` - Update site settings
 - `wp_get_namespaces` - List REST API namespaces
 
 ### Posts (6)
+
 - `wp_list_posts` - List posts with filters
 - `wp_get_post` - Get single post
 - `wp_create_post` - Create post
@@ -160,6 +164,7 @@ These work with any WordPress site:
 - `wp_search_posts` - Search posts
 
 ### Pages (5)
+
 - `wp_list_pages` - List pages
 - `wp_get_page` - Get single page
 - `wp_create_page` - Create page
@@ -167,6 +172,7 @@ These work with any WordPress site:
 - `wp_delete_page` - Delete page
 
 ### Users (6)
+
 - `wp_list_users` - List users
 - `wp_me` - Get current user
 - `wp_get_user` - Get user by ID
@@ -175,6 +181,7 @@ These work with any WordPress site:
 - `wp_delete_user` - Delete user
 
 ### Plugins (5)
+
 - `wp_list_plugins` - List plugins
 - `wp_get_plugin` - Get plugin details
 - `wp_activate_plugin` - Activate plugin (mcp/v1; `plugin` is the file path, e.g. `akismet/akismet.php`)
@@ -182,18 +189,21 @@ These work with any WordPress site:
 - `wp_delete_plugin` - Delete plugin (mcp/v1; `plugin` is the file path)
 
 ### Themes (4)
+
 - `wp_list_themes` - List themes
 - `wp_get_active_theme` - Get active theme
 - `wp_get_theme` - Get theme details
 - `wp_activate_theme` - Switch themes
 
 ### Media (4)
+
 - `wp_list_media` - List media library
 - `wp_get_media` - Get media item
 - `wp_update_media` - Update media metadata
 - `wp_delete_media` - Delete media
 
 ### Categories & Tags (8)
+
 - `wp_list_categories` - List categories
 - `wp_create_category` - Create category
 - `wp_update_category` - Update category
@@ -204,6 +214,7 @@ These work with any WordPress site:
 - `wp_delete_tag` - Delete tag
 
 ### Comments (6)
+
 - `wp_list_comments` - List comments
 - `wp_get_comment` - Get comment
 - `wp_create_comment` - Create comment
@@ -218,6 +229,7 @@ These work with any WordPress site:
 These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-endpoints) WordPress plugin to be installed and activated.
 
 ### Plugin Management (4)
+
 - `mcp_search_plugins` - Search WordPress.org plugins
 - `mcp_install_plugin` - Install plugin from WordPress.org
 - `mcp_update_plugin` - Update single plugin (`refresh` checks first, incl. GitHub/PUC plugins)
@@ -225,6 +237,7 @@ These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-end
 - `mcp_update_all_plugins` - Update all plugins
 
 ### Theme Management (6)
+
 - `mcp_search_themes` - Search WordPress.org themes
 - `mcp_install_theme` - Install theme from WordPress.org
 - `mcp_install_theme_zip` - Install a theme from a public ZIP `url` or upload a local `file_path` (.zip, max 64 MB; works for private or locally built themes, needs cvrt-mcp-endpoints 1.20.0+; replacing the active theme needs `replace_active: true`)
@@ -233,6 +246,7 @@ These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-end
 - `mcp_delete_theme` - Delete inactive theme
 
 ### Core Management (6)
+
 - `mcp_get_version` - Get WordPress version info
 - `mcp_get_system_info` - Get comprehensive system info
 - `mcp_check_updates` - Check for all updates
@@ -241,6 +255,7 @@ These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-end
 - `mcp_flush_cache` - Flush object cache and transients (not a page cache in front of WordPress)
 
 ### Database Management (5)
+
 - `mcp_get_tables` - List tables with sizes
 - `mcp_search_replace` - Search/replace in database
 - `mcp_optimize_tables` - Optimize all tables
@@ -248,6 +263,7 @@ These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-end
 - `mcp_clean_comments` - Delete spam/trash comments
 
 ### Options Management (5)
+
 - `mcp_list_options` - List options with prefix filter
 - `mcp_get_option` - Get single option
 - `mcp_set_option` - Create/update option
@@ -255,6 +271,7 @@ These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-end
 - `mcp_bulk_get_options` - Get multiple options
 
 ### Menu Management (8)
+
 - `mcp_list_menus` - List navigation menus
 - `mcp_get_menu_locations` - Get theme locations
 - `mcp_get_menu` - Get menu with items
@@ -265,6 +282,7 @@ These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-end
 - `mcp_assign_menu_location` - Assign menu to location
 
 ### Widget Management (8)
+
 - `mcp_list_sidebars` - List all sidebars
 - `mcp_get_sidebar_widgets` - Get sidebar widgets
 - `mcp_list_widget_types` - List widget types
@@ -275,6 +293,7 @@ These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-end
 - `mcp_move_widget` - Move widget to sidebar
 
 ### Health & Diagnostics (6)
+
 - `mcp_get_health` - Site health score
 - `mcp_get_debug_info` - Debug information
 - `mcp_get_php_info` - PHP configuration
@@ -293,29 +312,34 @@ These require the [cvrt-mcp-endpoints](https://github.com/cvrt-gmbh/cvrt-mcp-end
 Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and Advanced Custom Fields.
 
 ### Field Groups (4)
+
 - `acf_list_field_groups` - List all field groups
 - `acf_get_field_group` - Get field group with schema
 - `acf_export_field_groups` - Export as JSON
 - `acf_import_field_groups` - Import from JSON
 
 ### Post Fields (4)
+
 - `acf_get_post_fields` - Get all fields for post
 - `acf_update_post_fields` - Update multiple fields
 - `acf_get_post_field` - Get single field value
 - `acf_update_post_field` - Update single field
 
 ### Term & User Fields (4)
+
 - `acf_get_term_fields` - Get term ACF fields
 - `acf_update_term_fields` - Update term fields
 - `acf_get_user_fields` - Get user ACF fields
 - `acf_update_user_fields` - Update user fields
 
 ### Options Pages (3)
+
 - `acf_list_options_pages` - List options pages
 - `acf_get_options_fields` - Get options page fields
 - `acf_update_options_fields` - Update options fields
 
 ### Repeater Fields (5)
+
 - `acf_get_repeater` - Get repeater rows
 - `acf_add_repeater_row` - Add row
 - `acf_update_repeater_row` - Update row
@@ -323,6 +347,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and Advanced 
 - `acf_reorder_repeater` - Reorder rows
 
 ### Flexible Content (5)
+
 - `acf_get_flexible` - Get layouts
 - `acf_add_flexible_layout` - Add layout
 - `acf_update_flexible_layout` - Update layout
@@ -330,12 +355,14 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and Advanced 
 - `acf_reorder_flexible` - Reorder layouts
 
 ### Relationship Fields (4)
+
 - `acf_get_relationship` - Get related posts
 - `acf_set_relationship` - Set related posts
 - `acf_add_to_relationship` - Add posts
 - `acf_remove_from_relationship` - Remove posts
 
 ### Utility (2)
+
 - `acf_get_clone_references` - Get clone field refs
 - `acf_get_field_object` - Get field schema
 
@@ -346,6 +373,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and Advanced 
 Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommerce.
 
 ### Products (5)
+
 - `woo_list_products` - List products with filters
 - `woo_get_product` - Get product details
 - `woo_create_product` - Create product
@@ -353,18 +381,21 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `woo_delete_product` - Delete product
 
 ### Variations (4)
+
 - `woo_list_variations` - List product variations
 - `woo_create_variation` - Create variation
 - `woo_update_variation` - Update variation
 - `woo_delete_variation` - Delete variation
 
 ### Attributes (4)
+
 - `woo_list_attributes` - List attributes
 - `woo_list_attribute_terms` - List attribute terms
 - `woo_create_attribute` - Create attribute
 - `woo_create_attribute_term` - Create term
 
 ### Categories & Tags (5)
+
 - `woo_list_categories` - List product categories
 - `woo_create_category` - Create category
 - `woo_update_category` - Update category
@@ -372,6 +403,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `woo_list_tags` - List product tags
 
 ### Orders (5)
+
 - `woo_list_orders` - List orders
 - `woo_get_order` - Get order details
 - `woo_update_order_status` - Update status
@@ -379,6 +411,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `woo_get_order_notes` - Get notes
 
 ### Customers (5)
+
 - `woo_list_customers` - List customers
 - `woo_get_customer` - Get customer
 - `woo_create_customer` - Create customer
@@ -386,6 +419,7 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `woo_get_customer_orders` - Get order history
 
 ### Coupons (5)
+
 - `woo_list_coupons` - List coupons
 - `woo_get_coupon` - Get coupon
 - `woo_create_coupon` - Create coupon
@@ -393,11 +427,13 @@ Requires [wp-pilot-pro](https://github.com/cvrt-gmbh/wp-pilot-pro) and WooCommer
 - `woo_delete_coupon` - Delete coupon
 
 ### Reports (3)
+
 - `woo_sales_report` - Sales report
 - `woo_top_sellers` - Top selling products
 - `woo_stock_report` - Stock status report
 
 ### Product Meta & Inventory (3)
+
 - `woo_get_product_meta` - Get product meta
 - `woo_update_product_meta` - Update product meta
 - `woo_bulk_update_stock` - Bulk stock update
@@ -571,15 +607,15 @@ One server instance manages all your sites via the `WORDPRESS_SITES` env var (se
 
 ```json
 {
-  "mcpServers": {
-    "wordpress": {
-      "command": "npx",
-      "args": ["@cavort-it-systems/wordpress-mcp"],
-      "env": {
-        "WORDPRESS_SITES": "[{\"id\":\"site1\",\"url\":\"https://site1.com\",\"username\":\"admin\",\"password\":\"xxxx xxxx xxxx xxxx\"},{\"id\":\"site2\",\"url\":\"https://site2.com\",\"username\":\"admin\",\"password\":\"yyyy yyyy yyyy yyyy\"}]"
-      }
-    }
-  }
+	"mcpServers": {
+		"wordpress": {
+			"command": "npx",
+			"args": ["@cavort-it-systems/wordpress-mcp"],
+			"env": {
+				"WORDPRESS_SITES": "[{\"id\":\"site1\",\"url\":\"https://site1.com\",\"username\":\"admin\",\"password\":\"xxxx xxxx xxxx xxxx\"},{\"id\":\"site2\",\"url\":\"https://site2.com\",\"username\":\"admin\",\"password\":\"yyyy yyyy yyyy yyyy\"}]"
+			}
+		}
+	}
 }
 ```
 
