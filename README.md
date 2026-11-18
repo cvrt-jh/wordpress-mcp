@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.12.1-blue.svg)](https://modelcontextprotocol.io)
 
-Lightweight WordPress MCP server for site management. **343 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
+Lightweight WordPress MCP server for site management. **359 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
 
 **v3.5**: `fields_*` (12 tools) for [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+ - status, settings, field types, location values, schemas and CRUD + JSON sync for field groups, post types, taxonomies and options pages.
 
@@ -135,7 +135,7 @@ All responses are automatically trimmed. Example:
 | HTML tags                       | excerpts    | Clean text output                       |
 | Pretty-print JSON               | all         | Compact single-line output              |
 
-## Tools (343)
+## Tools (359)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself. The lists are generated from the registered tools (`pnpm run sync-docs`); a test fails when they drift.
 
@@ -605,6 +605,27 @@ Requires [cvrt-seo-manager](https://github.com/cvrt-gmbh/cvrt-seo-manager).
 - `seo_export_redirects` - Export every redirect as a CSV string (source, target, type, is_regex, enabled)
 - `seo_import_redirects` - Import redirects from CSV in the seo_export_redirects format (header row source,target,type[,is_regex],enabled; the is_regex column is detected from the header)
 - `seo_import_migrate` - Migrate from RankMath or Yoast
+
+### Language (machine translation) (16)
+
+Requires [cvrt-lang](https://github.com/cvrt-gmbh/cvrt-lang) 0.9.0 or later (machine translation, Azure AI Translator); `lang_list_pending` / `lang_submit_translations` / `lang_fail_job` are the external queue for manual or agent use (no recurring job). No tool sets the provider key: use the fort constant or the admin.
+
+- `lang_mt_status` - cvrt-lang machine translation status (cvrt-lang 0.9.0+): provider and readiness, pause state, settings, queue counts (pending, leased, failed, `retrying` = pending again after a failed attempt, ...
+- `lang_mt_estimate` - Estimate what lang_mt_enqueue would queue for the same arguments: jobs, units and characters
+- `lang_mt_enqueue` - Queue bulk machine translation jobs (published default-language originals only; manual translations stay)
+- `lang_mt_pause` - Pause machine translation (reason admin): the worker sends nothing until lang_mt_resume
+- `lang_mt_resume` - Lift any machine translation pause (admin, cap or auth)
+- `lang_list_pending` - External queue, for manual or agent use (no recurring job runs it): claim up to `limit` due jobs (POST /mt/jobs/claim)
+- `lang_submit_translations` - External queue, for manual or agent use: submit translations for a claimed job (POST /mt/jobs/{id})
+- `lang_fail_job` - External queue, for manual or agent use: report a claimed job as failed (POST /mt/jobs/{id}/fail)
+- `lang_mt_retry_job` - Put a failed machine translation job back in the queue (POST /mt/jobs/{id}/retry, no body)
+- `lang_mt_get_settings` - Machine translation settings (GET /mt/settings): provider, auto, auto_types, auto_string_kinds, review_mode, monthly_cap, user_daily_budget, formality, glossary_hints, provider_options, pause state, ...
+- `lang_mt_update_settings` - Patch the machine translation settings (PUT /mt/settings); only the fields you send change, nothing is written unless every one is valid
+- `lang_translate_machine` - Queue machine translation of posts (POST /translate with method machine): one user job per source post and language
+- `lang_strings_machine` - Queue machine translation of interface strings (POST /strings/machine): one job per string; a manual or imported translation stays
+- `lang_string_machine` - Queue machine translation of ONE string and name it (POST /strings/{id}/machine): a manual translation is translated too
+- `lang_get_units` - The side-by-side editor's translation units of a translation post (GET /units/post/{id}): per unit key the source text and hash, the stored translation and its status
+- `lang_update_units` - Update a translation post's units (PUT /units/post/{id}). units writes manual translations (key -> text, only keys of the source); approve marks keys reviewed; machine queues those keys for machine ...
 
 ### Fort (Bearfort) (5)
 
