@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- cvrt-lang machine translation tools (`mcp/lang/v1`, Azure AI Translator): `lang_mt_status`, `lang_mt_estimate`,
+  `lang_mt_enqueue`, `lang_mt_pause`, `lang_mt_resume`, `lang_get_units`, `lang_update_units`, and the external queue for
+  manual or agent use (no recurring job): `lang_list_pending`, `lang_submit_translations`, `lang_fail_job`. No tool
+  accepts or returns a provider key. `lang_list_pending` returns each job's lease token as `lease` (the output mask
+  hides any field named `token`); pass it as `token` to the submit and fail tools.
+
 ## [3.16.0] - 2026-11-18
 
 ### Added

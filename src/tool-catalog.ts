@@ -13,6 +13,7 @@ import { register as registerCvrtMedia } from "./tools/cvrt-media.js";
 import { register as registerFields } from "./tools/fields.js";
 import { register as registerFort } from "./tools/fort.js";
 import { register as registerFulfillment } from "./tools/fulfillment.js";
+import { register as registerLang } from "./tools/lang.js";
 import { register as registerLegal } from "./tools/legal.js";
 import { register as registerAcf } from "./tools/mcp-acf.js";
 import { register as registerMcpCore } from "./tools/mcp-core.js";
@@ -113,6 +114,12 @@ export const SECTIONS: Section[] = [
 		title: "SEO",
 		requires: "[cvrt-seo-manager](https://github.com/cvrt-gmbh/cvrt-seo-manager)",
 		register: registerSeo,
+	},
+	{
+		title: "Language (machine translation)",
+		requires:
+			"[cvrt-lang](https://github.com/cvrt-gmbh/cvrt-lang) with machine translation (Azure AI Translator); `lang_list_pending` / `lang_submit_translations` / `lang_fail_job` are the external queue for manual or agent use (no recurring job). No tool sets the provider key: use the fort constant or the admin",
+		register: registerLang,
 	},
 	{ title: "Fort (Bearfort)", requires: "`BEARFORT_API_KEY` (Bearfort API, not the site)", register: registerFort },
 	{ title: "WooCommerce Helper", requires: "cvrt-woo-helper", register: registerWooHelper },
