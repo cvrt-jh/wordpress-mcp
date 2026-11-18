@@ -185,6 +185,108 @@ export function register(server: McpServer) {
 	);
 
 	server.tool(
+		"lang_mt_retry_job",
+		"Put a failed machine translation job back in the queue (POST /mt/jobs/{id}/retry, no body). Returns { job, state: pending }. Job ids are in the `failed` list of lang_mt_status.",
+		{ site, id: z.number().int().positive().describe("Failed job id (from lang_mt_status `failed`)") },
+		async ({ site, id }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/mt/jobs/${id}/retry`, {}));
+		},
+	);
+
+	server.tool(
+		"lang_mt_get_settings",
+		"Machine translation settings (GET /mt/settings): provider, auto, auto_types, auto_string_kinds, review_mode, monthly_cap, user_daily_budget, formality, glossary_hints, provider_options, pause state, and the provider key only as { set, source } (constant, option, undecryptable or none).",
+		{ site },
+		async ({ site }) => {
+			const wp = forSite(site);
+			return jsonResult(hideKeys(await wp.get<Record<string, unknown>>(`${NS}/mt/settings`)));
+		},
+	);
+
+	server.tool(
+		"lang_mt_update_settings",
+		"Patch the machine translation settings (PUT /mt/settings); only the fields you send change, nothing is written unless every one is valid. The provider key is NOT a setting and no tool sets it (fort constant or admin); pausing is lang_mt_pause / lang_mt_resume. Returns the settings as lang_mt_get_settings does (key only as { set, source }).",
+		{
+			site,
+			provider: z.string().optional().describe("Provider id, `azure`, or `none`"),
+			auto: z.boolean().optional().describe("Translate automatically on save"),
+			auto_types: z
+				.record(z.string(), z.array(z.string()))
+				.optional()
+				.describe("Post type -> language codes translated automatically"),
+			auto_string_kinds: z.array(z.string()).optional().describe("String kinds translated automatically"),
+			review_mode: z
+				.enum(["review", "publish"])
+				.optional()
+				.describe("review: machine output waits for approval; publish: it goes live"),
+			monthly_cap: z.number().int().min(0).optional().describe("Monthly character cap"),
+			user_daily_budget: z.number().int().min(0).optional().describe("Characters per user per day"),
+			formality: z.record(z.string(), z.string()).optional().describe("Language code -> formality"),
+			glossary_hints: z.array(z.string()).optional().describe("Glossary hints"),
+			provider_options: z
+				.record(z.string(), z.record(z.string(), z.string()))
+				.optional()
+				.describe("Provider id -> option -> value (e.g. azure region); see lang_mt_status `providers`"),
+		},
+		async ({ site, ...args }) => {
+			// Defence in depth: the schema has no key field, but a caller that smuggles one in is refused, not forwarded.
+			if ("key" in args) throw new Error("The provider key is not a setting and cannot be set through MCP");
+			const wp = forSite(site);
+			return jsonResult(hideKeys(await wp.put<Record<string, unknown>>(`${NS}/mt/settings`, defined(args))));
+		},
+	);
+
+	server.tool(
+		"lang_translate_machine",
+		"Queue machine translation of posts (POST /translate with method machine): one user job per source post and language. Needs edit rights on every id (a foreign id refuses the whole request). Returns { queued: [{ id, lang, job }], errors }. Run lang_mt_estimate first to see the characters.",
+		{
+			site,
+			ids: z.array(z.number().int().positive()).min(1).max(50).describe("Post ids (1 to 50)"),
+			lang: z.string().describe("Target language code"),
+			unit_keys: z.array(z.string()).optional().describe("Only these unit keys; needs exactly one id"),
+		},
+		async ({ site, ...args }) => {
+			const wp = forSite(site);
+			return jsonResult(
+				await wp.post<Record<string, unknown>>(`${NS}/translate`, {
+					type: "post",
+					method: "machine",
+					...defined(args),
+				}),
+			);
+		},
+	);
+
+	server.tool(
+		"lang_strings_machine",
+		"Queue machine translation of interface strings (POST /strings/machine): one job per string; a manual or imported translation stays. Returns { queued, errors } per id.",
+		{
+			site,
+			ids: z.array(z.number().int().positive()).min(1).max(50).describe("String ids (1 to 50)"),
+			lang: z.string().describe("Target language code"),
+		},
+		async ({ site, ...body }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/strings/machine`, body));
+		},
+	);
+
+	server.tool(
+		"lang_string_machine",
+		"Queue machine translation of ONE string and name it (POST /strings/{id}/machine): a manual translation is translated too. Returns { queued, errors }; 404 cvrt_lang_not_found for an unknown string.",
+		{
+			site,
+			id: z.number().int().positive().describe("String id"),
+			lang: z.string().describe("Target language code"),
+		},
+		async ({ site, id, lang }) => {
+			const wp = forSite(site);
+			return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/strings/${id}/machine`, { lang }));
+		},
+	);
+
+	server.tool(
 		"lang_get_units",
 		"The side-by-side editor's translation units of a translation post (GET /units/post/{id}): per unit key the source text and hash, the stored translation and its status. Needs edit_post on the translation and read_post on its source.",
 		{ site, id: postId },

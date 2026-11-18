@@ -55,10 +55,16 @@ describe("lang tools", () => {
 			"lang_list_pending",
 			"lang_mt_enqueue",
 			"lang_mt_estimate",
+			"lang_mt_get_settings",
 			"lang_mt_pause",
 			"lang_mt_resume",
+			"lang_mt_retry_job",
 			"lang_mt_status",
+			"lang_mt_update_settings",
+			"lang_string_machine",
+			"lang_strings_machine",
 			"lang_submit_translations",
+			"lang_translate_machine",
 			"lang_update_units",
 		]);
 	});
@@ -295,5 +301,95 @@ describe("lang tools", () => {
 		put.mockResolvedValue({});
 		await tool("lang_update_units").handler({ site: "a", id: 12, approve: ["title"] });
 		expect(put).toHaveBeenCalledWith(`${NS}/units/post/12`, { approve: ["title"] });
+	});
+});
+
+describe("lang tools: retry, settings, machine requests", () => {
+	beforeEach(() => {
+		for (const m of [get, put, post, del]) m.mockReset();
+	});
+
+	it("lang_mt_retry_job posts an empty body to /mt/jobs/{id}/retry", async () => {
+		post.mockResolvedValue({ job: 4, state: "pending" });
+		await tool("lang_mt_retry_job").handler({ site: "a", id: 4 });
+		expect(post).toHaveBeenCalledWith(`${NS}/mt/jobs/4/retry`, {});
+	});
+
+	it("lang_mt_get_settings reads GET /mt/settings and keeps the { set, source } descriptor", async () => {
+		get.mockResolvedValue({ provider: "azure", key: { set: true, source: "option" } });
+		const out = JSON.parse((await tool("lang_mt_get_settings").handler({ site: "a" })).content[0].text);
+		expect(get).toHaveBeenCalledWith(`${NS}/mt/settings`);
+		expect(out.key).toEqual({ set: true, source: "option" });
+	});
+
+	it("lang_mt_get_settings masks a string key", async () => {
+		get.mockResolvedValue({ provider: "azure", key: "0123456789abcdef0123456789abcdef" });
+		const text = (await tool("lang_mt_get_settings").handler({ site: "a" })).content[0].text;
+		expect(text).not.toContain("0123456789abcdef");
+	});
+
+	it("lang_mt_update_settings puts only the settings that were set", async () => {
+		put.mockResolvedValue({ provider: "azure" });
+		await tool("lang_mt_update_settings").handler({
+			site: "a",
+			provider: "azure",
+			auto: true,
+			review_mode: "review",
+			monthly_cap: 500000,
+			formality: { de: "more" },
+		});
+		expect(put).toHaveBeenCalledWith(`${NS}/mt/settings`, {
+			provider: "azure",
+			auto: true,
+			review_mode: "review",
+			monthly_cap: 500000,
+			formality: { de: "more" },
+		});
+	});
+
+	it("lang_mt_update_settings has no key or pause field and refuses a key the caller smuggles in", async () => {
+		const { schema, handler } = tool("lang_mt_update_settings");
+		for (const arg of ["key", "paused", "paused_reason", "paused_month"]) expect(schema).not.toHaveProperty(arg);
+		await expect(handler({ site: "a", key: "0123456789abcdef", auto: true })).rejects.toThrow(/key/);
+		expect(put).not.toHaveBeenCalled();
+	});
+
+	it("lang_mt_update_settings never echoes a key", async () => {
+		put.mockResolvedValue({ provider: "azure", key: "0123456789abcdef0123456789abcdef" });
+		const text = (await tool("lang_mt_update_settings").handler({ site: "a", auto: false })).content[0].text;
+		expect(text).not.toContain("0123456789abcdef");
+	});
+
+	it("lang_translate_machine posts type post and method machine to /translate", async () => {
+		post.mockResolvedValue({ queued: [{ id: 5, lang: "en", job: 9 }], errors: [] });
+		await tool("lang_translate_machine").handler({ site: "a", ids: [5], lang: "en", unit_keys: ["title"] });
+		expect(post).toHaveBeenCalledWith(`${NS}/translate`, {
+			type: "post",
+			method: "machine",
+			ids: [5],
+			lang: "en",
+			unit_keys: ["title"],
+		});
+	});
+
+	it("lang_translate_machine omits unit_keys when not set and bounds ids to 1..50", async () => {
+		post.mockResolvedValue({});
+		await tool("lang_translate_machine").handler({ site: "a", ids: [5, 6], lang: "en" });
+		expect(post).toHaveBeenCalledWith(`${NS}/translate`, { type: "post", method: "machine", ids: [5, 6], lang: "en" });
+		const ids = tool("lang_translate_machine").schema.ids as z.ZodTypeAny;
+		expect(ids.safeParse([]).success).toBe(false);
+		expect(ids.safeParse(Array.from({ length: 51 }, (_, i) => i + 1)).success).toBe(false);
+	});
+
+	it("lang_strings_machine posts ids and lang to /strings/machine", async () => {
+		post.mockResolvedValue({ queued: [], errors: [] });
+		await tool("lang_strings_machine").handler({ site: "a", ids: [1, 2], lang: "en" });
+		expect(post).toHaveBeenCalledWith(`${NS}/strings/machine`, { ids: [1, 2], lang: "en" });
+	});
+
+	it("lang_string_machine posts lang to /strings/{id}/machine", async () => {
+		post.mockResolvedValue({ queued: [], errors: [] });
+		await tool("lang_string_machine").handler({ site: "a", id: 8, lang: "en" });
+		expect(post).toHaveBeenCalledWith(`${NS}/strings/8/machine`, { lang: "en" });
 	});
 });
