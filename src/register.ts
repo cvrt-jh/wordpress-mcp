@@ -1,94 +1,13 @@
 /**
  * Registers every tool on a server. Shared by index.ts and the drift test,
  * so the test sees exactly the tool set the published server exposes.
+ *
+ * The modules and their order live in tool-catalog.ts, which also generates
+ * the README tool lists; add a new tool module there.
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { register as registerComments } from "./tools/comments.js";
-import { register as registerCvrtMedia } from "./tools/cvrt-media.js";
-import { register as registerFields } from "./tools/fields.js";
-// Fort tools (Bearfort API: backups, jobs, logs) - need BEARFORT_API_KEY
-import { register as registerFort } from "./tools/fort.js";
-import { register as registerFulfillment } from "./tools/fulfillment.js";
-import { register as registerLegal } from "./tools/legal.js";
-// ACF tools (mcp/v1/acf) - requires cvrt-mcp-endpoints plugin + ACF Pro active
-import { register as registerAcf } from "./tools/mcp-acf.js";
-import { register as registerMcpCore } from "./tools/mcp-core.js";
-import { register as registerMcpCpt } from "./tools/mcp-cpt.js";
-import { register as registerMcpDatabase } from "./tools/mcp-database.js";
-// Elementor tools (mcp/v1/elementor) - requires cvrt-mcp-endpoints plugin + Elementor active
-import { register as registerMcpElementor } from "./tools/mcp-elementor.js";
-import { register as registerMcpHealth } from "./tools/mcp-health.js";
-import { register as registerMcpMedia } from "./tools/mcp-media.js";
-import { register as registerMcpMenus } from "./tools/mcp-menus.js";
-import { register as registerMcpOptions } from "./tools/mcp-options.js";
-// Extended MCP Endpoints tools (mcp/v1) - requires cvrt-mcp-endpoints plugin
-import { register as registerMcpPlugins } from "./tools/mcp-plugins.js";
-import { register as registerMcpTaxonomies } from "./tools/mcp-taxonomies.js";
-import { register as registerMcpThemes } from "./tools/mcp-themes.js";
-import { register as registerMcpUsers } from "./tools/mcp-users.js";
-import { register as registerMcpWidgets } from "./tools/mcp-widgets.js";
-// WooCommerce tools - requires future cvrt-woo-endpoints plugin (mcp/v1/woo)
-import { register as registerWoo } from "./tools/mcp-woo.js";
-import { register as registerMedia } from "./tools/media.js";
-import { register as registerPages } from "./tools/pages.js";
-import { register as registerPlugins } from "./tools/plugins.js";
-import { register as registerPosts } from "./tools/posts.js";
-import { register as registerSeo } from "./tools/seo.js";
-// Standard WordPress REST API tools (wp/v2)
-import { register as registerSite } from "./tools/site.js";
-// Multi-site: list_sites has no `site` param; every other tool requires one.
-import { register as registerSites } from "./tools/sites.js";
-// Stripe proxy + gateway status (mcp/v1/stripe, mcp/v1/payments) - cvrt-mcp-endpoints 1.17.0
-import { register as registerStripe } from "./tools/stripe.js";
-import { register as registerTaxonomies } from "./tools/taxonomies.js";
-import { register as registerThemes } from "./tools/themes.js";
-import { register as registerUsers } from "./tools/users.js";
-// cvrt-woo-helper (mcp/woo-helper/v1): Stripe express checkout + Stripe.js loading
-import { register as registerWooHelper } from "./tools/woo-helper.js";
+import { SECTIONS } from "./tool-catalog.js";
 
 export function registerAll(server: McpServer): void {
-	// Multi-site: list_sites has no `site` param; every other tool requires one.
-	registerSites(server);
-
-	// Standard WordPress REST API tools
-	registerSite(server);
-	registerPosts(server);
-	registerPages(server);
-	registerUsers(server);
-	registerPlugins(server);
-	registerThemes(server);
-	registerMedia(server);
-	registerTaxonomies(server);
-	registerComments(server);
-
-	// Extended tools (require cvrt-mcp-endpoints plugin)
-	registerMcpPlugins(server);
-	registerMcpThemes(server);
-	registerMcpCore(server);
-	registerMcpDatabase(server);
-	registerMcpOptions(server);
-	registerMcpMenus(server);
-	registerMcpWidgets(server);
-	registerMcpHealth(server);
-	registerMcpCpt(server);
-	registerMcpTaxonomies(server);
-	registerMcpUsers(server);
-	registerMcpMedia(server);
-
-	// Elementor tools (require cvrt-mcp-endpoints plugin + Elementor)
-	registerMcpElementor(server);
-
-	// ACF tools (require cvrt-mcp-endpoints plugin + ACF Pro)
-	registerAcf(server);
-
-	// WooCommerce tools (require future cvrt-woo-endpoints plugin)
-	registerWoo(server);
-	registerFulfillment(server);
-	registerLegal(server);
-	registerCvrtMedia(server);
-	registerFields(server);
-	registerSeo(server);
-	registerFort(server);
-	registerWooHelper(server);
-	registerStripe(server);
+	for (const section of SECTIONS) section.register(server);
 }
