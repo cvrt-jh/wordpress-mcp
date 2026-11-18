@@ -97,7 +97,7 @@ export function register(server: McpServer) {
 
 	server.tool(
 		"fields_get_values",
-		"Read every field value of one object (post, term, user or options page) that the field groups located on it define: name, key, type, group, the raw stored value and an escaped HTML rendering. 404 for an unknown object, 403 when the user may not edit it. Row fields (group, repeater; cvrt-fields 0.7.0+) return value as the raw nested value keyed by sub-field key (repeater: list of rows, group: object) and text as an empty string (cvrt-fields 0.2.1+).",
+		"Read every field value of one object (post, term, user or options page) that the field groups located on it define: name, key, type, group, the raw stored value and an escaped HTML rendering. 404 for an unknown object, 403 when the user may not edit it. Requires cvrt-fields 0.2.1+; row fields (group, repeater) need 0.7.0+ and return value as the raw nested value keyed by sub-field key (repeater: list of rows, group: object) and text as an empty string.",
 		{ site: z.string().describe("Site id (see list_sites)"), object: valuesObject },
 		async ({ site, object }) => {
 			const wp = forSite(site);

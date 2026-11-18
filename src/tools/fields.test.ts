@@ -18,6 +18,7 @@ import { register } from "./fields.js";
 
 type Handler = (args: Record<string, unknown>) => Promise<{ content: { type: string; text: string }[] }>;
 interface Tool {
+	description: string;
 	schema: z.ZodRawShape;
 	handler: Handler;
 }
@@ -25,8 +26,8 @@ interface Tool {
 function tools(): Map<string, Tool> {
 	const out = new Map<string, Tool>();
 	const server = {
-		tool: (name: string, _description: string, schema: z.ZodRawShape, handler: Handler) => {
-			out.set(name, { schema, handler });
+		tool: (name: string, description: string, schema: z.ZodRawShape, handler: Handler) => {
+			out.set(name, { description, schema, handler });
 		},
 	};
 	register(server as never);
@@ -176,13 +177,7 @@ describe("fields tools", () => {
 	});
 
 	it("row values: nested values pass through unchanged and the descriptions document them", async () => {
-		const descriptions = new Map<string, string>();
-		register({
-			tool: (name: string, description: string) => {
-				descriptions.set(name, description);
-			},
-		} as never);
-		const update = descriptions.get("fields_update_values") ?? "";
+		const update = tool("fields_update_values").description;
 		for (const phrase of [
 			"repeater: list of rows",
 			"group: object",
@@ -195,9 +190,22 @@ describe("fields tools", () => {
 		]) {
 			expect(update, phrase).toContain(phrase);
 		}
-		expect(descriptions.get("fields_get_values")).toContain("keyed by sub-field key");
-		expect(descriptions.get("fields_list_types")).toContain("repeater");
-		expect(descriptions.get("fields_list_types")).toContain("sub_fields");
+		const read = tool("fields_get_values").description;
+		for (const phrase of [
+			"cvrt-fields 0.2.1+",
+			"0.7.0+",
+			"group, repeater",
+			"keyed by sub-field key",
+			"repeater: list of rows",
+			"group: object",
+			"text as an empty string",
+		]) {
+			expect(read, phrase).toContain(phrase);
+		}
+		const types = tool("fields_list_types").description;
+		for (const phrase of ["group and repeater", "0.7.0+", "min, max, layout, button_label, sub_fields"]) {
+			expect(types, phrase).toContain(phrase);
+		}
 
 		put.mockResolvedValue({ object: "42", fields: [], skipped: ["links.1.url"] });
 		const values = {
