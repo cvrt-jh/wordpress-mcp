@@ -102,6 +102,30 @@ describe("seo_indexnow_ping", () => {
 });
 
 describe("seo_update_settings", () => {
+	it("passes a csm_kg_logo_format 400 through with code and message (no swallowing)", async () => {
+		put.mockRejectedValue(
+			new Error(
+				'WordPress API error 400: {"code":"csm_kg_logo_format","message":"kg_logo must be an attachment id.","data":{"status":400}}',
+			),
+		);
+		await expect(
+			tool("seo_update_settings").handler({ site: "a", settings: { kg_logo: "https://evil.example/x.png" } }),
+		).rejects.toThrow(/csm_kg_logo_format.*kg_logo must be an attachment id/s);
+	});
+
+	it("documents every accepted kg_logo form and the 400", () => {
+		let text = "";
+		register({
+			tool: (name: string, d: string) => {
+				if (name === "seo_update_settings") text = d;
+			},
+		} as never);
+		expect(text).toMatch(/media-library URL/);
+		expect(text).toMatch(/sent back unchanged/);
+		expect(text).toMatch(/0 removes the logo/);
+		expect(text).toMatch(/csm_kg_logo_format/);
+	});
+
 	it("sends the settings object as the whole body", async () => {
 		put.mockResolvedValue({});
 		const settings = { social: { social_extra_profiles: ["https://github.com/x"] }, title_separator: "|" };
@@ -230,6 +254,19 @@ describe("other tools", () => {
 		post.mockResolvedValue({});
 		await tool("seo_sitemap_ping").handler({ site: "a" });
 		expect(post).toHaveBeenCalledWith(`${NS}/sitemap/submit`, {});
+	});
+
+	it("seo_sitemap_flush posts to /sitemap/flush and returns the result", async () => {
+		post.mockResolvedValue({ flushed: true });
+		const res = await tool("seo_sitemap_flush").handler({ site: "a" });
+		expect(post).toHaveBeenCalledWith(`${NS}/sitemap/flush`, {});
+		expect(res.content[0].text).toContain('"flushed":true');
+	});
+
+	it("seo_sitemap_flush fails for an unknown site before any request", async () => {
+		post.mockClear();
+		await expect(tool("seo_sitemap_flush").handler({ site: "nope" })).rejects.toThrow(/Unknown site/);
+		expect(post).not.toHaveBeenCalled();
 	});
 
 	// /status answers with the sitemap_health feature, /sitemap/health with the report.
@@ -451,6 +488,20 @@ describe("other tools", () => {
 		expect(text).toMatch(/csm_unknown_setting/);
 		expect(text).toMatch(/ignored_removed/);
 		expect(text).not.toMatch(/unknown keys are ignored\)/);
+	});
+
+	it("seo_redirects_audit documents the chain and loop codes with their fields", () => {
+		let text = "";
+		register({
+			tool: (name: string, d: string) => {
+				if (name === "seo_redirects_audit") text = d;
+			},
+		} as never);
+		expect(text).toMatch(/redirect_chain/);
+		expect(text).toMatch(/redirect_loop/);
+		expect(text).toMatch(/hops/);
+		expect(text).toMatch(/truncated/);
+		expect(text).toMatch(/final/);
 	});
 
 	it("seo_status documents features, which seo_import_migrate relies on", () => {

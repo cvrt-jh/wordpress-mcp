@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.12.1-blue.svg)](https://modelcontextprotocol.io)
 
-Lightweight WordPress MCP server for site management. **342 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
+Lightweight WordPress MCP server for site management. **343 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
 
 **v3.5**: `fields_*` (12 tools) for [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+ - status, settings, field types, location values, schemas and CRUD + JSON sync for field groups, post types, taxonomies and options pages.
 
@@ -135,7 +135,7 @@ All responses are automatically trimmed. Example:
 | HTML tags                       | excerpts    | Clean text output                       |
 | Pretty-print JSON               | all         | Compact single-line output              |
 
-## Tools (342)
+## Tools (343)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself. The lists are generated from the registered tools (`pnpm run sync-docs`); a test fails when they drift.
 
@@ -566,7 +566,7 @@ Requires [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+ (`fields
 - `fields_delete_definition` - Delete a database definition
 - `fields_sync_definition` - Copy a JSON-sourced definition into the database
 
-### SEO (34)
+### SEO (35)
 
 Requires [cvrt-seo-manager](https://github.com/cvrt-gmbh/cvrt-seo-manager).
 
@@ -596,6 +596,7 @@ Requires [cvrt-seo-manager](https://github.com/cvrt-gmbh/cvrt-seo-manager).
 - `seo_sitemap_status` - Get sitemap status: { sitemap_url, post_types, taxonomies, total_urls, search_console? }
 - `seo_sitemap_health` - Check the sitemap (cvrt-seo-manager 1.15.0+, feature sitemap_health; refused with a clear message on an older plugin): the site fetches every sitemap file and every listed URL on its own host ...
 - `seo_sitemap_ping` - Submit the sitemap to Google Search Console (needs the search_console settings) and return the status Search Console reports
+- `seo_sitemap_flush` - Flush the XML and HTML sitemap caches of cvrt-seo-manager (POST /sitemap/flush; the next request rebuilds them)
 - `seo_indexnow_ping` - Submit URLs to IndexNow (one request per URL)
 - `seo_export_settings` - Export every csm_* option as a flat { csm_name: value } map
 - `seo_import_settings` - Import settings from a flat { csm_name: value } map (the seo_export_settings shape)
