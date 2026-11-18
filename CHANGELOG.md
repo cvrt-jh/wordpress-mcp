@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.15.1] - 2026-11-18
+
+### Changed
+
+- Tooling only, no tool behaviour change: lockfile fixed (pnpm only, `package-lock.json` removed), Biome lint and
+  format, README tool lists and `server.json` tool count generated from the registered tools (`pnpm run sync-docs`,
+  sync test), `prepublishOnly` runs lint, test and build.
+
 ## [3.15.0] - 2026-11-16
 
 ### Added
