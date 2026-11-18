@@ -3,6 +3,7 @@
 	"version": "3.15.0",
 	"mcpName": "io.github.cvrt-jh/wordpress-mcp",
 	"description": "Lightweight WordPress MCP server - token-optimized REST API access",
+	"packageManager": "pnpm@10.27.0",
 	"type": "module",
 	"main": "build/index.js",
 	"bin": {
@@ -20,7 +21,7 @@
 		"test:watch": "vitest",
 		"lint": "biome check .",
 		"sync-docs": "tsc && node scripts/sync-docs.mjs",
-		"prepublishOnly": "npm run build"
+		"prepublishOnly": "pnpm run lint && pnpm test && pnpm run build"
 	},
 	"keywords": [
 		"wordpress",

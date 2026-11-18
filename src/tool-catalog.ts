@@ -46,6 +46,8 @@ export interface Section {
 	title: string;
 	/** What the tools need on the site; rendered under the heading. */
 	requires: string;
+	/** Optional caveat rendered under the requirement line (things the summaries cannot say). */
+	note?: string;
 	register: (server: McpServer) => void;
 }
 
@@ -98,6 +100,7 @@ export const SECTIONS: Section[] = [
 		title: "Media Optimization",
 		requires:
 			"[cvrt-media](https://github.com/cvrt-gmbh/cvrt-media) 0.1.0+ (`media_get_recovery` / `media_retry_recovery` need 0.1.1+); separate from the cvrt-mcp-endpoints `mcp_*_media` tools (library management)",
+		note: "File replace is not a tool (it needs an upload; use WP-CLI).",
 		register: registerCvrtMedia,
 	},
 	{
@@ -148,6 +151,7 @@ export function renderTools(sections: Section[] = SECTIONS): string {
 	for (const section of sections) {
 		const tools = collect(section.register);
 		parts.push(`### ${section.title} (${tools.length})`, "", `Requires ${section.requires}.`, "");
+		if (section.note) parts.push(section.note, "");
 		for (const t of tools) parts.push(`- \`${t.name}\` - ${summary(t.description)}`);
 		parts.push("");
 	}

@@ -521,6 +521,8 @@ Requires [cvrt-legal](https://github.com/cvrt-gmbh/cvrt-legal) (`legal_get_page`
 
 Requires [cvrt-media](https://github.com/cvrt-gmbh/cvrt-media) 0.1.0+ (`media_get_recovery` / `media_retry_recovery` need 0.1.1+); separate from the cvrt-mcp-endpoints `mcp_*_media` tools (library management).
 
+File replace is not a tool (it needs an upload; use WP-CLI).
+
 - `media_get_status` - [cvrt] Media status: plugin version, available encoders (WebP/AVIF), entitlement, Elementor Image Optimizer state, and which configured output formats are missing on this server
 - `media_get_settings` - Get the [cvrt] Media settings (output format, level, qualities, max dimension, metadata, backup retention, SVG)
 - `media_update_settings` - Update [cvrt] Media settings; omitted keys keep their value, and nothing is stored when any value is invalid. github_token is write-only: it is never returned, and a blank value keeps the stored token
