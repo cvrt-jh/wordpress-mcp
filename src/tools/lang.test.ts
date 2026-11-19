@@ -959,6 +959,13 @@ describe("lang tools: export and import (local files)", () => {
 		expect(readdirSync(dir)).toEqual(["only.json"]);
 	});
 
+	it("lang_export writes a target whose name is NAME_MAX long (the temp name is short)", async () => {
+		get.mockResolvedValue(doc);
+		const name = `${"n".repeat(250)}.json`;
+		await tool("lang_export").handler({ site: "a", out_path: join(dir, name) });
+		expect(readdirSync(dir)).toEqual([name]);
+	});
+
 	it("lang_export refuses an out_path that does not end in .json", async () => {
 		for (const out_path of [join(dir, "export.txt"), join(dir, "export"), join(dir, ".zshrc")]) {
 			await expect(tool("lang_export").handler({ site: "a", out_path }), out_path).rejects.toThrow(

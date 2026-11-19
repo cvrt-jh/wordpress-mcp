@@ -14,7 +14,7 @@
  */
 import { randomBytes } from "node:crypto";
 import { link, lstat, open, readFile, stat, unlink } from "node:fs/promises";
-import { basename, dirname, isAbsolute, join } from "node:path";
+import { dirname, isAbsolute, join } from "node:path";
 
 function absolute(path: string, arg: string): void {
 	if (!isAbsolute(path)) throw new Error(`${arg} must be an absolute path on this machine: ${path}`);
@@ -42,7 +42,9 @@ export async function assertNewFile(path: string, arg: string): Promise<void> {
 /** Writes `text` to the new file `path` (mode 0600) through a temp file and link(). Returns the bytes written. */
 export async function writeNewFile(path: string, text: string, arg: string): Promise<number> {
 	absolute(path, arg);
-	const temp = join(dirname(path), `.${basename(path)}.${randomBytes(6).toString("hex")}.tmp`);
+	// Short and fixed-length (never derived from the target name, so a long name cannot exceed NAME_MAX). A process
+	// killed mid-write can leave this `.tmp` file behind; it is never the target.
+	const temp = join(dirname(path), `.${randomBytes(4).toString("hex")}.tmp`);
 	const bytes = Buffer.from(text, "utf8");
 	const handle = await open(temp, "wx", 0o600);
 	try {
@@ -56,10 +58,15 @@ export async function writeNewFile(path: string, text: string, arg: string): Pro
 				throw new Error(`${arg} already exists (file, directory or symlink); give a new file: ${path}`);
 			throw e;
 		});
-		return bytes.length;
-	} finally {
-		await unlink(temp);
+	} catch (e) {
+		// The original error wins: a failing cleanup never replaces it.
+		await unlink(temp).catch(() => undefined);
+		throw e;
 	}
+	await unlink(temp).catch((e: unknown) => {
+		if (code(e) !== "ENOENT") throw e;
+	});
+	return bytes.length;
 }
 
 /** The JSON object in `path`: absolute, a regular file of at most `maxBytes` (checked before reading). */

@@ -630,7 +630,7 @@ export function register(rawServer: McpServer) {
 
 	server.tool(
 		"lang_export",
-		"cvrt-lang 0.10.0+: export Lang's own data (GET /export: languages, settings, content types, field policies, switcher, object links, strings, status; no secrets) into a NEW JSON file on this machine (out_path: absolute, ends in .json, must not exist; created 0600, never a partial file). Returns the file, its bytes and row counts per section only, never the data. Feed the file to lang_import.",
+		"cvrt-lang 0.10.0+: export Lang's own data (GET /export: languages, settings, content types, field policies, switcher, object links, strings, status; no secrets) into a NEW JSON file on this machine (out_path: absolute, ends in .json, must not exist; created 0600, never a partial file; a process killed mid-write can leave a hidden `.<8 hex>.tmp` file in that directory). Returns the file, its bytes and row counts per section only, never the data. Feed the file to lang_import.",
 		{
 			site,
 			sections: z.array(z.enum(SECTIONS)).min(1).optional().describe("Only these sections (default all)"),
