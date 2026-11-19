@@ -13,14 +13,141 @@
  * never returns one from any route, so elsewhere this is the server's guarantee, not ours.
  * lang_list_pending and lang_submit_translations are the external-queue pair, for manual or agent use; there is no
  * recurring job behind them.
+ *
+ * Migration (cvrt-lang 0.10.0+, threat model plan 8b K12): lang_migrate_* call the literal per-source routes
+ * /migrate/{wpml|polylang}; the `urls` step reads a server file and is CLI only, so lang_migrate_run refuses it. No
+ * tool takes a server path: lang_export writes and lang_import reads a file on THIS machine (src/local-file.ts) and only
+ * its content travels. lang_migrate_cleanup_apply is the one tool that removes the source plugin's data: before any
+ * request it needs a Bearfort backup job of this fort that completed less than 60 minutes ago (an operator safety rail
+ * in the client; the server's own bounds are the confirm token, the verified dump and the preconditions), and its body
+ * is exactly { confirm }.
  */
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { forFort } from "../bearfort.js";
 import { forSite } from "../client.js";
+import { assertNewFile, readJsonObject, writeNewFile } from "../local-file.js";
 import { MASK } from "../mask.js";
 import { defined, jsonResult } from "../types.js";
 
 const NS = "/mcp/lang/v1";
+
+/** Import sources with a literal route (Cvrt_Lang_Migrate_Providers). */
+const SOURCES = ["wpml", "polylang"] as const;
+/** Steps over REST: every step of either importer and `all`; `urls` is CLI only (it reads a server file). */
+const STEPS = [
+	"all",
+	"languages",
+	"settings",
+	"objects",
+	"fields",
+	"strings",
+	"elementor",
+	"menus",
+	"workflow",
+] as const;
+/** Export sections (Cvrt_Lang_Export::SECTIONS). */
+const SECTIONS = [
+	"languages",
+	"default_language",
+	"settings",
+	"content_types",
+	"field_policies",
+	"switcher",
+	"objects",
+	"strings",
+	"status",
+] as const;
+/** Largest import body the server takes (Cvrt_Lang_Import::MAX_BYTES, 32 MB). */
+const IMPORT_MAX_BYTES = 33554432;
+/** A cleanup apply needs a fort backup that completed at most this long ago. */
+const BACKUP_MAX_AGE_MS = 60 * 60 * 1000;
+/** Clock skew tolerated between this machine and Bearfort for a backup's finished_at. */
+const CLOCK_SKEW_MS = 5 * 60 * 1000;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const source = z.enum(SOURCES).describe("Import source: wpml or polylang (the plugin the site is moving away from)");
+
+/** The route of a source; refuses anything else (a handler called without the schema must not build a path). */
+function migrateRoute(value: unknown): string {
+	if (!SOURCES.includes(value as (typeof SOURCES)[number])) {
+		throw new Error(`Refused: source must be one of ${SOURCES.join(", ")}`);
+	}
+	return `${NS}/migrate/${value}`;
+}
+
+/**
+ * The backup job `jobId` of the site's fort, checked (PF29): a backup of THIS fort that completed less than 60 minutes
+ * ago. Throws before the cleanup request otherwise.
+ */
+async function freshBackup(siteId: string, given: unknown): Promise<{ fort: string; job: string }> {
+	if (typeof given !== "string" || !UUID.test(given)) {
+		throw new Error(
+			"Refused: backup_job_id (a uuid) is required. Run fort_backup_create, wait until fort_job_get shows it completed, then pass its jobId.",
+		);
+	}
+	// Bearfort serializes job ids in lower case.
+	const jobId = given.toLowerCase();
+	const fort = await forFort(siteId);
+	const job = await fort.get<Record<string, unknown>>(`/jobs/${jobId}`);
+	if (job.id !== jobId || job.action !== "backup") {
+		throw new Error(`Refused: ${jobId} is not a backup job (fort_backup_create starts one)`);
+	}
+	if (job.site_hex !== fort.hex) {
+		throw new Error(`Refused: job ${jobId} is not a job of fort ${fort.hex}; back up this site's fort first`);
+	}
+	if (job.status !== "completed") {
+		throw new Error(
+			`Refused: backup job ${jobId} did not finish successfully (status ${String(job.status)}); wait for it or start a new one`,
+		);
+	}
+	const finished = typeof job.finished_at === "string" ? Date.parse(job.finished_at) : Number.NaN;
+	const age = Date.now() - finished;
+	if (Number.isNaN(finished)) {
+		throw new Error(`Refused: backup job ${jobId} has no readable finish time`);
+	}
+	if (age < -CLOCK_SKEW_MS) {
+		throw new Error(
+			`Refused: backup job ${jobId}'s finish time is in the future (more than 5 minutes); check this machine's clock`,
+		);
+	}
+	if (age > BACKUP_MAX_AGE_MS) {
+		throw new Error(
+			`Refused: backup job ${jobId} finished more than 60 minutes ago; start a fresh fort_backup_create before the cleanup`,
+		);
+	}
+	return { fort: fort.hex, job: jobId };
+}
+
+/** Marker of a Lang export document (Cvrt_Lang_Export::FORMAT). */
+const EXPORT_FORMAT = "cvrt-lang-export";
+
+/**
+ * Whether a local JSON object is a Lang export (format, version 1, a sections object). lang_import sends nothing else:
+ * a misdirected file_path (an MCP config, an env dump) must never reach the site.
+ */
+function isLangExport(document: Record<string, unknown>): boolean {
+	const sections = document.sections;
+	return (
+		document.format === EXPORT_FORMAT &&
+		document.version === 1 &&
+		sections !== null &&
+		typeof sections === "object" &&
+		!Array.isArray(sections)
+	);
+}
+
+/** Rows per section of an export document (Cvrt_Lang_Export::counts(): a list or map counts its entries, null 0). */
+function sectionCounts(document: Record<string, unknown>): Record<string, number> {
+	const sections = document.sections;
+	if (sections === null || typeof sections !== "object") return {};
+	return Object.fromEntries(
+		Object.entries(sections).map(([name, value]) => [
+			name,
+			value === null ? 0 : typeof value === "object" ? Object.keys(value).length : 1,
+		]),
+	);
+}
 
 const site = z.string().describe("Site id (see list_sites)");
 const jobId = z.number().int().positive().describe("Job id from lang_list_pending");
@@ -429,6 +556,123 @@ export function register(rawServer: McpServer) {
 		async ({ site, id, ...body }) => {
 			const wp = forSite(site);
 			return jsonResult(await wp.put<Record<string, unknown>>(`${NS}/units/post/${id}`, defined(body)));
+		},
+	);
+
+	server.tool(
+		"lang_migrate_status",
+		"cvrt-lang 0.10.0+: the importer's resume state for a source (GET /migrate/{source}): present, last step, cursor, verdict. A pure read.",
+		{ site, source },
+		async ({ site, source }) => {
+			const route = migrateRoute(source);
+			return jsonResult(await forSite(site).get<Record<string, unknown>>(route));
+		},
+	);
+
+	server.tool(
+		"lang_migrate_run",
+		"cvrt-lang 0.10.0+: run one importer step or `all` from WPML or Polylang into Lang (POST /migrate/{source}). A DRY RUN unless apply is true: the dry run reports what would be written and writes nothing (works read-only). Apply is refused while the source plugin is active and is rolled back only by a fort backup: run fort_backup_create first. The `urls` step reads a URL list from the server and runs only in WP-CLI (`wp cvrt-lang migrate <source> urls --urls=<file>`), so it is not offered here. resume continues an interrupted apply; batch = rows per chunk (1-2000, server default 500).",
+		{
+			site,
+			source,
+			step: z.enum(STEPS).describe("Step to run, or all (urls is CLI only)"),
+			apply: z.boolean().optional().describe("Write (default false: dry run)"),
+			batch: z.number().int().min(1).max(2000).optional().describe("Rows per chunk (1-2000, server default 500)"),
+			resume: z.boolean().optional().describe("Continue an interrupted apply from its saved position"),
+		},
+		async ({ site, source, step, apply, batch, resume }) => {
+			const route = migrateRoute(source);
+			if (step === ("urls" as string)) {
+				throw new Error(
+					"Refused: the urls step reads a URL list from the server and runs only in WP-CLI (wp cvrt-lang migrate <source> urls --urls=<file>)",
+				);
+			}
+			const wp = forSite(site);
+			return jsonResult(
+				await wp.post<Record<string, unknown>>(route, { step, apply: apply === true, ...defined({ batch, resume }) }),
+			);
+		},
+	);
+
+	server.tool(
+		"lang_migrate_cleanup_plan",
+		"cvrt-lang 0.10.0+: what a cleanup would remove of the old language plugin's data (GET /migrate/{source}/cleanup): tables, options, meta, terms, cron hooks (names and counts, never values), unknown names that are only listed, blockers, backup_dir readiness and the `confirm` token (valid 30 min, bound to this exact plan). Writes nothing. Order for a cleanup: (1) fort_backup_create, (2) fort_job_get until the job is completed, (3) lang_migrate_cleanup_plan (a fresh token, after the backup), (4) lang_migrate_cleanup_apply with confirm and the backup's job id. WP-CLI: `wp cvrt-lang migrate <source> cleanup --apply --confirm=<token>`.",
+		{ site, source },
+		async ({ site, source }) => {
+			const route = `${migrateRoute(source)}/cleanup`;
+			return jsonResult(await forSite(site).get<Record<string, unknown>>(route));
+		},
+	);
+
+	server.tool(
+		"lang_migrate_cleanup_apply",
+		"DESTRUCTIVE, cvrt-lang 0.10.0+: remove the old language plugin's data that lang_migrate_cleanup_plan listed (POST /migrate/{source}/cleanup, body exactly { confirm }). Refused before any request unless the site is a Bearfort fort and backup_job_id is a backup job of THIS fort that completed less than 60 minutes ago (needs BEARFORT_API_KEY). Order: fort_backup_create -> fort_job_get until completed -> lang_migrate_cleanup_plan (fresh 30-minute token) -> this tool. The server also writes a verified dump of every removed row to its own backup directory before removing anything; the answer names the dump's file name, bytes, sha256 and rows (never a path). A failure after the dump answers 500 with `dropped` and the dump. Rollback is the fort backup.",
+		{
+			site,
+			source,
+			confirm: z
+				.string()
+				.regex(/^\d{1,12}\.[0-9a-f]{32}$/)
+				.describe("The `confirm` token of lang_migrate_cleanup_plan (valid 30 minutes, bound to that plan)"),
+			backup_job_id: z
+				.string()
+				.uuid()
+				.describe("jobId of a fort_backup_create of this site that completed less than 60 minutes ago"),
+		},
+		async ({ site, source, confirm, backup_job_id }) => {
+			const route = `${migrateRoute(source)}/cleanup`;
+			const wp = forSite(site);
+			const backup = await freshBackup(site, backup_job_id);
+			const result = await wp.post<Record<string, unknown>>(route, { confirm });
+			return jsonResult({ fort: backup.fort, backup_job: backup.job, ...result });
+		},
+	);
+
+	server.tool(
+		"lang_export",
+		"cvrt-lang 0.10.0+: export Lang's own data (GET /export: languages, settings, content types, field policies, switcher, object links, strings, status; no secrets) into a NEW JSON file on this machine (out_path: absolute, ends in .json, must not exist; created 0600, never a partial file; a process killed mid-write can leave a hidden `.<8 hex>.tmp` file in that directory). Returns the file, its bytes and row counts per section only, never the data. Feed the file to lang_import.",
+		{
+			site,
+			sections: z.array(z.enum(SECTIONS)).min(1).optional().describe("Only these sections (default all)"),
+			out_path: z
+				.string()
+				.describe("Absolute path of a new .json file on this machine (refused if anything exists there)"),
+		},
+		async ({ site, sections, out_path }) => {
+			const wp = forSite(site);
+			if (!out_path.toLowerCase().endsWith(".json")) {
+				throw new Error(`Refused: out_path must end in .json: ${out_path}`);
+			}
+			await assertNewFile(out_path, "out_path");
+			const params: Record<string, string> = sections ? { sections: sections.join(",") } : {};
+			const document = await wp.get<Record<string, unknown>>(`${NS}/export`, params);
+			const bytes = await writeNewFile(out_path, `${JSON.stringify(document)}\n`, "out_path");
+			return jsonResult({ file: out_path, bytes, counts: sectionCounts(document) });
+		},
+	);
+
+	server.tool(
+		"lang_import",
+		"cvrt-lang 0.10.0+: import a lang_export file from this machine (POST /import { document, apply }). A DRY RUN unless apply is true: the report shows what would change and writes nothing. Refused before any request: a file that is not a cvrt-lang export (format cvrt-lang-export, version 1, sections), so no other local JSON is ever sent, and files or bodies over 32 MB. Strings keep manual translations, object links only where id, type, subtype and slug still match; an export of another site gets the warning other_site.",
+		{
+			site,
+			file_path: z.string().describe("Absolute path of the export JSON on this machine (at most 32 MB)"),
+			apply: z.boolean().optional().describe("Write (default false: dry run)"),
+		},
+		async ({ site, file_path, apply }) => {
+			const wp = forSite(site);
+			const document = await readJsonObject(file_path, IMPORT_MAX_BYTES, "file_path");
+			if (!isLangExport(document)) {
+				throw new Error(
+					`Refused: file_path is not a cvrt-lang export (needs format "${EXPORT_FORMAT}", version 1 and a sections object); nothing was sent: ${file_path}`,
+				);
+			}
+			const body = { document, apply: apply === true };
+			const size = Buffer.byteLength(JSON.stringify(body), "utf8");
+			if (size > IMPORT_MAX_BYTES) {
+				throw new Error(`Refused: the import body is ${size} bytes, over the server's 32 MB limit`);
+			}
+			return jsonResult(await wp.post<Record<string, unknown>>(`${NS}/import`, body));
 		},
 	);
 }

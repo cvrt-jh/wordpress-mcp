@@ -116,9 +116,9 @@ export const SECTIONS: Section[] = [
 		register: registerSeo,
 	},
 	{
-		title: "Language (machine translation)",
+		title: "Language (machine translation, migration, export/import)",
 		requires:
-			"[cvrt-lang](https://github.com/cvrt-gmbh/cvrt-lang) 0.9.0 or later (machine translation, Azure AI Translator); `lang_list_pending` / `lang_submit_translations` / `lang_fail_job` are the external queue for manual or agent use (no recurring job). No tool sets the provider key: use the fort constant or the admin",
+			"[cvrt-lang](https://github.com/cvrt-gmbh/cvrt-lang) 0.9.0 or later (machine translation, Azure AI Translator); `lang_list_pending` / `lang_submit_translations` / `lang_fail_job` are the external queue for manual or agent use (no recurring job). No tool sets the provider key: use the fort constant or the admin. `lang_migrate_*`, `lang_export` and `lang_import` need 0.10.0+; migrate runs and imports are dry runs unless `apply` is true; the `urls` step is WP-CLI only. Cleanup order: `fort_backup_create` -> `fort_job_get` until completed -> `lang_migrate_cleanup_plan` -> `lang_migrate_cleanup_apply` (refused without a completed backup of this fort under 60 minutes old; needs `BEARFORT_API_KEY`). `lang_export` / `lang_import` use files on this machine, never a server path",
 		register: registerLang,
 	},
 	{ title: "Fort (Bearfort)", requires: "`BEARFORT_API_KEY` (Bearfort API, not the site)", register: registerFort },

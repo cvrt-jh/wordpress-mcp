@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP SDK](https://img.shields.io/badge/MCP%20SDK-1.12.1-blue.svg)](https://modelcontextprotocol.io)
 
-Lightweight WordPress MCP server for site management. **362 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
+Lightweight WordPress MCP server for site management. **368 tools** with **token-optimized responses** - REST API responses automatically slimmed from kilobytes to essentials.
 
 **v3.5**: `fields_*` (12 tools) for [cvrt-fields](https://github.com/cvrt-gmbh/cvrt-fields) 0.1.2+ - status, settings, field types, location values, schemas and CRUD + JSON sync for field groups, post types, taxonomies and options pages.
 
@@ -135,7 +135,7 @@ All responses are automatically trimmed. Example:
 | HTML tags                       | excerpts    | Clean text output                       |
 | Pretty-print JSON               | all         | Compact single-line output              |
 
-## Tools (362)
+## Tools (368)
 
 Every tool below requires a `site` argument (the id from your `WORDPRESS_SITES` config), except `list_sites` itself. The lists are generated from the registered tools (`pnpm run sync-docs`); a test fails when they drift.
 
@@ -609,9 +609,9 @@ Requires [cvrt-seo-manager](https://github.com/cvrt-gmbh/cvrt-seo-manager).
 - `seo_import_redirects` - Import redirects from CSV in the seo_export_redirects format (header row source,target,type[,is_regex],enabled; the is_regex column is detected from the header)
 - `seo_import_migrate` - Migrate from RankMath or Yoast
 
-### Language (machine translation) (16)
+### Language (machine translation, migration, export/import) (22)
 
-Requires [cvrt-lang](https://github.com/cvrt-gmbh/cvrt-lang) 0.9.0 or later (machine translation, Azure AI Translator); `lang_list_pending` / `lang_submit_translations` / `lang_fail_job` are the external queue for manual or agent use (no recurring job). No tool sets the provider key: use the fort constant or the admin.
+Requires [cvrt-lang](https://github.com/cvrt-gmbh/cvrt-lang) 0.9.0 or later (machine translation, Azure AI Translator); `lang_list_pending` / `lang_submit_translations` / `lang_fail_job` are the external queue for manual or agent use (no recurring job). No tool sets the provider key: use the fort constant or the admin. `lang_migrate_*`, `lang_export` and `lang_import` need 0.10.0+; migrate runs and imports are dry runs unless `apply` is true; the `urls` step is WP-CLI only. Cleanup order: `fort_backup_create` -> `fort_job_get` until completed -> `lang_migrate_cleanup_plan` -> `lang_migrate_cleanup_apply` (refused without a completed backup of this fort under 60 minutes old; needs `BEARFORT_API_KEY`). `lang_export` / `lang_import` use files on this machine, never a server path.
 
 - `lang_mt_status` - cvrt-lang machine translation status (cvrt-lang 0.9.0+): provider and readiness, pause state, settings, queue counts (pending, leased, failed, `retrying` = pending again after a failed attempt, ...
 - `lang_mt_estimate` - Estimate what lang_mt_enqueue would queue for the same arguments: jobs, units and characters
@@ -629,6 +629,12 @@ Requires [cvrt-lang](https://github.com/cvrt-gmbh/cvrt-lang) 0.9.0 or later (mac
 - `lang_string_machine` - Queue machine translation of ONE string and name it (POST /strings/{id}/machine): a manual translation is translated too
 - `lang_get_units` - The side-by-side editor's translation units of a translation post (GET /units/post/{id}): per unit key the source text and hash, the stored translation and its status
 - `lang_update_units` - Update a translation post's units (PUT /units/post/{id}). units writes manual translations (key -> text, only keys of the source); approve marks keys reviewed; machine queues those keys for machine ...
+- `lang_migrate_status` - cvrt-lang 0.10.0+: the importer's resume state for a source (GET /migrate/{source}): present, last step, cursor, verdict
+- `lang_migrate_run` - cvrt-lang 0.10.0+: run one importer step or `all` from WPML or Polylang into Lang (POST /migrate/{source})
+- `lang_migrate_cleanup_plan` - cvrt-lang 0.10.0+: what a cleanup would remove of the old language plugin's data (GET /migrate/{source}/cleanup): tables, options, meta, terms, cron hooks (names and counts, never values), unknown ...
+- `lang_migrate_cleanup_apply` - DESTRUCTIVE, cvrt-lang 0.10.0+: remove the old language plugin's data that lang_migrate_cleanup_plan listed (POST /migrate/{source}/cleanup, body exactly { confirm })
+- `lang_export` - cvrt-lang 0.10.0+: export Lang's own data (GET /export: languages, settings, content types, field policies, switcher, object links, strings, status; no secrets) into a NEW JSON file on this machine ...
+- `lang_import` - cvrt-lang 0.10.0+: import a lang_export file from this machine (POST /import { document, apply })
 
 ### Fort (Bearfort) (5)
 
