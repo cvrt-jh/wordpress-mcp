@@ -357,7 +357,9 @@ describe("other tools", () => {
 		expect(get).toHaveBeenLastCalledWith(`${NS}/audit/page`, { post_id: 5 });
 		await tool("seo_audit_page").handler({ site: "a", url: "https://x.test/p/" });
 		expect(get).toHaveBeenLastCalledWith(`${NS}/audit/page`, { url: "https://x.test/p/" });
-		expect(z.object(tool("seo_audit_page").schema).shape.post_id.safeParse(0).success).toBe(false);
+		const postId = z.object(tool("seo_audit_page").schema).shape.post_id;
+		for (const bad of [0, 1.5, "5"]) expect(postId.safeParse(bad).success).toBe(false);
+		expect(postId.safeParse(5).success).toBe(true);
 	});
 
 	it("seo_audit_pages GETs /audit/pages with the given paging only and limits 1-100", async () => {
