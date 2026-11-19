@@ -98,6 +98,30 @@ const postSeoFields = {
 		.describe(
 			`Per-post SoftwareApplication schema: { enabled, name, applicationCategory, operatingSystem, description, url, offers: [{ name, price, priceCurrency, url, unitText, unitCode }] (max 20), aggregateRating }. Omitted enabled = true. ${NULL_CLEARS}`,
 		),
+	location: z
+		.record(z.any())
+		.nullable()
+		.optional()
+		.describe(
+			`Per-post override of a location node (cvrt-seo-manager 1.18.0+; used when the site's locations module is on, see seo_locations_report): an object of LocalBusiness fields. null or {} deletes it. An invalid value answers 400.`,
+		),
+	faq: z
+		.array(
+			z.object({
+				question: z.string().describe("Plain text, up to 300 characters"),
+				answer: z
+					.string()
+					.describe(
+						"HTML limited to a[href], p, br, ul, ol, li, strong, b, em, i, h2-h6, div (links http/https/mailto/tel only; script/style removed), up to 5000 characters",
+					),
+			}),
+		)
+		.max(50)
+		.nullable()
+		.optional()
+		.describe(
+			`FAQPage rows for the post (cvrt-seo-manager 1.18.0+, feature faq_schema; at most 50). The rows become the mainEntity of the page's WebPage node, whose type becomes FAQPage. ${NULL_CLEARS} An empty array deletes it too.`,
+		),
 	breadcrumb_title: z.string().nullable().optional().describe(`Title used in breadcrumbs. ${NULL_CLEARS}`),
 	pillar_content: z.boolean().nullable().optional().describe(`Mark as pillar (cornerstone) content. ${NULL_CLEARS}`),
 	seo_score: z.number().int().nullable().optional().describe(`Stored SEO score (0-100). ${NULL_CLEARS}`),
@@ -125,7 +149,7 @@ const SETTINGS_DOC = [
 	"robots: default_robots (text); booleans noindex_archives, noindex_tags, noindex_author, noindex_search, noindex_paginated, noindex_password_protected, noindex_empty_archives, robots_max_directives; 1.15.0+ also author_archives (enabled | redirect = 301 to home | disabled = 404), noindex_post_types, noindex_taxonomies (arrays of slugs: noindex and out of the sitemap unless an entry says index).",
 	"social: default_og_image (attachment ID), default_twitter_card (summary | summary_large_image), social_profiles (object network => URL, e.g. { facebook: 'https://...', twitter: '@handle' }), social_extra_profiles (1.12.0+: extra schema sameAs profile URLs as an array, a JSON array string or one URL per line; only absolute http(s) URLs are kept, duplicates removed), og_home_title, og_home_description, og_home_image (attachment ID).",
 	"knowledge_graph: kg_type, kg_name, kg_alternate_name (1.15.0+), kg_description (multi-line), kg_logo (1.17.0+ accepts an attachment ID, a media-library URL of this site, the stored logo sent back unchanged, or 0 removes the logo; anything else answers 400 csm_kg_logo_format and nothing is written, the error carries code and message; the attachment must be a Google Images format of at least 112x112 px), kg_url.",
-	"schema: schema_defaults (object post_type => BlogPosting | Article | NewsArticle | WebPage | Product), schema_article_type, software_app (site-wide SoftwareApplication object, same shape as the per-post field).",
+	"schema: schema_defaults (object post_type => BlogPosting | Article | NewsArticle | WebPage | Product), schema_article_type, software_app (site-wide SoftwareApplication object, same shape as the per-post field), faq_sources (1.18.0+: object post_type => [{ question, answer }] of field references used for posts without their own faq rows, at most 20 pairs per type), menu_schema (1.18.0+: { enabled, page_id, name, item_post_type, section_taxonomy, currency (ISO 4217, default EUR), sources: { description, price, image, vegan, vegetarian, gluten_free } } builds a Menu node on the menu page and its translations).",
 	"verification: verify_google, verify_bing, verify_pinterest, verify_yandex (public meta tokens).",
 	"indexnow: indexnow_enabled (bool), indexnow_key (SECRET, write-only; blank keeps the stored key).",
 	"search_console: gsc_service_account (SECRET, write-only: the service-account JSON key as a string; validated before anything is written; blank keeps it, null clears it), gsc_property, gsc_auto_submit (bool).",
@@ -134,7 +158,7 @@ const SETTINGS_DOC = [
 	"breadcrumbs: breadcrumbs_enabled, breadcrumbs_show_home, breadcrumbs_show_post_title (bools), breadcrumbs_separator, breadcrumbs_home_label.",
 	"images: image_seo_enabled (bool), image_alt_template, image_title_template.",
 	"links: nofollow_external, external_new_tab, strip_category_base (bools).",
-	"local_seo: local_business_type, local_address (object), local_phone, local_email, local_hours (array), local_geo ({ latitude, longitude }), local_price_range.",
+	"local_seo: local_business_type, local_address (object), local_phone, local_email, local_hours (array), local_geo ({ latitude, longitude }), local_price_range, locations (1.18.0+: the multi-location module settings; one invalid key answers 400 csm_locations_invalid and nothing is written; '' or null clears it and turns the module off).",
 	"monitor_404: 404_monitor_enabled (bool), 404_retention_days, 404_max_rows (ints), 404_exclude_patterns (array of patterns).",
 	"woocommerce: woo_remove_base_slug, woo_remove_category_base, woo_remove_generator (bools), woo_brand_taxonomy.",
 ].join(" ");
@@ -607,6 +631,55 @@ export function register(server: McpServer) {
 			return jsonResult(
 				await wp.get<Record<string, unknown>>(`${NS}/sitemap/health`, defined({ limit, offset, sitemaps: flag })),
 			);
+		},
+	);
+
+	server.tool(
+		"seo_locations_report",
+		"Report the location nodes of the site (cvrt-seo-manager 1.18.0+, feature locations; refused with a clear message on an older plugin): the LocalBusiness node and findings of every published location post without a password, all languages. Returns { enabled, post_type, total, locations: [{ post_id, language, url, node, findings }] }; enabled false and no locations while the module is off (seo_update_settings local_seo.locations).",
+		{ site },
+		async ({ site }) => {
+			const wp = forSite(site);
+			await requireFeature(wp, "locations", "locations report");
+			return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/locations`));
+		},
+	);
+
+	server.tool(
+		"seo_audit_page",
+		"Audit one page (cvrt-seo-manager 1.18.0+, feature page_audit; refused with a clear message on an older plugin): the site fetches the page itself and analyses H1, heading order, alt texts, og:image size, JSON-LD, FAQ visibility, location node and word count. Give exactly one of post_id (published, no password, viewable post type, else 404 csm_not_public) or url (this site's host only, else 400 csm_offsite); both or neither is rejected before any request.",
+		{
+			site,
+			post_id: z.number().int().min(1).optional().describe("Post ID to audit (exclusive with url)"),
+			url: z.string().optional().describe("URL on this site to audit (exclusive with post_id)"),
+		},
+		async ({ site, post_id, url }) => {
+			if ((post_id === undefined) === (url === undefined)) {
+				throw new Error("Give exactly one of post_id or url");
+			}
+			const wp = forSite(site);
+			await requireFeature(wp, "page_audit", "page audit");
+			return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/audit/page`, defined({ post_id, url })));
+		},
+	);
+
+	server.tool(
+		"seo_audit_pages",
+		"Audit the sitemap URLs page by page (cvrt-seo-manager 1.18.0+, feature page_audit; refused with a clear message on an older plugin): returns { pages: [{ url, status, h1_count, missing_alt, og_image, findings }], truncated, next_offset, ... }. A call audits `limit` URLs from `offset` within a time budget; while truncated is true, continue with offset = next_offset.",
+		{
+			site,
+			limit: z.number().int().min(1).max(100).optional().describe("URLs to audit in this call (1-100, default 20)"),
+			offset: z
+				.number()
+				.int()
+				.min(0)
+				.optional()
+				.describe("Index of the first URL to audit (default 0; use next_offset to continue)"),
+		},
+		async ({ site, limit, offset }) => {
+			const wp = forSite(site);
+			await requireFeature(wp, "page_audit", "page audit");
+			return jsonResult(await wp.get<Record<string, unknown>>(`${NS}/audit/pages`, defined({ limit, offset })));
 		},
 	);
 
