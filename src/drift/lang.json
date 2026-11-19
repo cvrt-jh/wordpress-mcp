@@ -133,5 +133,60 @@
 		"server": ["units", "approve", "machine", "machine_now", "publish"],
 		"path": ["id"],
 		"fields": ["units", "approve", "machine", "machine_now", "publish"]
+	},
+	"lang_migrate_status": {
+		"method": "GET",
+		"route": "/mcp/lang/v1/migrate/{source}",
+		"source": "cvrt-lang 0.10.0 (plan 8b, unreleased at commit 8b2ad9e) includes/class-rest-api.php rest_migrate_state -> class-migrate.php state (no args; one literal route per source: wpml, polylang)",
+		"server": [],
+		"path": ["source"]
+	},
+	"lang_migrate_run": {
+		"method": "POST",
+		"route": "/mcp/lang/v1/migrate/{source}",
+		"source": "cvrt-lang 0.10.0 (plan 8b, unreleased at commit 8b2ad9e) includes/class-rest-api.php rest_migrate_run -> migrate_run (MIGRATE_KEYS; step urls is 400 over REST, CLI only)",
+		"server": ["step", "apply", "batch", "resume"],
+		"path": ["source"],
+		"fields": ["step", "apply", "batch", "resume"]
+	},
+	"lang_migrate_cleanup_plan": {
+		"method": "GET",
+		"route": "/mcp/lang/v1/migrate/{source}/cleanup",
+		"source": "cvrt-lang 0.10.0 (plan 8b, unreleased at commit 8b2ad9e) includes/class-rest-api.php rest_migrate_cleanup_plan -> class-migrate-cleanup.php plan (no args)",
+		"server": [],
+		"path": ["source"]
+	},
+	"lang_migrate_cleanup_apply": {
+		"method": "POST",
+		"route": "/mcp/lang/v1/migrate/{source}/cleanup",
+		"source": "cvrt-lang 0.10.0 (plan 8b, unreleased at commit 8b2ad9e) includes/class-rest-api.php rest_migrate_cleanup_apply -> migrate_cleanup_apply (body exactly confirm, any other key 400)",
+		"server": ["confirm"],
+		"path": ["source"],
+		"fields": ["confirm"],
+		"local": {
+			"backup_job_id": "Bearfort job checked first (GET /v1/sites/{hex}/jobs/{id}: a completed backup of this fort, under 60 min old); never sent to the site"
+		},
+		"sample": { "backup_job_id": "6f1c2c1e-3b9a-4a51-9a1e-1d2c3b4a5f60" }
+	},
+	"lang_export": {
+		"method": "GET",
+		"route": "/mcp/lang/v1/export",
+		"source": "cvrt-lang 0.10.0 (plan 8b, unreleased at commit 8b2ad9e) includes/class-rest-api.php rest_export -> class-export.php sections (query sections, comma-separated)",
+		"server": ["sections"],
+		"fields": ["sections"],
+		"local": {
+			"out_path": "the new file on this machine the export is written to; never sent"
+		}
+	},
+	"lang_import": {
+		"method": "POST",
+		"route": "/mcp/lang/v1/import",
+		"source": "cvrt-lang 0.10.0 (plan 8b, unreleased at commit 8b2ad9e) includes/class-rest-api.php rest_import -> class-import.php from_body (BODY_KEYS document, apply)",
+		"server": ["document", "apply"],
+		"fields": ["apply"],
+		"sends": ["document", "apply"],
+		"local": {
+			"file_path": "the export file on this machine; its JSON object is sent as document"
+		}
 	}
 }

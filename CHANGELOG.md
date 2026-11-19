@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- cvrt-lang 0.10.0 migration tools: `lang_migrate_status`, `lang_migrate_run` (dry run unless `apply: true`; the
+  `urls` step is refused, it is WP-CLI only), `lang_migrate_cleanup_plan` (names, counts and the 30-minute `confirm`
+  token) and `lang_migrate_cleanup_apply` (body exactly `{ confirm }`; refused before any request unless the site is a
+  Bearfort fort and `backup_job_id` is a backup job of that fort that completed less than 60 minutes ago).
+- `lang_export` writes Lang's export to a new file on this machine (absolute path, nothing may exist there, created
+  0600) and returns row counts per section only; `lang_import` sends such a file (dry run unless `apply: true`; over
+  32 MB refused before any request). No lang tool takes a server path.
+
 ## [3.18.0] - 2026-11-19
 
 ### Added

@@ -60,7 +60,15 @@ vi.mock("./bearfort.js", async (importOriginal) => {
 		...actual,
 		forFort: async () => ({
 			hex: "abcdef0123",
-			get: (p: string, q?: Record<string, unknown>) => record("GET")(fortPath(p), q),
+			// A job read answers a backup of this fort that completed just now: lang_migrate_cleanup_apply posts
+			// only after such a job (PF29); fort_job_get ignores the body.
+			get: async (p: string, q?: Record<string, unknown>) => {
+				const out = await record("GET")(fortPath(p), q);
+				const job = /^\/jobs\/([^/]+)$/.exec(p);
+				if (!job) return out;
+				const now = new Date().toISOString();
+				return { id: job[1], site_hex: "abcdef0123", action: "backup", status: "completed", finished_at: now };
+			},
 			getText: async (p: string, q?: Record<string, unknown>) => {
 				await record("GET")(fortPath(p), q);
 				return "";
@@ -69,6 +77,13 @@ vi.mock("./bearfort.js", async (importOriginal) => {
 		}),
 	};
 });
+
+// Local files on the operator's machine (lang_export, lang_import): no disk I/O here, only the REST call is checked.
+vi.mock("./local-file.js", () => ({
+	assertNewFile: async () => undefined,
+	writeNewFile: async () => 0,
+	readJsonObject: async () => ({}),
+}));
 
 import { registerAll } from "./register.js";
 
