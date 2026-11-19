@@ -315,6 +315,87 @@ describe("other tools", () => {
 		expect(z.object(tool("seo_sitemap_health").schema).shape.offset.safeParse(-1).success).toBe(false);
 	});
 
+	// Briefing features (cvrt-seo-manager 1.18.0): each route announces itself in /status features.
+	const featureSite = (features: string[], report: Record<string, unknown> = {}) =>
+		get.mockImplementation(async (path: string) =>
+			path === `${NS}/status` ? { version: "1.18.0", features } : report,
+		);
+
+	it.each([
+		["seo_locations_report", "locations", {}],
+		["seo_audit_page", "page_audit", { post_id: 5 }],
+		["seo_audit_pages", "page_audit", {}],
+	])("%s refuses a site without the %s feature", async (name, feature, args) => {
+		get.mockReset();
+		get.mockResolvedValue({ version: "1.17.0", features: ["sitemap_health"] });
+		await expect(tool(name).handler({ site: "a", ...args })).rejects.toThrow(new RegExp(feature));
+		expect(get).toHaveBeenCalledTimes(1);
+		expect(get).toHaveBeenCalledWith(`${NS}/status`);
+	});
+
+	it("seo_locations_report GETs /locations without params", async () => {
+		get.mockReset();
+		featureSite(["locations"], { enabled: true, total: 0, locations: [] });
+		const r = await tool("seo_locations_report").handler({ site: "a" });
+		expect(get).toHaveBeenLastCalledWith(`${NS}/locations`);
+		expect(parse(r).enabled).toBe(true);
+	});
+
+	it("seo_audit_page rejects both and neither of post_id and url before any request", async () => {
+		get.mockReset();
+		await expect(tool("seo_audit_page").handler({ site: "a" })).rejects.toThrow(/exactly one of post_id or url/);
+		await expect(tool("seo_audit_page").handler({ site: "a", post_id: 5, url: "https://x.test/" })).rejects.toThrow(
+			/exactly one of post_id or url/,
+		);
+		expect(get).not.toHaveBeenCalled();
+	});
+
+	it("seo_audit_page GETs /audit/page with post_id or url", async () => {
+		get.mockReset();
+		featureSite(["page_audit"], { findings: [] });
+		await tool("seo_audit_page").handler({ site: "a", post_id: 5 });
+		expect(get).toHaveBeenLastCalledWith(`${NS}/audit/page`, { post_id: 5 });
+		await tool("seo_audit_page").handler({ site: "a", url: "https://x.test/p/" });
+		expect(get).toHaveBeenLastCalledWith(`${NS}/audit/page`, { url: "https://x.test/p/" });
+		const postId = z.object(tool("seo_audit_page").schema).shape.post_id;
+		for (const bad of [0, 1.5, "5"]) expect(postId.safeParse(bad).success).toBe(false);
+		expect(postId.safeParse(5).success).toBe(true);
+	});
+
+	it("seo_audit_pages GETs /audit/pages with the given paging only and limits 1-100", async () => {
+		get.mockReset();
+		featureSite(["page_audit"], { pages: [], truncated: false });
+		await tool("seo_audit_pages").handler({ site: "a" });
+		expect(get).toHaveBeenLastCalledWith(`${NS}/audit/pages`, {});
+		await tool("seo_audit_pages").handler({ site: "a", limit: 50, offset: 100 });
+		expect(get).toHaveBeenLastCalledWith(`${NS}/audit/pages`, { limit: 50, offset: 100 });
+		const shape = z.object(tool("seo_audit_pages").schema).shape;
+		expect(shape.limit.safeParse(0).success).toBe(false);
+		expect(shape.limit.safeParse(101).success).toBe(false);
+		expect(shape.limit.safeParse(100).success).toBe(true);
+		expect(shape.offset.safeParse(-1).success).toBe(false);
+		let text = "";
+		register({
+			tool: (name: string, d: string) => {
+				if (name === "seo_audit_pages") text = d;
+			},
+		} as never);
+		expect(text).toMatch(/next_offset/);
+		expect(text).toMatch(/truncated/);
+	});
+
+	it("seo_update_post_seo passes location and faq only when given", async () => {
+		put.mockReset();
+		put.mockResolvedValue({});
+		await tool("seo_update_post_seo").handler({ site: "a", id: 5, title: "T" });
+		expect(put).toHaveBeenLastCalledWith(`${NS}/posts/5/seo`, { title: "T" });
+		const faq = [{ question: "Q?", answer: "<p>A</p>" }];
+		await tool("seo_update_post_seo").handler({ site: "a", id: 5, location: { name: "Mainz" }, faq });
+		expect(put).toHaveBeenLastCalledWith(`${NS}/posts/5/seo`, { location: { name: "Mainz" }, faq });
+		await tool("seo_update_post_seo").handler({ site: "a", id: 5, location: null, faq: null });
+		expect(put).toHaveBeenLastCalledWith(`${NS}/posts/5/seo`, { location: null, faq: null });
+	});
+
 	it("seo_import_migrate sends source and the given flags only", async () => {
 		post.mockResolvedValue({});
 		await tool("seo_import_migrate").handler({ site: "a", source: "rankmath", settings: true });

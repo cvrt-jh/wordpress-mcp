@@ -74,6 +74,8 @@
 			"schema_defaults",
 			"schema_article_type",
 			"software_app",
+			"faq_sources",
+			"menu_schema",
 			"verify_google",
 			"verify_bing",
 			"verify_pinterest",
@@ -109,6 +111,7 @@
 			"local_hours",
 			"local_geo",
 			"local_price_range",
+			"locations",
 			"404_monitor_enabled",
 			"404_retention_days",
 			"404_max_rows",
@@ -148,6 +151,8 @@
 			"schema",
 			"schema_type",
 			"software_app",
+			"location",
+			"faq",
 			"breadcrumb_title",
 			"pillar_content",
 			"seo_score",
@@ -171,6 +176,8 @@
 			"schema",
 			"schema_type",
 			"software_app",
+			"location",
+			"faq",
 			"breadcrumb_title",
 			"pillar_content",
 			"seo_score",
@@ -321,6 +328,31 @@
 		"server": ["limit", "offset", "sitemaps"],
 		"fields": ["limit", "offset", "sitemaps"],
 		"response": { "features": ["sitemap_health"] }
+	},
+	"seo_locations_report": {
+		"method": "GET",
+		"route": "/mcp/seo/v1/locations",
+		"source": "cvrt-seo-manager 1.18.0 includes/class-rest-api.php get_locations (no params; feature locations) -> Cvrt_CSM_Locations::report",
+		"server": [],
+		"response": { "features": ["locations"] }
+	},
+	"seo_audit_page": {
+		"method": "GET",
+		"route": "/mcp/seo/v1/audit/page",
+		"source": "cvrt-seo-manager 1.18.0 includes/class-rest-api.php get_audit_page (args post_id integer >= 1 XOR url string; both or neither 400 csm_audit_target; feature page_audit)",
+		"server": ["post_id", "url"],
+		"fields": ["post_id", "url"],
+		"sample": { "post_id": null, "url": "https://example.com/" },
+		"sends": ["url"],
+		"response": { "features": ["page_audit"] }
+	},
+	"seo_audit_pages": {
+		"method": "GET",
+		"route": "/mcp/seo/v1/audit/pages",
+		"source": "cvrt-seo-manager 1.18.0 includes/class-rest-api.php get_audit_pages (args limit 1-100 default 20, offset >= 0; feature page_audit) -> Cvrt_CSM_Page_Audit::run_batch",
+		"server": ["limit", "offset"],
+		"fields": ["limit", "offset"],
+		"response": { "features": ["page_audit"] }
 	},
 	"seo_sitemap_ping": {
 		"method": "POST",
