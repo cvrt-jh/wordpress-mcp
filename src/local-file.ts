@@ -4,13 +4,17 @@
  * those tools send the file's content, not its path.
  *
  * Writing: a new file only. The path must be absolute, nothing may exist there
- * (no file, directory or symlink, dangling or not), and the file is created
- * exclusively (O_CREAT | O_EXCL: never follows a symlink, never replaces a file
- * that appeared in between) with mode 0600.
+ * (no file, directory or symlink, dangling or not). The text goes to a temp file
+ * in the same directory (O_CREAT | O_EXCL, mode 0600), which is then hard-linked
+ * to the target: link() never replaces a file that appeared in between and never
+ * follows a symlink there, and a failed write leaves no partial file at the
+ * target. The temp file is always removed.
  * Reading: an absolute path to a regular file, size checked before it is read.
+ * Errors never quote file content (a JSON parse error would show its start).
  */
-import { lstat, open, readFile, stat } from "node:fs/promises";
-import { dirname, isAbsolute } from "node:path";
+import { randomBytes } from "node:crypto";
+import { link, lstat, open, readFile, stat, unlink } from "node:fs/promises";
+import { basename, dirname, isAbsolute, join } from "node:path";
 
 function absolute(path: string, arg: string): void {
 	if (!isAbsolute(path)) throw new Error(`${arg} must be an absolute path on this machine: ${path}`);
@@ -35,20 +39,26 @@ export async function assertNewFile(path: string, arg: string): Promise<void> {
 	if (!parent?.isDirectory()) throw new Error(`${arg}: the directory does not exist: ${dirname(path)}`);
 }
 
-/** Creates `path` exclusively (mode 0600) and writes `text`. Returns the bytes written. */
+/** Writes `text` to the new file `path` (mode 0600) through a temp file and link(). Returns the bytes written. */
 export async function writeNewFile(path: string, text: string, arg: string): Promise<number> {
 	absolute(path, arg);
-	const handle = await open(path, "wx", 0o600).catch((e: unknown) => {
-		if (code(e) === "EEXIST")
-			throw new Error(`${arg} already exists (file, directory or symlink); give a new file: ${path}`);
-		throw e;
-	});
+	const temp = join(dirname(path), `.${basename(path)}.${randomBytes(6).toString("hex")}.tmp`);
+	const bytes = Buffer.from(text, "utf8");
+	const handle = await open(temp, "wx", 0o600);
 	try {
-		const bytes = Buffer.from(text, "utf8");
-		await handle.writeFile(bytes);
+		try {
+			await handle.writeFile(bytes);
+		} finally {
+			await handle.close();
+		}
+		await link(temp, path).catch((e: unknown) => {
+			if (code(e) === "EEXIST")
+				throw new Error(`${arg} already exists (file, directory or symlink); give a new file: ${path}`);
+			throw e;
+		});
 		return bytes.length;
 	} finally {
-		await handle.close();
+		await unlink(temp);
 	}
 }
 
@@ -63,8 +73,9 @@ export async function readJsonObject(path: string, maxBytes: number, arg: string
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(await readFile(path, "utf8"));
-	} catch (e) {
-		throw new Error(`${arg} is not valid JSON: ${(e as Error).message}`);
+	} catch {
+		// The parser's message quotes the start of the input: never shown (it may be a secret).
+		throw new Error(`${arg} is not valid JSON: ${path}`);
 	}
 	if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
 		throw new Error(`${arg} must hold a JSON object`);

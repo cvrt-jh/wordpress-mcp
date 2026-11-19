@@ -103,8 +103,13 @@ async function freshBackup(siteId: string, given: unknown): Promise<{ fort: stri
 	}
 	const finished = typeof job.finished_at === "string" ? Date.parse(job.finished_at) : Number.NaN;
 	const age = Date.now() - finished;
-	if (Number.isNaN(finished) || age < -CLOCK_SKEW_MS) {
+	if (Number.isNaN(finished)) {
 		throw new Error(`Refused: backup job ${jobId} has no readable finish time`);
+	}
+	if (age < -CLOCK_SKEW_MS) {
+		throw new Error(
+			`Refused: backup job ${jobId}'s finish time is in the future (more than 5 minutes); check this machine's clock`,
+		);
 	}
 	if (age > BACKUP_MAX_AGE_MS) {
 		throw new Error(
@@ -112,6 +117,24 @@ async function freshBackup(siteId: string, given: unknown): Promise<{ fort: stri
 		);
 	}
 	return { fort: fort.hex, job: jobId };
+}
+
+/** Marker of a Lang export document (Cvrt_Lang_Export::FORMAT). */
+const EXPORT_FORMAT = "cvrt-lang-export";
+
+/**
+ * Whether a local JSON object is a Lang export (format, version 1, a sections object). lang_import sends nothing else:
+ * a misdirected file_path (an MCP config, an env dump) must never reach the site.
+ */
+function isLangExport(document: Record<string, unknown>): boolean {
+	const sections = document.sections;
+	return (
+		document.format === EXPORT_FORMAT &&
+		document.version === 1 &&
+		sections !== null &&
+		typeof sections === "object" &&
+		!Array.isArray(sections)
+	);
 }
 
 /** Rows per section of an export document (Cvrt_Lang_Export::counts(): a list or map counts its entries, null 0). */
@@ -607,14 +630,19 @@ export function register(rawServer: McpServer) {
 
 	server.tool(
 		"lang_export",
-		"cvrt-lang 0.10.0+: export Lang's own data (GET /export: languages, settings, content types, field policies, switcher, object links, strings, status; no secrets) into a NEW JSON file on this machine (out_path: absolute, must not exist; created 0600). Returns the file, its bytes and row counts per section only, never the data. Feed the file to lang_import.",
+		"cvrt-lang 0.10.0+: export Lang's own data (GET /export: languages, settings, content types, field policies, switcher, object links, strings, status; no secrets) into a NEW JSON file on this machine (out_path: absolute, ends in .json, must not exist; created 0600, never a partial file). Returns the file, its bytes and row counts per section only, never the data. Feed the file to lang_import.",
 		{
 			site,
 			sections: z.array(z.enum(SECTIONS)).min(1).optional().describe("Only these sections (default all)"),
-			out_path: z.string().describe("Absolute path of a new file on this machine (refused if anything exists there)"),
+			out_path: z
+				.string()
+				.describe("Absolute path of a new .json file on this machine (refused if anything exists there)"),
 		},
 		async ({ site, sections, out_path }) => {
 			const wp = forSite(site);
+			if (!out_path.toLowerCase().endsWith(".json")) {
+				throw new Error(`Refused: out_path must end in .json: ${out_path}`);
+			}
 			await assertNewFile(out_path, "out_path");
 			const params: Record<string, string> = sections ? { sections: sections.join(",") } : {};
 			const document = await wp.get<Record<string, unknown>>(`${NS}/export`, params);
@@ -625,7 +653,7 @@ export function register(rawServer: McpServer) {
 
 	server.tool(
 		"lang_import",
-		"cvrt-lang 0.10.0+: import a lang_export file from this machine (POST /import { document, apply }). A DRY RUN unless apply is true: the report shows what would change and writes nothing. Files or bodies over 32 MB are refused before any request. Strings keep manual translations, object links only where id, type, subtype and slug still match; an export of another site gets the warning other_site.",
+		"cvrt-lang 0.10.0+: import a lang_export file from this machine (POST /import { document, apply }). A DRY RUN unless apply is true: the report shows what would change and writes nothing. Refused before any request: a file that is not a cvrt-lang export (format cvrt-lang-export, version 1, sections), so no other local JSON is ever sent, and files or bodies over 32 MB. Strings keep manual translations, object links only where id, type, subtype and slug still match; an export of another site gets the warning other_site.",
 		{
 			site,
 			file_path: z.string().describe("Absolute path of the export JSON on this machine (at most 32 MB)"),
@@ -634,6 +662,11 @@ export function register(rawServer: McpServer) {
 		async ({ site, file_path, apply }) => {
 			const wp = forSite(site);
 			const document = await readJsonObject(file_path, IMPORT_MAX_BYTES, "file_path");
+			if (!isLangExport(document)) {
+				throw new Error(
+					`Refused: file_path is not a cvrt-lang export (needs format "${EXPORT_FORMAT}", version 1 and a sections object); nothing was sent: ${file_path}`,
+				);
+			}
 			const body = { document, apply: apply === true };
 			const size = Buffer.byteLength(JSON.stringify(body), "utf8");
 			if (size > IMPORT_MAX_BYTES) {

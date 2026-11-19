@@ -13,9 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `urls` step is refused, it is WP-CLI only), `lang_migrate_cleanup_plan` (names, counts and the 30-minute `confirm`
   token) and `lang_migrate_cleanup_apply` (body exactly `{ confirm }`; refused before any request unless the site is a
   Bearfort fort and `backup_job_id` is a backup job of that fort that completed less than 60 minutes ago).
-- `lang_export` writes Lang's export to a new file on this machine (absolute path, nothing may exist there, created
-  0600) and returns row counts per section only; `lang_import` sends such a file (dry run unless `apply: true`; over
-  32 MB refused before any request). No lang tool takes a server path.
+- `lang_export` writes Lang's export to a new `.json` file on this machine (absolute path, nothing may exist there,
+  created 0600 through a temp file and link, so never a partial file) and returns row counts per section only;
+  `lang_import` sends such a file (dry run unless `apply: true`); a file that is not a cvrt-lang export, or over
+  32 MB, is refused before any request, and local errors never quote file content. No lang tool takes a server path.
 
 ## [3.18.0] - 2026-11-19
 

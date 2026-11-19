@@ -1,7 +1,9 @@
 import {
+	chmodSync,
 	lstatSync,
 	mkdirSync,
 	mkdtempSync,
+	readdirSync,
 	readFileSync,
 	rmSync,
 	statSync,
@@ -775,10 +777,15 @@ describe("lang tools: cleanup apply (PF29: fort backup first)", () => {
 	it.each([
 		["no finished_at", { finished_at: undefined }],
 		["unreadable finished_at", { finished_at: "yesterday" }],
-		["finished_at in the future", { finished_at: new Date(Date.now() + 30 * MINUTE).toISOString() }],
 	])("refused with %s", async (_name, over) => {
 		fortGet.mockResolvedValue(backupJob(over));
-		await expect(apply({})).rejects.toThrow(/finish/);
+		await expect(apply({})).rejects.toThrow(/has no readable finish time/);
+		expect(post).not.toHaveBeenCalled();
+	});
+
+	it("refused with finished_at in the future, with its own message", async () => {
+		fortGet.mockResolvedValue(backupJob({ finished_at: new Date(Date.now() + 30 * MINUTE).toISOString() }));
+		await expect(apply({})).rejects.toThrow(/finish time is in the future.*clock/);
 		expect(post).not.toHaveBeenCalled();
 	});
 
@@ -812,11 +819,19 @@ describe("lang tools: cleanup apply (PF29: fort backup first)", () => {
 		expect(confirm.safeParse("/var/www/x").success).toBe(false);
 	});
 
-	it("cleanup apply output (also an error) is masked", async () => {
+	it("cleanup apply output is masked", async () => {
 		fortGet.mockResolvedValue(backupJob());
 		post.mockResolvedValue({ removed: {}, note: GH_PAT });
 		const text = (await apply({})).content[0].text;
 		expect(text).not.toContain(GH_PAT);
+	});
+
+	it("a refusal never echoes the backup job's error text (error path)", async () => {
+		fortGet.mockResolvedValue(backupJob({ status: "failed", error_message: `upload failed: ${GH_PAT}` }));
+		const err = (await apply({}).catch((e: Error) => e)) as Error;
+		expect(err.message).toMatch(/did not finish successfully \(status failed\)/);
+		expect(err.message).not.toContain(GH_PAT);
+		expect(post).not.toHaveBeenCalled();
 	});
 
 	it("the description names the order and the 60-minute backup rule", () => {
@@ -895,7 +910,7 @@ describe("lang tools: export and import (local files)", () => {
 		symlinkSync(target, link);
 		const dangling = join(dir, "dangling.json");
 		symlinkSync(join(dir, "missing.json"), dangling);
-		const sub = join(dir, "sub");
+		const sub = join(dir, "sub.json");
 		mkdirSync(sub);
 		for (const out_path of [link, dangling, sub]) {
 			await expect(tool("lang_export").handler({ site: "a", out_path }), out_path).rejects.toThrow(/already exists/);
@@ -921,6 +936,36 @@ describe("lang tools: export and import (local files)", () => {
 		});
 		await expect(tool("lang_export").handler({ site: "a", out_path: file })).rejects.toThrow(/already exists/);
 		expect(readFileSync(file, "utf8")).toBe("theirs");
+		expect(readdirSync(dir)).toEqual(["race.json"]);
+	});
+
+	it("lang_export leaves no file behind when the write fails (read-only directory)", async () => {
+		const file = join(dir, "export.json");
+		get.mockImplementation(async () => {
+			chmodSync(dir, 0o500);
+			return doc;
+		});
+		try {
+			await expect(tool("lang_export").handler({ site: "a", out_path: file })).rejects.toThrow(/EACCES|permission/i);
+			expect(readdirSync(dir)).toEqual([]);
+		} finally {
+			chmodSync(dir, 0o700);
+		}
+	});
+
+	it("a successful lang_export leaves only the target (no temp file)", async () => {
+		get.mockResolvedValue(doc);
+		await tool("lang_export").handler({ site: "a", out_path: join(dir, "only.json") });
+		expect(readdirSync(dir)).toEqual(["only.json"]);
+	});
+
+	it("lang_export refuses an out_path that does not end in .json", async () => {
+		for (const out_path of [join(dir, "export.txt"), join(dir, "export"), join(dir, ".zshrc")]) {
+			await expect(tool("lang_export").handler({ site: "a", out_path }), out_path).rejects.toThrow(
+				/out_path must end in \.json/,
+			);
+		}
+		expect(get).not.toHaveBeenCalled();
 	});
 
 	it("lang_import posts the file's document as a dry run by default", async () => {
@@ -943,8 +988,8 @@ describe("lang tools: export and import (local files)", () => {
 
 	it("lang_import refuses a body over 32 MB even when the file is exactly 32 MB", async () => {
 		const file = join(dir, "edge.json");
-		const head = '{"a":"';
-		const tail = '"}';
+		const head = '{"format":"cvrt-lang-export","version":1,"sections":{"strings":["';
+		const tail = '"]}}';
 		writeFileSync(file, head + "x".repeat(32 * 1024 * 1024 - head.length - tail.length) + tail);
 		expect(statSync(file).size).toBe(32 * 1024 * 1024);
 		await expect(tool("lang_import").handler({ site: "a", file_path: file })).rejects.toThrow(/32 MB/);
@@ -956,9 +1001,51 @@ describe("lang tools: export and import (local files)", () => {
 		writeFileSync(bad, "{not json");
 		const list = join(dir, "list.json");
 		writeFileSync(list, "[1,2]");
-		for (const file_path of [join(dir, "missing.json"), dir, bad, list, "relative.json"]) {
-			await expect(tool("lang_import").handler({ site: "a", file_path }), file_path).rejects.toThrow();
+		const cases: [string, RegExp][] = [
+			[join(dir, "missing.json"), /file_path is not a readable file/],
+			[dir, /file_path is not a readable file/],
+			[bad, /file_path is not valid JSON/],
+			[list, /file_path must hold a JSON object/],
+			["relative.json", /file_path must be an absolute path/],
+		];
+		for (const [file_path, message] of cases) {
+			await expect(tool("lang_import").handler({ site: "a", file_path }), file_path).rejects.toThrow(message);
 		}
+		expect(post).not.toHaveBeenCalled();
+	});
+
+	it("lang_import sends only a cvrt-lang export: any other JSON (an MCP config with app passwords) is refused locally", async () => {
+		const secret = "abcd efgh ijkl mnop qrst uvwx";
+		const others: Record<string, unknown>[] = [
+			{ mcpServers: { wordpress: { env: { WORDPRESS_SITES: `[{"id":"a","app_password":"${secret}"}]` } } } },
+			{ ...doc, format: "cvrt-lang-backup" },
+			{ ...doc, version: 2 },
+			{ ...doc, version: "1" },
+			{ ...doc, sections: [] },
+			{ ...doc, sections: null },
+			{ format: "cvrt-lang-export", version: 1 },
+		];
+		for (const [i, content] of others.entries()) {
+			const file = join(dir, `other-${i}.json`);
+			writeFileSync(file, JSON.stringify(content));
+			const err = (await tool("lang_import")
+				.handler({ site: "a", file_path: file })
+				.catch((e: Error) => e)) as Error;
+			expect(err.message, file).toMatch(/file_path is not a cvrt-lang export/);
+			expect(err.message).not.toContain(secret);
+		}
+		expect(post).not.toHaveBeenCalled();
+	});
+
+	it("an unparsable file's error never quotes its content", async () => {
+		const file = join(dir, "env.json");
+		writeFileSync(file, `AHREFS_API_KEY=${GH_PAT}\n`);
+		const err = (await tool("lang_import")
+			.handler({ site: "a", file_path: file })
+			.catch((e: Error) => e)) as Error;
+		expect(err.message).toMatch(/file_path is not valid JSON/);
+		expect(err.message).not.toContain(GH_PAT);
+		expect(err.message).not.toContain("AHREFS");
 		expect(post).not.toHaveBeenCalled();
 	});
 

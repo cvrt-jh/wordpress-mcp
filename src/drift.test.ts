@@ -82,7 +82,7 @@ vi.mock("./bearfort.js", async (importOriginal) => {
 vi.mock("./local-file.js", () => ({
 	assertNewFile: async () => undefined,
 	writeNewFile: async () => 0,
-	readJsonObject: async () => ({}),
+	readJsonObject: async () => ({ format: "cvrt-lang-export", version: 1, sections: {} }),
 }));
 
 import { registerAll } from "./register.js";

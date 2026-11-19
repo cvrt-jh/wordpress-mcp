@@ -176,7 +176,8 @@
 		"fields": ["sections"],
 		"local": {
 			"out_path": "the new file on this machine the export is written to; never sent"
-		}
+		},
+		"sample": { "out_path": "/drift/export.json" }
 	},
 	"lang_import": {
 		"method": "POST",
