@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.18.0] - 2026-11-19
+
+### Added
+
+- cvrt-seo-manager 1.18.0 tools: `seo_locations_report` (location nodes and findings of every published location post),
+  `seo_audit_page` (audit one page by `post_id` or same-host `url`) and `seo_audit_pages`.
+- `seo_update_post_seo` takes `location` (per-post LocalBusiness override) and `faq` (FAQPage rows, at most 50).
+- `seo_update_settings` knows the new settings drift keys: `local_seo.locations`, `schema.faq_sources` and `schema.menu_schema`.
+
 ## [3.17.0] - 2026-11-19
 
 ### Added
