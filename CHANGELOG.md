@@ -5,11 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.19.0] - 2026-11-19
 
 ### Added
 
-- cvrt-lang 0.10.0 migration tools: `lang_migrate_status`, `lang_migrate_run` (dry run unless `apply: true`; the
+- cvrt-lang 0.10.0 or later migration tools: `lang_migrate_status`, `lang_migrate_run` (dry run unless `apply: true`; the
   `urls` step is refused, it is WP-CLI only), `lang_migrate_cleanup_plan` (names, counts and the 30-minute `confirm`
   token) and `lang_migrate_cleanup_apply` (body exactly `{ confirm }`; refused before any request unless the site is a
   Bearfort fort and `backup_job_id` is a backup job of that fort that completed less than 60 minutes ago).
